@@ -77,11 +77,14 @@ export function MatchLineupDialog({
   const maxPairSize = isDoublesMatch ? 2 : undefined;
 
   const { data: players } = useQuery({
-    queryKey: ["players", categoryId],
+    queryKey: ["players", categoryId, isAthletics ? "athletics" : "default"],
     queryFn: async () => {
+      const cols = isAthletics
+        ? "id, name, first_name, position, discipline, specialty, disciplines, specialties"
+        : "id, name, first_name, position";
       const { data, error } = await supabase
         .from("players")
-        .select("id, name, first_name, position")
+        .select(cols)
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
@@ -102,23 +105,74 @@ export function MatchLineupDialog({
     enabled: !!matchId,
   });
 
+  // Build athletics players (with their pairs) from the players query
+  const athleticsPlayers: AthleticsLineupPlayer[] = isAthletics && players
+    ? (players as any[]).map((p) => {
+        const fullName = [p.first_name, p.name].filter(Boolean).join(" ") || "Athlète inconnu";
+        const pairs: { discipline: string; specialty: string | null }[] = [];
+        const arr = Array.isArray(p.disciplines) ? p.disciplines : [];
+        const arrSpec = Array.isArray(p.specialties) ? p.specialties : [];
+        if (arr.length > 0) {
+          arr.forEach((d: string, i: number) => {
+            if (d) pairs.push({ discipline: d, specialty: arrSpec[i] || null });
+          });
+        } else if (p.discipline) {
+          pairs.push({ discipline: p.discipline, specialty: p.specialty || null });
+        }
+        return { playerId: p.id, playerName: fullName, pairs };
+      })
+    : [];
+
   useEffect(() => {
-    if (players && players.length > 0) {
-      const lineup = players.map((player) => {
-        const existing = existingLineup?.find((l) => l.player_id === player.id);
-        const fullName = [player.first_name, player.name].filter(Boolean).join(" ") || "Athlète inconnu";
-        return {
-          playerId: player.id,
-          playerName: fullName,
-          isStarter: existing?.is_starter ?? false,
-          position: existing?.position ?? "",
-          minutesPlayed: existing?.minutes_played ?? 0,
-          isSelected: !!existing,
-        };
+    if (!players || players.length === 0) return;
+
+    if (isAthletics) {
+      // Build entries: one per (player × pair); pre-check those already saved in the lineup
+      const initialEntries: AthleticsLineupEntry[] = [];
+      (players as any[]).forEach((p) => {
+        const arr = Array.isArray(p.disciplines) ? p.disciplines : [];
+        const arrSpec = Array.isArray(p.specialties) ? p.specialties : [];
+        const pairs: { discipline: string; specialty: string | null }[] = [];
+        if (arr.length > 0) {
+          arr.forEach((d: string, i: number) => {
+            if (d) pairs.push({ discipline: d, specialty: arrSpec[i] || null });
+          });
+        } else if (p.discipline) {
+          pairs.push({ discipline: p.discipline, specialty: p.specialty || null });
+        }
+        pairs.forEach((pair) => {
+          const existing = existingLineup?.find(
+            (l: any) =>
+              l.player_id === p.id &&
+              (l.discipline ?? null) === pair.discipline &&
+              (l.specialty ?? null) === (pair.specialty || null),
+          );
+          initialEntries.push({
+            playerId: p.id,
+            discipline: pair.discipline,
+            specialty: pair.specialty,
+            isSelected: !!existing,
+          });
+        });
       });
-      setLineupData(lineup);
+      setAthleticsEntries(initialEntries);
+      return;
     }
-  }, [players, existingLineup]);
+
+    const lineup = (players as any[]).map((player) => {
+      const existing = existingLineup?.find((l) => l.player_id === player.id);
+      const fullName = [player.first_name, player.name].filter(Boolean).join(" ") || "Athlète inconnu";
+      return {
+        playerId: player.id,
+        playerName: fullName,
+        isStarter: existing?.is_starter ?? false,
+        position: existing?.position ?? "",
+        minutesPlayed: existing?.minutes_played ?? 0,
+        isSelected: !!existing,
+      };
+    });
+    setLineupData(lineup);
+  }, [players, existingLineup, isAthletics]);
 
   const saveLineup = useMutation({
     mutationFn: async () => {
@@ -128,6 +182,25 @@ export function MatchLineupDialog({
         .delete()
         .eq("match_id", matchId);
       if (deleteError) throw deleteError;
+
+      if (isAthletics) {
+        const selected = athleticsEntries.filter((e) => e.isSelected);
+        if (selected.length > 0) {
+          const { error } = await supabase.from("match_lineups").insert(
+            selected.map((e) => ({
+              match_id: matchId,
+              player_id: e.playerId,
+              discipline: e.discipline,
+              specialty: e.specialty,
+              is_starter: true,
+              position: null,
+              minutes_played: 0,
+            })),
+          );
+          if (error) throw error;
+        }
+        return { selectedCount: selected.length };
+      }
 
       // Insert new lineup
       const selectedPlayers = lineupData.filter((p) => p.isSelected);
@@ -167,6 +240,24 @@ export function MatchLineupDialog({
       prev.map((p) => (p.playerId === playerId ? { ...p, ...updates } : p))
     );
   };
+
+  const toggleAthleticsEntry = (
+    playerId: string,
+    discipline: string | null,
+    specialty: string | null,
+    selected: boolean,
+  ) => {
+    setAthleticsEntries((prev) =>
+      prev.map((e) =>
+        e.playerId === playerId &&
+        (e.discipline ?? null) === (discipline ?? null) &&
+        (e.specialty ?? null) === (specialty ?? null)
+          ? { ...e, isSelected: selected }
+          : e,
+      ),
+    );
+  };
+
 
   const handleFieldLineupChange = (fieldLineup: Record<string, string>, substitutes: string[]) => {
     // Update lineup from field visualization
