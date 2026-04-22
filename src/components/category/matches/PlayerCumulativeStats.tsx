@@ -26,6 +26,7 @@ import { CumulativeKickingMap } from "./CumulativeKickingMap";
 import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
 import { preparePdfWithSettings } from "@/lib/pdfExport";
 import { drawPdfRugbyField, drawPdfZoneStatsGrid, svgPctToPdfPos } from "@/lib/pdfRugbyField";
+import { drawStatEvolutionTable, drawStatLineChart, type StatEvolutionData } from "@/lib/pdfPlayerEvolution";
 
 interface PlayerCumulativeStatsProps {
   categoryId: string;
