@@ -288,8 +288,9 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
     return catOrder * 1e10 + new Date(c.start_date).getTime();
   };
   const monthCyclesArr: PeriodizationCycle[][] = [];
-  for (let m = 0; m < 12; m++) {
-    const cs = cyclesActiveInMonth(data.cycles, data.year, m).sort(
+  for (let i = 0; i < 12; i++) {
+    const { year: yy, month: mm } = monthsSeq[i];
+    const cs = cyclesActiveInMonth(data.cycles, yy, mm).sort(
       (a, b) => cycleSortKey(a) - cycleSortKey(b),
     );
     monthCyclesArr.push(cs);
@@ -303,14 +304,15 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
   const today = startOfDay(new Date());
 
   // ── Month headers ──
-  for (let m = 0; m < 12; m++) {
-    const x = gridLeft + m * monthWidth;
+  for (let i = 0; i < 12; i++) {
+    const { year: yy, month: mm } = monthsSeq[i];
+    const x = gridLeft + i * monthWidth;
     pdf.setFillColor(28, 33, 50);
     pdf.rect(x, gridTop, monthWidth, monthHeaderH, "F");
     pdf.setTextColor(255, 255, 255);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(7.5);
-    pdf.text(`${monthLabels[m]} ${data.year}`, x + monthWidth / 2, gridTop + monthHeaderH / 2 + 1.4, {
+    pdf.text(`${monthLabels[mm]} ${yy}`, x + monthWidth / 2, gridTop + monthHeaderH / 2 + 1.4, {
       align: "center",
     });
   }
