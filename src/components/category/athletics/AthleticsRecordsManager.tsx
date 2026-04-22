@@ -55,20 +55,38 @@ export function AthleticsRecordsManager({ categoryId, playerId, singlePlayer = f
   const [seasonYear, setSeasonYear] = useState(new Date().getFullYear());
   const [notes, setNotes] = useState("");
 
-  // Fetch players (only if not restricted to single player)
+  // Fetch players (always — we also need the current athlete's disciplines in singlePlayer mode)
   const { data: players = [] } = useQuery({
-    queryKey: ["category_players_minimal", categoryId],
+    queryKey: ["category_players_minimal_athletics", categoryId, playerId || "all"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("players")
-        .select("id, name, first_name, discipline, specialty")
-        .eq("category_id", categoryId)
-        .order("name");
+        .select("id, name, first_name, discipline, specialty, disciplines, specialties")
+        .eq("category_id", categoryId);
+      if (singlePlayer && playerId) q = q.eq("id", playerId);
+      const { data, error } = await q.order("name");
       if (error) throw error;
-      return (data || []) as Player[];
+      return (data || []) as unknown as Player[];
     },
-    enabled: !singlePlayer,
   });
+
+  /**
+   * Returns the list of (discipline, specialty) pairs the given player practices.
+   * Falls back to the legacy single discipline if the new arrays are empty.
+   */
+  const getAthletePairs = (
+    p: Player | undefined,
+  ): Array<{ discipline: string; specialty: string | null }> => {
+    if (!p) return [];
+    if (p.disciplines && p.disciplines.length > 0) {
+      return p.disciplines.map((d, i) => ({
+        discipline: d,
+        specialty: p.specialties?.[i] || null,
+      }));
+    }
+    if (p.discipline) return [{ discipline: p.discipline, specialty: p.specialty || null }];
+    return [];
+  };
 
   // Fetch records
   const { data: records = [], isLoading } = useQuery({
