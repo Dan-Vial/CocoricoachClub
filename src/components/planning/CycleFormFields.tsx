@@ -10,6 +10,8 @@ const CYCLE_TYPES = [
 ];
 
 const DOMINANT_QUALITIES = [
+  { value: "technique", label: "Technique" },
+  { value: "tactique", label: "Tactique" },
   { value: "force", label: "Force" },
   { value: "puissance", label: "Puissance" },
   { value: "vitesse", label: "Vitesse / Explosivité" },
@@ -17,8 +19,6 @@ const DOMINANT_QUALITIES = [
   { value: "endurance_anaerobie", label: "Endurance anaérobie" },
   { value: "endurance_force", label: "Endurance de force" },
   { value: "hypertrophie", label: "Hypertrophie" },
-  { value: "technique", label: "Technique" },
-  { value: "tactique", label: "Tactique" },
   { value: "mobilite", label: "Mobilité / Souplesse" },
   { value: "prevention", label: "Prévention / Prophylaxie" },
   { value: "mental", label: "Préparation mentale" },
