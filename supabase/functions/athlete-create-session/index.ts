@@ -186,6 +186,13 @@ serve(async (req) => {
             notes: ex.notes || null,
             order_index: idx,
             library_exercise_id: ex.library_exercise_id || null,
+            set_type: ex.set_type || "normal",
+            method: ex.method || ex.set_type || null,
+            group_id: ex.group_id || null,
+            group_order: ex.group_order ?? null,
+            tempo: ex.tempo || null,
+            drop_sets: ex.drop_sets ?? null,
+            cluster_sets: ex.cluster_sets ?? null,
           }))
       : [];
 

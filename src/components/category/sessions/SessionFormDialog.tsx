@@ -744,6 +744,13 @@ export function SessionFormDialog({
               : (ex.notes || null),
             order_index: idx,
             library_exercise_id: ex.library_exercise_id,
+            set_type: ex.set_type || "normal",
+            method: ex.set_type || "normal",
+            group_id: ex.group_id || null,
+            group_order: ex.group_order ?? null,
+            tempo: ex.tempo || null,
+            drop_sets: ex.drop_sets ? (ex.drop_sets as any) : null,
+            cluster_sets: ex.cluster_sets ? (ex.cluster_sets as any) : null,
           }));
 
         const { data: payload, error } = await supabase.functions.invoke("athlete-create-session", {
