@@ -1000,13 +1000,84 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
           doc.setFont("helvetica", "bold");
           doc.setTextColor(30, 41, 59);
           doc.text("Cartographie des tirs au but — Équipe", 14, y);
-          y += 5;
+          y += 6;
+
+          // Aggregate totals across all kickers for the summary line
+          const teamKickAgg = Object.values(kickingByPlayerFinal).reduce((acc, k) => {
+            acc.total += k.total; acc.success += k.success;
+            acc.conversion.total += k.conversion.total; acc.conversion.success += k.conversion.success;
+            acc.penalty.total += k.penalty.total; acc.penalty.success += k.penalty.success;
+            acc.drop.total += k.drop.total; acc.drop.success += k.drop.success;
+            return acc;
+          }, {
+            total: 0, success: 0,
+            conversion: { total: 0, success: 0 },
+            penalty: { total: 0, success: 0 },
+            drop: { total: 0, success: 0 },
+          });
+          const teamRate = teamKickAgg.total > 0 ? Math.round((teamKickAgg.success / teamKickAgg.total) * 100) : 0;
+          const teamConvRate = teamKickAgg.conversion.total > 0 ? Math.round((teamKickAgg.conversion.success / teamKickAgg.conversion.total) * 100) : 0;
+          const teamPenRate = teamKickAgg.penalty.total > 0 ? Math.round((teamKickAgg.penalty.success / teamKickAgg.penalty.total) * 100) : 0;
+          const teamDropRate = teamKickAgg.drop.total > 0 ? Math.round((teamKickAgg.drop.success / teamKickAgg.drop.total) * 100) : 0;
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8);
+          doc.setTextColor(30, 41, 59);
+          doc.text(`Global: ${teamKickAgg.success}/${teamKickAgg.total} (${teamRate}%)  •  Transformations: ${teamKickAgg.conversion.success}/${teamKickAgg.conversion.total} (${teamConvRate}%)  •  Pénalités: ${teamKickAgg.penalty.success}/${teamKickAgg.penalty.total} (${teamPenRate}%)  •  Drops: ${teamKickAgg.drop.success}/${teamKickAgg.drop.total} (${teamDropRate}%)`, 14, y);
+          y += 6;
+
+          // Visual legend (shapes + colors) — matches the on-screen cartography
           doc.setFontSize(7);
           doc.setTextColor(100, 116, 139);
-          doc.text("● Transformation   ■ Pénalité   ◆ Drop   |   Vert = réussi   Rouge = raté", 14, y);
-          y += 5;
+          // Transformation = blue circle
+          doc.setFillColor(59, 130, 246);
+          doc.circle(18, y - 1, 2, "F");
+          doc.text("Transformation", 22, y);
+          // Pénalité = orange square
+          doc.setFillColor(249, 115, 22);
+          doc.rect(56, y - 3, 4, 4, "F");
+          doc.text("Pénalité", 62, y);
+          // Drop = purple diamond
+          doc.setFillColor(139, 92, 246);
+          const tdx = 90, tdy = y - 1;
+          (doc as any).triangle(tdx, tdy - 2.5, tdx + 2.5, tdy, tdx, tdy + 2.5, "F");
+          (doc as any).triangle(tdx, tdy - 2.5, tdx - 2.5, tdy, tdx, tdy + 2.5, "F");
+          doc.text("Drop", 94, y);
+          // Réussi (vert)
+          doc.setFillColor(34, 197, 94);
+          doc.circle(118, y - 1, 2, "F");
+          doc.text("Réussi", 122, y);
+          // Raté (rouge)
+          doc.setFillColor(239, 68, 68);
+          doc.circle(144, y - 1, 2, "F");
+          doc.text("Raté", 148, y);
+          y += 6;
 
           const allKicks = Object.values(kickingByPlayerFinal).flatMap(k => k.allKicks);
+
+          // Marker counts by type — used to verify consistency with numeric totals
+          const markerCounts = allKicks.reduce((acc, k) => {
+            const t = (k.kickType as "conversion" | "penalty" | "drop") || "penalty";
+            if (!acc[t]) acc[t] = { total: 0, success: 0 };
+            acc[t].total++;
+            if (k.success) acc[t].success++;
+            return acc;
+          }, {} as Record<string, { total: number; success: number }>);
+          const mc = (t: string) => markerCounts[t] || { total: 0, success: 0 };
+          // Show note only if marker counts differ from numeric totals (positions not all saved)
+          const mismatch =
+            mc("conversion").total !== teamKickAgg.conversion.total ||
+            mc("penalty").total !== teamKickAgg.penalty.total ||
+            mc("drop").total !== teamKickAgg.drop.total;
+          if (mismatch) {
+            doc.setFontSize(6.5);
+            doc.setTextColor(150, 110, 30);
+            doc.text(
+              `Symboles affichés — T: ${mc("conversion").success}/${mc("conversion").total}  P: ${mc("penalty").success}/${mc("penalty").total}  D: ${mc("drop").success}/${mc("drop").total} (positions saisies sur le terrain)`,
+              14, y
+            );
+            y += 4;
+          }
+          doc.setTextColor(30, 41, 59);
           const mapW = pageW - 28;
           const mapH = 55;
           const fb = drawPdfRugbyField(doc, 14, y, mapW, mapH);
