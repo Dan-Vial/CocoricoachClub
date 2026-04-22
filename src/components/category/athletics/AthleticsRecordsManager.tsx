@@ -121,15 +121,43 @@ export function AthleticsRecordsManager({ categoryId, playerId, singlePlayer = f
 
   const openCreate = (forPlayerId?: string, autoDiscipline?: string, autoSpecialty?: string | null) => {
     resetForm();
-    if (forPlayerId) setSelectedPlayerId(forPlayerId);
-    if (autoDiscipline) {
-      setDiscipline(autoDiscipline);
-      const defaults = getDefaultUnitForDiscipline(autoDiscipline, autoSpecialty);
+    const targetPlayerId = forPlayerId || playerId || "";
+    if (targetPlayerId) setSelectedPlayerId(targetPlayerId);
+
+    // Auto-prefill discipline & specialty from the athlete's profile when not given explicitly.
+    let disc = autoDiscipline;
+    let spec: string | null | undefined = autoSpecialty;
+    if (!disc && targetPlayerId) {
+      const pairs = getAthletePairs(playerMap.get(targetPlayerId));
+      if (pairs.length > 0) {
+        disc = pairs[0].discipline;
+        spec = pairs[0].specialty;
+      }
+    }
+
+    if (disc) {
+      setDiscipline(disc);
+      const defaults = getDefaultUnitForDiscipline(disc, spec ?? undefined);
       setUnit(defaults.unit);
       setLowerIsBetter(defaults.lowerIsBetter);
     }
-    if (autoSpecialty) setSpecialty(autoSpecialty);
+    if (spec) setSpecialty(spec);
     setIsDialogOpen(true);
+  };
+
+  // When the user selects a different athlete inside the dialog, refresh the
+  // discipline/specialty defaults from that athlete's profile.
+  const handlePlayerChange = (newPlayerId: string) => {
+    setSelectedPlayerId(newPlayerId);
+    const pairs = getAthletePairs(playerMap.get(newPlayerId));
+    if (pairs.length > 0) {
+      const first = pairs[0];
+      setDiscipline(first.discipline);
+      setSpecialty(first.specialty || NONE_SPECIALTY);
+      const defaults = getDefaultUnitForDiscipline(first.discipline, first.specialty ?? undefined);
+      setUnit(defaults.unit);
+      setLowerIsBetter(defaults.lowerIsBetter);
+    }
   };
 
   const openEdit = (r: AthleticsRecord) => {
