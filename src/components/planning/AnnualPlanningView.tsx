@@ -65,17 +65,17 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   const [prefilledEndDate, setPrefilledEndDate] = useState<Date | undefined>();
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
 
-  // Query sport type
+  // Query sport type + names for PDF export
   const { data: categoryData } = useQuery({
     queryKey: ["category-sport-type-annual", categoryId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("categories")
-        .select("rugby_type")
+        .select("rugby_type, name, clubs(name)")
         .eq("id", categoryId)
         .single();
       if (error) throw error;
-      return data;
+      return data as { rugby_type: string; name: string; clubs: { name: string } | null };
     },
   });
   const isSkiSport = categoryData?.rugby_type ? getMainSportFromType(categoryData.rugby_type) === "ski" : false;
