@@ -1257,6 +1257,75 @@ export function CompetitionRoundsDialog({
                             </div>
                           )}
 
+                          {/* Athletics: Conditions (vent, sens du vent, température) */}
+                          {isAthletics && (
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                              <div>
+                                <Label className="text-xs">Vent (m/s)</Label>
+                                <Input
+                                  value={round.wind_conditions || ""}
+                                  onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { wind_conditions: e.target.value })}
+                                  placeholder="+1.2"
+                                  className="h-8"
+                                  disabled={round.isLocked}
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Sens du vent</Label>
+                                <Select
+                                  value={(round as any).wind_direction || ""}
+                                  onValueChange={(value) =>
+                                    updateRound(selectedPlayer.playerId, round.round_number, { wind_direction: value } as any)
+                                  }
+                                  disabled={round.isLocked}
+                                >
+                                  <SelectTrigger className="h-8">
+                                    <SelectValue placeholder="Choisir..." />
+                                  </SelectTrigger>
+                                  <SelectContent className="z-[200]">
+                                    <SelectItem value="face">Vent de face</SelectItem>
+                                    <SelectItem value="dos">Vent de dos</SelectItem>
+                                    <SelectItem value="lateral_gauche">Latéral gauche</SelectItem>
+                                    <SelectItem value="lateral_droit">Latéral droit</SelectItem>
+                                    <SelectItem value="nul">Vent nul</SelectItem>
+                                    <SelectItem value="variable">Variable</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label className="text-xs">Température (°C)</Label>
+                                <Input
+                                  type="number"
+                                  onWheel={blurOnWheel}
+                                  value={round.temperature_celsius || ""}
+                                  onChange={(e) => updateRound(selectedPlayer.playerId, round.round_number, { temperature_celsius: parseFloat(e.target.value) || undefined })}
+                                  placeholder="20"
+                                  className="h-8"
+                                  disabled={round.isLocked}
+                                />
+                              </div>
+                              <div className="flex flex-col">
+                                <Label className="text-xs">Record personnel</Label>
+                                <Button
+                                  type="button"
+                                  variant={(round as any).is_personal_record ? "default" : "outline"}
+                                  size="sm"
+                                  className="h-8 gap-1"
+                                  onClick={() =>
+                                    updateRound(selectedPlayer.playerId, round.round_number, {
+                                      is_personal_record: !(round as any).is_personal_record,
+                                    } as any)
+                                  }
+                                  disabled={round.isLocked}
+                                  title="Marquer comme record personnel"
+                                >
+                                  <Trophy className={`h-3.5 w-3.5 ${(round as any).is_personal_record ? "text-amber-300" : "text-amber-500"}`} />
+                                  {(round as any).is_personal_record ? "RP ✓" : "RP"}
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+
                           {/* Bowling: Category, Phase, Adversaire, then score sheet */}
                           {isBowling && (
                             <div className={`space-y-4 ${round.isLocked ? "opacity-80" : ""}`}>
