@@ -71,7 +71,7 @@ export function AnnualLoadHeatmap({ year, periodStart, periodEnd, categories, cy
 
   const weeks = useMemo(() => {
     return eachWeekOfInterval({ start: yearStart, end: yearEnd }, { weekStartsOn: 1 });
-  }, [year]);
+  }, [yearStart, yearEnd]);
 
   // For each category × week, compute combined intensity+volume score
   const heatData = useMemo(() => {
