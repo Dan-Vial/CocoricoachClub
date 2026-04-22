@@ -482,7 +482,7 @@ export function CompetitionRoundsDialog({
       setIsDataInitialized(true);
       
       if (!selectedPlayerId && playersData.length > 0) {
-        setSelectedPlayerId(playersData[0].playerId);
+        setSelectedPlayerId(playersData[0].entryKey);
       }
     }
   }, [lineup, existingRounds, isDataInitialized, selectedPlayerId, isBowling, matchData]);
