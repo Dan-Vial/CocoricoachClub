@@ -31,6 +31,8 @@ interface Player {
   first_name: string | null;
   discipline: string | null;
   specialty: string | null;
+  disciplines: string[] | null;
+  specialties: string[] | null;
 }
 
 export function AthleticsRecordsManager({ categoryId, playerId, singlePlayer = false, canEdit }: Props) {
