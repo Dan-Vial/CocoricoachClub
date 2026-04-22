@@ -1830,11 +1830,12 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
 
           y += mapH + 6;
 
-          // Zone stats grid below cartography
+          // Zone stats grid below cartography (split by kickType)
           const zoneKicks = k.allKicks.map((kick: any) => ({
             x: kick.x as number,
             y: kick.y as number,
             success: !!kick.success,
+            kickType: kick.kickType as string | undefined,
           }));
           y = drawPdfZoneStatsGrid(doc, zoneKicks, pageW, y, pageH);
         }
