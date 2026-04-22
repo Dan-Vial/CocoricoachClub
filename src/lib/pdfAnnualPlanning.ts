@@ -692,7 +692,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
           }
 
           const maxFs = Math.max(titleFit.fontSize, typeFit.fontSize);
-          const descenderPad = maxFs * 0.28 + 0.45;
+          const descenderPad = maxFs * 0.45 + 0.9;
           const titleY = bandBottom - innerPaddingV - descenderPad;
 
           if (titleFit.text && titleFit.fontSize > 0) {
