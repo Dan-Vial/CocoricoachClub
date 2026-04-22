@@ -1598,6 +1598,12 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
             matchesData={matchesDataForCharts}
             sportStats={sportStats}
             sportType={sportType}
+            matchesWithScores={allMatches.filter(m => activeMatchIds.includes(m.id)).map(m => ({
+              id: m.id,
+              is_home: m.is_home,
+              score_home: m.score_home ?? null,
+              score_away: m.score_away ?? null,
+            }))}
           />
         </div>
         )}

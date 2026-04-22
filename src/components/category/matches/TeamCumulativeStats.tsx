@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, TrendingUp, TrendingDown, Minus, Trophy, Target, Shield, Activity, Dumbbell } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from "recharts";
 import type { StatField } from "@/lib/constants/sportStats";
 import { getStatCategories } from "@/lib/constants/sportStats";
 
@@ -23,14 +22,22 @@ interface MatchData {
   }>;
 }
 
+interface MatchScoreData {
+  id: string;
+  is_home: boolean;
+  score_home: number | null;
+  score_away: number | null;
+}
+
 interface TeamCumulativeStatsProps {
   stats: CumulativeStats[];
   matchesData: MatchData[];
   sportStats: StatField[];
   sportType: string;
+  matchesWithScores?: MatchScoreData[];
 }
 
-export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType }: TeamCumulativeStatsProps) {
+export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType, matchesWithScores = [] }: TeamCumulativeStatsProps) {
   const statCategories = getStatCategories(sportType);
 
   // Aggregate team totals across all players
@@ -43,7 +50,6 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType 
       totals[stat.key] = stats.reduce((sum, p) => sum + (p.sportData[stat.key] || 0), 0);
     });
 
-    // Compute percentage stats
     sportStats.forEach(stat => {
       if (stat.computedFrom) {
         const { successKey, totalKey, failureKey } = stat.computedFrom;
@@ -57,22 +63,6 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType 
 
     return { totals, matchCount };
   }, [stats, sportStats]);
-
-  // Team per-match evolution
-  const teamEvolution = useMemo(() => {
-    if (matchesData.length < 2) return [];
-    return matchesData.map(match => {
-      const row: Record<string, string | number> = { match: match.matchLabel };
-      sportStats.forEach(stat => {
-        if (stat.computedFrom) return;
-        const teamVal = Object.values(match.players).reduce(
-          (sum, p) => sum + (p.sportData[stat.key] || 0), 0
-        );
-        row[stat.key] = teamVal;
-      });
-      return row;
-    });
-  }, [matchesData, sportStats]);
 
   // Team progression: first match team total vs last match team total
   const teamProgression = useMemo(() => {
@@ -89,6 +79,20 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType 
     return prog;
   }, [matchesData, sportStats]);
 
+  // Aggregate scored / conceded points from matches
+  const scoreSummary = useMemo(() => {
+    const valid = matchesWithScores.filter(m => m.score_home != null && m.score_away != null);
+    if (valid.length === 0) return null;
+    let scored = 0, conceded = 0;
+    valid.forEach(m => {
+      const s = m.is_home ? (m.score_home || 0) : (m.score_away || 0);
+      const c = m.is_home ? (m.score_away || 0) : (m.score_home || 0);
+      scored += s;
+      conceded += c;
+    });
+    return { scored, conceded, count: valid.length };
+  }, [matchesWithScores]);
+
   const getCategoryIcon = (catKey: string) => {
     switch (catKey) {
       case "scoring": return <Trophy className="h-4 w-4 text-primary" />;
@@ -101,110 +105,86 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType 
 
   const ProgressionBadge = ({ value }: { value: number }) => {
     if (value > 0) return (
-      <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-200 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950 gap-0.5">
+      <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-emerald-600 border-emerald-200 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950 gap-0.5">
         <TrendingUp className="h-3 w-3" />+{value}
       </Badge>
     );
     if (value < 0) return (
-      <Badge variant="outline" className="text-xs text-destructive border-red-200 bg-red-50 dark:text-red-400 dark:border-red-800 dark:bg-red-950 gap-0.5">
+      <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-destructive border-destructive/30 bg-destructive/5 gap-0.5">
         <TrendingDown className="h-3 w-3" />{value}
       </Badge>
     );
-    return <Badge variant="outline" className="text-xs text-muted-foreground"><Minus className="h-3 w-3" /></Badge>;
+    return <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground"><Minus className="h-3 w-3" /></Badge>;
   };
 
-  // Radar chart data for team overview — normalize to 0-100 scale per category
-  const radarData = useMemo(() => {
-    const rawValues = statCategories.map(cat => {
-      const catStats = sportStats.filter(s => s.category === cat.key && !s.computedFrom);
-      const total = catStats.length > 0
-        ? catStats.reduce((sum, s) => sum + (teamTotals.totals[s.key] || 0), 0)
-        : 0;
-      return { category: cat.label, rawValue: total };
-    });
-    const maxVal = Math.max(...rawValues.map(v => v.rawValue), 1);
-    return rawValues.map(v => ({
-      category: v.category,
-      value: Math.round((v.rawValue / maxVal) * 100),
-      rawValue: v.rawValue,
-    }));
-  }, [statCategories, sportStats, teamTotals]);
+  // Stats that should NOT receive a traffic-light tone (neutral metrics)
+  const isNeutralStat = (key: string) =>
+    /minutesplayed|playingtime|starts|manofmatch/i.test(key);
 
   return (
-    <div className="space-y-4">
-      <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Users className="h-4 w-4 text-primary" />
-            Vue d'ensemble équipe
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[220px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={radarData}>
-                <PolarGrid strokeDasharray="3 3" opacity={0.3} />
-                <PolarAngleAxis dataKey="category" tick={{ fontSize: 11 }} />
-                <PolarRadiusAxis tick={{ fontSize: 9 }} domain={[0, 100]} />
-                <Radar name="Équipe" dataKey="value" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.3} />
-                <Tooltip formatter={(value: number, _name: string, props: any) => [props.payload.rawValue, "Total"]} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="space-y-4">
-        {statCategories.map(cat => {
-          const categoryStats = sportStats.filter(s => s.category === cat.key);
-          if (categoryStats.length === 0) return null;
-          return (
-            <Card key={cat.key} className="border-border/60">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  {getCategoryIcon(cat.key)}
-                  {cat.label}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {categoryStats.map(stat => {
-                    const val = teamTotals.totals[stat.key] || 0;
-                    const avg = teamTotals.matchCount > 0 ? Math.round((val / teamTotals.matchCount) * 10) / 10 : 0;
-                    const prog = teamProgression[stat.key] || 0;
-                    // Traffic-light color based on progression direction
-                    // For "lower is better" stats (like turnovers, missed_tackles, errors, penalties_conceded), invert.
-                    const lowerIsBetter = /turnover|missed|error|penalt(y|ies)_conceded|fault|loss|interception_conceded/i.test(stat.key);
-                    const effectiveProg = lowerIsBetter ? -prog : prog;
-                    let toneClass = "bg-muted/50 border-border/60";
-                    if (matchesData.length >= 2 && !stat.computedFrom) {
-                      if (effectiveProg > 0) toneClass = "bg-emerald-500/10 border-emerald-500/30 dark:bg-emerald-500/15";
-                      else if (effectiveProg < 0) toneClass = "bg-destructive/10 border-destructive/30";
-                      else toneClass = "bg-amber-500/10 border-amber-500/30";
-                    }
-                    return (
-                      <div key={stat.key} className={`p-3 rounded-lg text-center space-y-1 border ${toneClass}`}>
-                        <p className="text-2xl font-bold">
-                          {stat.computedFrom ? `${val}%` : val}
-                        </p>
-                        <p className="text-xs text-muted-foreground">{stat.shortLabel}</p>
-                        <div className="flex items-center justify-center gap-2">
-                          {!stat.computedFrom && (
-                            <span className="text-xs text-muted-foreground">Moy: {avg}</span>
-                          )}
-                          {matchesData.length >= 2 && !stat.computedFrom && (
-                            <ProgressionBadge value={prog} />
-                          )}
-                        </div>
+    <div className="space-y-3">
+      {statCategories.map(cat => {
+        const categoryStats = sportStats.filter(s => s.category === cat.key);
+        if (categoryStats.length === 0) return null;
+        const isGeneral = cat.key === "general";
+        return (
+          <Card key={cat.key} className="border-border/60">
+            <CardHeader className="py-2 px-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                {getCategoryIcon(cat.key)}
+                {cat.label}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-3 pb-3 pt-0">
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+                {/* Inject scored / conceded tiles at start of "general" category */}
+                {isGeneral && scoreSummary && (
+                  <>
+                    <div className="p-2 rounded-lg text-center space-y-0.5 border bg-emerald-500/10 border-emerald-500/30">
+                      <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{scoreSummary.scored}</p>
+                      <p className="text-[11px] text-muted-foreground leading-tight">Pts marqués</p>
+                    </div>
+                    <div className="p-2 rounded-lg text-center space-y-0.5 border bg-destructive/10 border-destructive/30">
+                      <p className="text-xl font-bold text-destructive">{scoreSummary.conceded}</p>
+                      <p className="text-[11px] text-muted-foreground leading-tight">Pts encaissés</p>
+                    </div>
+                  </>
+                )}
+                {categoryStats.map(stat => {
+                  const val = teamTotals.totals[stat.key] || 0;
+                  const avg = teamTotals.matchCount > 0 ? Math.round((val / teamTotals.matchCount) * 10) / 10 : 0;
+                  const prog = teamProgression[stat.key] || 0;
+                  const neutral = isNeutralStat(stat.key);
+                  const lowerIsBetter = /turnover|missed|error|penalt(y|ies)_conceded|fault|loss|interception_conceded/i.test(stat.key);
+                  const effectiveProg = lowerIsBetter ? -prog : prog;
+                  let toneClass = "bg-muted/50 border-border/60";
+                  if (!neutral && matchesData.length >= 2 && !stat.computedFrom) {
+                    if (effectiveProg > 0) toneClass = "bg-emerald-500/10 border-emerald-500/30 dark:bg-emerald-500/15";
+                    else if (effectiveProg < 0) toneClass = "bg-destructive/10 border-destructive/30";
+                    else toneClass = "bg-amber-500/10 border-amber-500/30";
+                  }
+                  return (
+                    <div key={stat.key} className={`p-2 rounded-lg text-center space-y-0.5 border ${toneClass}`}>
+                      <p className="text-xl font-bold">
+                        {stat.computedFrom ? `${val}%` : val}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground leading-tight">{stat.shortLabel}</p>
+                      <div className="flex items-center justify-center gap-1 flex-wrap">
+                        {!stat.computedFrom && (
+                          <span className="text-[10px] text-muted-foreground">Moy {avg}</span>
+                        )}
+                        {!neutral && matchesData.length >= 2 && !stat.computedFrom && (
+                          <ProgressionBadge value={prog} />
+                        )}
                       </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }
