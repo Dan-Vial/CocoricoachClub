@@ -111,6 +111,7 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
         discipline,
         specialty: specialty === NONE_SPECIALTY ? null : specialty,
         label: label || "Minima fédéral",
+        level,
         target_value: target,
         unit,
         lower_is_better: lowerIsBetter,
