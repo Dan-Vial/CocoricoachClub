@@ -32,14 +32,33 @@ interface AnnualLoadHeatmapProps {
   sessions: { id: string; session_date: string }[];
 }
 
+// Shared green → yellow → red gradient (0..10 scale)
+// Mirrors the PDF "Moyenne de tous les cycles" gradient for visual consistency.
+function intensityRgb(value0to10: number): [number, number, number] {
+  const t = Math.max(0, Math.min(1, value0to10 / 10));
+  // 0 → green (76,175,80), 0.5 → amber (255,193,7), 1 → red (229,57,53)
+  if (t <= 0.5) {
+    const u = t / 0.5;
+    return [
+      Math.round(76 + (255 - 76) * u),
+      Math.round(175 + (193 - 175) * u),
+      Math.round(80 + (7 - 80) * u),
+    ];
+  }
+  const u = (t - 0.5) / 0.5;
+  return [
+    Math.round(255 + (229 - 255) * u),
+    Math.round(193 + (57 - 193) * u),
+    Math.round(7 + (53 - 7) * u),
+  ];
+}
+
 function getHeatColor(value: number, max: number): string {
   if (max === 0 || value === 0) return "transparent";
   const ratio = Math.min(value / max, 1);
-  // Green → Yellow → Orange → Red
-  if (ratio <= 0.25) return `rgba(34, 197, 94, ${0.15 + ratio * 2})`;
-  if (ratio <= 0.5) return `rgba(234, 179, 8, ${0.2 + ratio})`;
-  if (ratio <= 0.75) return `rgba(249, 115, 22, ${0.3 + ratio * 0.6})`;
-  return `rgba(239, 68, 68, ${0.4 + ratio * 0.5})`;
+  const [r, g, b] = intensityRgb(ratio * 10);
+  // Slight transparency so the underlying grid stays subtle
+  return `rgba(${r}, ${g}, ${b}, ${0.55 + ratio * 0.4})`;
 }
 
 export function AnnualLoadHeatmap({ year, categories, cycles, sessions }: AnnualLoadHeatmapProps) {
