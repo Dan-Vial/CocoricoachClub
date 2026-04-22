@@ -260,6 +260,7 @@ function fitVerticalText(
   maxFs: number,
   fontStyle: "normal" | "bold" | "italic" = "normal",
   maxLateralFs: number = Infinity,
+  allowTruncate: boolean = true,
 ): { fontSize: number; text: string } {
   if (!text) return { fontSize: minFs, text: "" };
 
@@ -278,6 +279,22 @@ function fitVerticalText(
       return { fontSize: fs, text };
     }
     fs -= 0.1;
+  }
+
+  // Fallback: truncate text to fit at minimum readable size, so something is always shown.
+  if (allowTruncate && availableHeight > 1) {
+    const minimumFs = Math.max(2.6, floor);
+    pdf.setFontSize(minimumFs);
+    let truncated = text;
+    while (truncated.length > 1 && pdf.getTextWidth(truncated + "…") > availableHeight) {
+      truncated = truncated.slice(0, -1);
+    }
+    if (truncated.length >= 1) {
+      const finalText = truncated.length < text.length ? truncated + "…" : truncated;
+      pdf.setFont(prevFont.fontName || "helvetica", (prevFont.fontStyle as "normal" | "bold" | "italic") || "normal");
+      pdf.setFontSize(prevSize);
+      return { fontSize: minimumFs, text: finalText };
+    }
   }
 
   pdf.setFont(prevFont.fontName || "helvetica", (prevFont.fontStyle as "normal" | "bold" | "italic") || "normal");
