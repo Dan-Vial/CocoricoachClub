@@ -19,8 +19,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Plus, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { playerSchema } from "@/lib/validations";
 import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES, JUDO_WEIGHT_CATEGORIES, AVIRON_ROLES, isAthletismeCategory, isJudoCategory, isIndividualSport, isSkiCategory, SKI_DISCIPLINES, getSkiDisciplinesForCategory } from "@/lib/constants/sportTypes";
 import { getPositionsForSport } from "@/lib/constants/sportPositions";
@@ -43,6 +44,11 @@ export function AddPlayerDialog({
   const [birthDate, setBirthDate] = useState("");
   const [discipline, setDiscipline] = useState("");
   const [specialty, setSpecialty] = useState("");
+  // Multi-discipline support (athletics): list of {discipline, specialty} pairs.
+  // The first pair is the "primary" — kept in sync with `discipline` / `specialty` for backward compat.
+  const [disciplinePairs, setDisciplinePairs] = useState<Array<{ discipline: string; specialty: string }>>([]);
+  const [draftDiscipline, setDraftDiscipline] = useState("");
+  const [draftSpecialty, setDraftSpecialty] = useState("");
   const [position, setPosition] = useState("");
   const [fisRanking, setFisRanking] = useState("");
   const [fisPointsInput, setFisPointsInput] = useState("");
