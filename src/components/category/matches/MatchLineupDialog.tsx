@@ -255,15 +255,43 @@ export function MatchLineupDialog({
     specialty: string | null,
     selected: boolean,
   ) => {
-    setAthleticsEntries((prev) =>
-      prev.map((e) =>
-        e.playerId === playerId &&
-        (e.discipline ?? null) === (discipline ?? null) &&
-        (e.specialty ?? null) === (specialty ?? null)
-          ? { ...e, isSelected: selected }
-          : e,
-      ),
-    );
+    setAthleticsEntries((prev) => {
+      // First update the targeted entry
+      const next = prev.map((e) => {
+        if (
+          e.playerId === playerId &&
+          (e.discipline ?? null) === (discipline ?? null) &&
+          (e.specialty ?? null) === (specialty ?? null)
+        ) {
+          if (selected) {
+            // Assign next available start order for this athlete
+            const currentOrders = prev
+              .filter((p) => p.playerId === playerId && p.isSelected && p.startOrder != null)
+              .map((p) => p.startOrder as number);
+            const nextOrder = currentOrders.length > 0 ? Math.max(...currentOrders) + 1 : 1;
+            return { ...e, isSelected: true, startOrder: nextOrder };
+          }
+          return { ...e, isSelected: false, startOrder: null };
+        }
+        return e;
+      });
+
+      // Re-pack start orders for this athlete (1, 2, 3…) preserving order
+      const athleteEntries = next
+        .filter((e) => e.playerId === playerId && e.isSelected)
+        .sort((a, b) => (a.startOrder ?? 999) - (b.startOrder ?? 999));
+      const orderMap = new Map<string, number>();
+      athleteEntries.forEach((e, idx) => {
+        const key = `${e.discipline ?? ""}|${e.specialty ?? ""}`;
+        orderMap.set(key, idx + 1);
+      });
+
+      return next.map((e) => {
+        if (e.playerId !== playerId || !e.isSelected) return e;
+        const key = `${e.discipline ?? ""}|${e.specialty ?? ""}`;
+        return { ...e, startOrder: orderMap.get(key) ?? e.startOrder };
+      });
+    });
   };
 
 
