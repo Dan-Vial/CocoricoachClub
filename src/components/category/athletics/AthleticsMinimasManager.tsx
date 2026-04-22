@@ -64,6 +64,7 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
     setDiscipline("");
     setSpecialty(NONE_SPECIALTY);
     setLabel("Minima fédéral");
+    setLevel("national");
     setTargetValue("");
     setUnit("sec");
     setLowerIsBetter(true);
