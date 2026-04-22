@@ -37,6 +37,7 @@ import { PlayerSurfEquipment } from "@/components/surf/PlayerSurfEquipment";
 import { PlayerSkiEquipment } from "@/components/ski/PlayerSkiEquipment";
 import { PlayerPadelEquipment } from "@/components/padel/PlayerPadelEquipment";
 import { PlayerMedalsSection } from "@/components/player/PlayerMedalsSection";
+import { AthleticsRecordsManager } from "@/components/category/athletics/AthleticsRecordsManager";
 import { ViewerModeProvider, useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { AthleteSpaceDocuments } from "@/components/athlete-space/AthleteSpaceDocuments";
 import { Badge } from "@/components/ui/badge";
@@ -471,6 +472,18 @@ function PlayerDetailsContent() {
         <div className="mb-3">
           <PlayerMedalsSection playerId={playerId!} />
         </div>
+
+        {/* Records personnels (athlétisme uniquement) */}
+        {isAthletics && (
+          <div className="mb-3">
+            <AthleticsRecordsManager
+              categoryId={player.category_id}
+              playerId={playerId!}
+              singlePlayer
+              canEdit={!isViewer}
+            />
+          </div>
+        )}
 
         <Tabs defaultValue="charge" className="space-y-6">
           <ScrollArea className="w-full whitespace-nowrap pb-2">
