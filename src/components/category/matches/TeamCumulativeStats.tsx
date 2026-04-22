@@ -164,14 +164,14 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
                     else toneClass = "bg-amber-500/10 border-amber-500/30";
                   }
                   return (
-                    <div key={stat.key} className={`p-2 rounded-lg text-center space-y-0.5 border ${toneClass}`}>
-                      <p className="text-xl font-bold">
+                    <div key={stat.key} className={`p-1.5 rounded-md text-center space-y-0 border ${toneClass}`}>
+                      <p className="text-base font-bold leading-tight">
                         {stat.computedFrom ? `${val}%` : val}
                       </p>
-                      <p className="text-[11px] text-muted-foreground leading-tight">{stat.shortLabel}</p>
-                      <div className="flex items-center justify-center gap-1 flex-wrap">
+                      <p className="text-[9px] text-muted-foreground leading-tight">{stat.shortLabel}</p>
+                      <div className="flex items-center justify-center gap-0.5 flex-wrap">
                         {!stat.computedFrom && (
-                          <span className="text-[10px] text-muted-foreground">Moy {avg}</span>
+                          <span className="text-[9px] text-muted-foreground">Moy {avg}</span>
                         )}
                         {!neutral && matchesData.length >= 2 && !stat.computedFrom && (
                           <ProgressionBadge value={prog} />
