@@ -561,7 +561,12 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                    `Épreuves (${roundsCount || 0})`}
                 </Button>
               )
-            ) : null}
+            ) : (
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start" onClick={() => setIsStatsOpen(true)}>
+                <BarChart3 className="h-3.5 w-3.5" />
+                Statistiques
+              </Button>
+            )}
             {canHaveSubMatches && (
               <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start" onClick={() => setIsAddSubMatchOpen(true)}>
                 <Plus className="h-3.5 w-3.5" />
