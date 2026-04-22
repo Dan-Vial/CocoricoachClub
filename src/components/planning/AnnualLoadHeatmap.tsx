@@ -27,6 +27,10 @@ interface PeriodizationCycle {
 
 interface AnnualLoadHeatmapProps {
   year: number;
+  /** Optional custom period start (defaults to Jan 1 of `year`). */
+  periodStart?: Date;
+  /** Optional custom period end (defaults to Dec 31 of `year`). */
+  periodEnd?: Date;
   categories: PeriodizationCategory[];
   cycles: PeriodizationCycle[];
   sessions: { id: string; session_date: string }[];
@@ -61,9 +65,9 @@ function getHeatColor(value: number, max: number): string {
   return `rgba(${r}, ${g}, ${b}, ${0.55 + ratio * 0.4})`;
 }
 
-export function AnnualLoadHeatmap({ year, categories, cycles, sessions }: AnnualLoadHeatmapProps) {
-  const yearStart = startOfYear(new Date(year, 0, 1));
-  const yearEnd = endOfYear(new Date(year, 0, 1));
+export function AnnualLoadHeatmap({ year, periodStart, periodEnd, categories, cycles, sessions }: AnnualLoadHeatmapProps) {
+  const yearStart = periodStart ?? startOfYear(new Date(year, 0, 1));
+  const yearEnd = periodEnd ?? endOfYear(new Date(year, 0, 1));
 
   const weeks = useMemo(() => {
     return eachWeekOfInterval({ start: yearStart, end: yearEnd }, { weekStartsOn: 1 });
