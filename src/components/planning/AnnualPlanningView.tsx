@@ -15,7 +15,7 @@ import { FisCalendarSync } from "./FisCalendarSync";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { getMainSportFromType } from "@/lib/constants/sportTypes";
+import { getMainSportFromType, MAIN_SPORTS } from "@/lib/constants/sportTypes";
 
 interface AnnualPlanningViewProps {
   categoryId: string;
@@ -94,16 +94,21 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
     },
   });
 
-  // Auto-seed defaults
+  // Auto-seed defaults (sport-aware)
   const seededRef = useRef(false);
   useEffect(() => {
     if (seededRef.current || isViewer) return;
     if (categories === undefined) return;
+    if (!categoryData?.rugby_type) return;
     seededRef.current = true;
     const seedDefaults = async () => {
+      const mainSport = getMainSportFromType(categoryData.rugby_type);
+      const sportLabel = MAIN_SPORTS.find(s => s.value === mainSport)?.label ?? "Sport";
       const defaults = [
+        { name: sportLabel, color: "#3b82f6", sort_order: 0 },
+        { name: "Préparation Physique", color: "#ef4444", sort_order: 1 },
+        { name: "Préparation Mentale", color: "#22c55e", sort_order: 2 },
         { name: "Compétitions", color: "#d4a017", sort_order: 100 },
-        { name: "Stages France", color: "#1e3a5f", sort_order: 101 },
       ];
       let added = false;
       for (const d of defaults) {
@@ -121,7 +126,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
       if (added) queryClient.invalidateQueries({ queryKey: ["periodization_categories", categoryId] });
     };
     seedDefaults();
-  }, [categories, categoryId, isViewer, queryClient]);
+  }, [categories, categoryId, categoryData, isViewer, queryClient]);
 
   const { data: cycles = [] } = useQuery({
     queryKey: ["periodization_cycles", categoryId, selectedYear.getFullYear()],
