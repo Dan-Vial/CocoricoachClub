@@ -18,6 +18,9 @@ import { toast } from "sonner";
 import jsPDF from "jspdf";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { AthleticsDeltaBadge } from "@/components/category/athletics/AthleticsDeltaBadge";
+import { findMatchingReference, type AthleticsMinima, type AthleticsRecord } from "@/lib/athletics/recordsHelpers";
+import { getMinimaLevel } from "@/lib/athletics/minimaLevels";
 
 interface AggregatedRoundStatsDialogProps {
   open: boolean;
