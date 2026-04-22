@@ -209,6 +209,9 @@ export function AddPlayerDialog({
       setBirthDate("");
       setDiscipline("");
       setSpecialty("");
+      setDisciplinePairs([]);
+      setDraftDiscipline("");
+      setDraftSpecialty("");
       setPosition("");
       setFisRanking("");
       setFisPointsInput("");
@@ -236,13 +239,11 @@ export function AddPlayerDialog({
       return;
     }
 
-    // Validate discipline and specialty for athletics
-    if (isAthletics && !discipline) {
-      setValidationError("Veuillez sélectionner une discipline");
-      return;
-    }
-    if (isAthletics && discipline && availableSpecialties.length > 0 && !specialty) {
-      setValidationError("Veuillez sélectionner une spécialité");
+    // Validate discipline(s) for athletics — multi-discipline supported
+    if (isAthletics && disciplinePairs.length === 0) {
+      setValidationError(
+        "Ajoutez au moins une discipline (clique sur + après ton choix de discipline/spécialité)",
+      );
       return;
     }
 
@@ -258,14 +259,26 @@ export function AddPlayerDialog({
       return;
     }
 
+    // Athletics: derive primary discipline/specialty from the first pair, send full lists too.
+    const primaryDiscipline = isAthletics
+      ? disciplinePairs[0]?.discipline || ""
+      : discipline;
+    const primarySpecialty = isAthletics
+      ? disciplinePairs[0]?.specialty || ""
+      : specialty;
+    const disciplineList = isAthletics ? disciplinePairs.map((p) => p.discipline) : undefined;
+    const specialtyList = isAthletics ? disciplinePairs.map((p) => p.specialty || "") : undefined;
+
     addPlayer.mutate({
       name: result.data.name,
       email: playerEmail.trim() || undefined,
       phone: playerPhone.trim() || undefined,
       birth_year: result.data.birthYear,
       birth_date: birthDate || undefined,
-      discipline: discipline || undefined,
-      specialty: specialty || undefined,
+      discipline: primaryDiscipline || undefined,
+      specialty: primarySpecialty || undefined,
+      disciplines: disciplineList,
+      specialties: specialtyList,
       position: position || undefined,
       fis_ranking: fisRanking ? parseInt(fisRanking) : undefined,
       fis_points: fisPointsInput ? parseFloat(fisPointsInput) : undefined,
