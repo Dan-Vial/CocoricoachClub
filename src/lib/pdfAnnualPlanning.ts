@@ -140,9 +140,10 @@ function drawVerticalText(
 }
 
 /**
- * Auto-fit a font size so that `text` rendered vertically fits within `availableHeight` (mm).
- * Uses jsPDF's real text measurement instead of a rough character ratio so exported labels
- * never get cut off.
+ * Auto-fit a font size so that `text` rendered vertically fits within `availableHeight` (mm)
+ * AND the chosen font size stays below `maxLateralFs` (visual width of rotated text ≈ font size in mm).
+ * If even the smallest readable size doesn't fit, returns an empty text — the caller must
+ * skip rendering rather than draw something that would overflow the colored band.
  */
 function fitVerticalText(
   pdf: jsPDF,
@@ -151,15 +152,18 @@ function fitVerticalText(
   minFs: number,
   maxFs: number,
   fontStyle: "normal" | "bold" | "italic" = "normal",
+  maxLateralFs: number = Infinity,
 ): { fontSize: number; text: string } {
   if (!text) return { fontSize: minFs, text: "" };
 
   const prevSize = pdf.getFontSize();
   const prevFont = pdf.getFont();
-  let fs = maxFs;
+  const floor = Math.max(0.6, minFs);
+  // Hard cap by both the explicit maxFs and the lateral budget (avoid horizontal overflow).
+  let fs = Math.min(maxFs, maxLateralFs);
 
   pdf.setFont("helvetica", fontStyle);
-  while (fs >= 0.6) {
+  while (fs >= floor) {
     pdf.setFontSize(fs);
     const measuredHeight = pdf.getTextWidth(text);
     if (measuredHeight <= availableHeight) {
@@ -170,9 +174,10 @@ function fitVerticalText(
     fs -= 0.1;
   }
 
+  // Doesn't fit at the readable floor — caller should not draw anything.
   pdf.setFont(prevFont.fontName || "helvetica", (prevFont.fontStyle as "normal" | "bold" | "italic") || "normal");
   pdf.setFontSize(prevSize);
-  return { fontSize: 0.6, text };
+  return { fontSize: 0, text: "" };
 }
 
 // Draws a refined gold trophy/cup icon centered on (cx, cy)
