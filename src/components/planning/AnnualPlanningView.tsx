@@ -1,10 +1,11 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Plus, Calendar, Settings2, ChevronLeft, ChevronRight, Check, BarChart3, Clock, Trash2, Trophy, Download } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { exportAnnualPlanningToPdf } from "@/lib/pdfAnnualPlanning";
-import { format, startOfYear, endOfYear, addYears, subYears } from "date-fns";
+import { format, startOfYear, endOfYear, addYears, subYears, addMonths, addDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { YearCalendarGrid } from "./YearCalendarGrid";
 import { AnnualTimelineView } from "./AnnualTimelineView";
@@ -51,10 +52,25 @@ const VIEW_MODES: { value: ViewMode; label: string; shortLabel: string; icon: Re
   { value: "heatmap", label: "Vue charge", shortLabel: "Charge", icon: <BarChart3 className="h-4 w-4" /> },
 ];
 
+const MONTH_LABELS = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+const START_MONTH_STORAGE_PREFIX = "planning-start-month:";
+
 export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   const { isViewer } = useViewerModeContext();
   const queryClient = useQueryClient();
   const [selectedYear, setSelectedYear] = useState(new Date());
+  const [startMonth, setStartMonth] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    const stored = window.localStorage.getItem(`${START_MONTH_STORAGE_PREFIX}${categoryId}`);
+    const n = stored ? parseInt(stored, 10) : 0;
+    return Number.isFinite(n) && n >= 0 && n <= 11 ? n : 0;
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(`${START_MONTH_STORAGE_PREFIX}${categoryId}`, String(startMonth));
+    }
+  }, [startMonth, categoryId]);
+
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
   const [addCycleOpen, setAddCycleOpen] = useState(false);
@@ -80,8 +96,21 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   });
   const isSkiSport = categoryData?.rugby_type ? getMainSportFromType(categoryData.rugby_type) === "ski" : false;
 
-  const yearStart = startOfYear(selectedYear);
-  const yearEnd = endOfYear(selectedYear);
+  // Period (12 months starting at startMonth of selectedYear)
+  const { periodStart, periodEnd, periodLabel } = useMemo(() => {
+    const ps = new Date(selectedYear.getFullYear(), startMonth, 1);
+    const pe = addDays(addMonths(ps, 12), -1);
+    const sameYear = ps.getFullYear() === pe.getFullYear();
+    const label = startMonth === 0
+      ? `${ps.getFullYear()}`
+      : sameYear
+        ? `${MONTH_LABELS[startMonth]} ${ps.getFullYear()}`
+        : `${MONTH_LABELS[startMonth]} ${ps.getFullYear()} → ${MONTH_LABELS[pe.getMonth()]} ${pe.getFullYear()}`;
+    return { periodStart: ps, periodEnd: pe, periodLabel: label };
+  }, [selectedYear, startMonth]);
+
+  const yearStart = periodStart;
+  const yearEnd = periodEnd;
 
   // ─── Data queries ───
   const { data: categories = [] } = useQuery({
@@ -132,7 +161,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   }, [categories, categoryId, categoryData, isViewer, queryClient]);
 
   const { data: cycles = [] } = useQuery({
-    queryKey: ["periodization_cycles", categoryId, selectedYear.getFullYear()],
+    queryKey: ["periodization_cycles", categoryId, selectedYear.getFullYear(), startMonth],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("periodization_cycles")
@@ -147,7 +176,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   });
 
   const { data: sessions = [] } = useQuery({
-    queryKey: ["training_sessions_annual", categoryId, selectedYear.getFullYear()],
+    queryKey: ["training_sessions_annual", categoryId, selectedYear.getFullYear(), startMonth],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("training_sessions")
@@ -161,7 +190,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   });
 
   const { data: matches = [] } = useQuery({
-    queryKey: ["matches_annual", categoryId, selectedYear.getFullYear()],
+    queryKey: ["matches_annual", categoryId, selectedYear.getFullYear(), startMonth],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("matches")
@@ -235,7 +264,9 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   const handleExportPdf = useCallback(() => {
     try {
       exportAnnualPlanningToPdf({
-        year: selectedYear.getFullYear(),
+        year: periodStart.getFullYear(),
+        startMonth,
+        periodLabel,
         categoryName: categoryData?.name || "Catégorie",
         clubName: categoryData?.clubs?.name,
         categories,
@@ -247,7 +278,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
       console.error(e);
       toast.error("Erreur lors de la génération du PDF");
     }
-  }, [selectedYear, categoryData, categories, cycles, matches]);
+  }, [periodStart, startMonth, periodLabel, categoryData, categories, cycles, matches]);
 
   return (
     <div className="space-y-4">
@@ -259,7 +290,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
               <Calendar className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-lg font-bold tracking-tight">Planification {selectedYear.getFullYear()}</h2>
+              <h2 className="text-lg font-bold tracking-tight">Planification {periodLabel}</h2>
               <p className="text-xs text-muted-foreground">
                 {categories.length} thématique{categories.length > 1 ? "s" : ""} · {cycles.length} cycle{cycles.length > 1 ? "s" : ""}
               </p>
@@ -267,6 +298,21 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Start month selector */}
+            <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2 py-0.5" title="Mois de départ de la planification (saison personnalisée)">
+              <span className="text-[11px] font-medium text-muted-foreground">Début :</span>
+              <Select value={String(startMonth)} onValueChange={(v) => setStartMonth(parseInt(v, 10))}>
+                <SelectTrigger className="h-7 w-[110px] text-xs border-0 bg-transparent shadow-none focus:ring-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONTH_LABELS.map((label, idx) => (
+                    <SelectItem key={idx} value={String(idx)} className="text-xs">{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Year nav */}
             <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5">
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedYear(subYears(selectedYear, 1))}>
@@ -321,7 +367,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
                     size="sm"
                     className="h-8 gap-1 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
                     onClick={() => {
-                      if (confirm(`Supprimer tous les cycles de ${selectedYear.getFullYear()} ? Cette action est irréversible.`)) {
+                      if (confirm(`Supprimer tous les cycles de la période ${periodLabel} ? Cette action est irréversible.`)) {
                         deleteAllCycles.mutate();
                       }
                     }}
@@ -376,6 +422,8 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
               {viewMode === "timeline" && (
                 <AnnualTimelineView
                   year={selectedYear.getFullYear()}
+                  periodStart={periodStart}
+                  periodEnd={periodEnd}
                   categories={categories}
                   cycles={cycles}
                   sessions={sessions}
@@ -391,6 +439,8 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
               {viewMode === "heatmap" && (
                 <AnnualLoadHeatmap
                   year={selectedYear.getFullYear()}
+                  periodStart={periodStart}
+                  periodEnd={periodEnd}
                   categories={categories}
                   cycles={cycles}
                   sessions={sessions}
@@ -405,7 +455,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
       <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b bg-gradient-to-r from-muted/20 to-transparent">
           <h3 className="text-sm font-bold tracking-tight text-muted-foreground">
-            Calendrier {selectedYear.getFullYear()}
+            Calendrier {periodLabel}
           </h3>
         </div>
         <div className="p-4 space-y-3">
@@ -462,6 +512,8 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
           )}
           <YearCalendarGrid
             year={selectedYear.getFullYear()}
+            periodStart={periodStart}
+            periodEnd={periodEnd}
             cycles={cycles}
             sessions={sessions}
             matches={matches}

@@ -30,6 +30,10 @@ interface PeriodizationCycle {
 
 interface AnnualTimelineViewProps {
   year: number;
+  /** Optional custom period start (defaults to Jan 1 of `year`). */
+  periodStart?: Date;
+  /** Optional custom period end (defaults to Dec 31 of `year`). */
+  periodEnd?: Date;
   categories: PeriodizationCategory[];
   cycles: PeriodizationCycle[];
   sessions: { id: string; session_date: string }[];
@@ -97,6 +101,8 @@ function IntensityDots({ value, max = 10 }: { value: number; max?: number }) {
 
 export function AnnualTimelineView({
   year,
+  periodStart,
+  periodEnd,
   categories,
   cycles,
   sessions,
@@ -109,8 +115,8 @@ export function AnnualTimelineView({
   const navigate = useNavigate();
   const params = useParams();
   const routeCategoryId = params.id || params.categoryId;
-  const yearStart = startOfYear(new Date(year, 0, 1));
-  const yearEnd = endOfYear(new Date(year, 0, 1));
+  const yearStart = periodStart ?? startOfYear(new Date(year, 0, 1));
+  const yearEnd = periodEnd ?? endOfYear(new Date(year, 0, 1));
   const months = eachMonthOfInterval({ start: yearStart, end: yearEnd });
   const totalDays = differenceInDays(yearEnd, yearStart) + 1;
 
@@ -152,7 +158,7 @@ export function AnnualTimelineView({
 
   // Today marker
   const today = new Date();
-  const todayInYear = today.getFullYear() === year;
+  const todayInYear = today >= yearStart && today <= yearEnd;
   const todayPct = todayInYear ? (differenceInDays(today, yearStart) / totalDays) * 100 : null;
 
   // Week markers for zoom

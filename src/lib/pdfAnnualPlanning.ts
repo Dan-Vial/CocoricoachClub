@@ -34,6 +34,10 @@ interface MatchInfo {
 
 export interface AnnualPlanningPdfData {
   year: number;
+  /** Month 0-11 the period starts at. Defaults to 0 (January). */
+  startMonth?: number;
+  /** Optional human label for the period (e.g. "Avril 2026 → Mars 2027"). */
+  periodLabel?: string;
   categoryName: string;
   clubName?: string;
   categories: PeriodizationCategory[];
@@ -199,6 +203,19 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
   const pageH = pdf.internal.pageSize.getHeight();
   const margin = 8;
 
+  // Build month sequence (12 months starting at startMonth)
+  const startMonth = ((data.startMonth ?? 0) % 12 + 12) % 12;
+  const monthsSeq: { year: number; month: number }[] = Array.from({ length: 12 }, (_, i) => {
+    const totalMonth = startMonth + i;
+    return { year: data.year + Math.floor(totalMonth / 12), month: totalMonth % 12 };
+  });
+  const lastMs = monthsSeq[11];
+  const periodLabel = data.periodLabel ?? (
+    startMonth === 0
+      ? String(data.year)
+      : `${data.year} → ${lastMs.year}`
+  );
+
   // ── Header band ──
   pdf.setFillColor(28, 33, 50);
   pdf.rect(0, 0, pageW, 18, "F");
@@ -206,7 +223,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
   pdf.setTextColor(255, 255, 255);
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(13);
-  pdf.text(`Planification annuelle ${data.year}`, margin, 8);
+  pdf.text(`Planification annuelle ${periodLabel}`, margin, 8);
 
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(8);
@@ -271,8 +288,9 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
     return catOrder * 1e10 + new Date(c.start_date).getTime();
   };
   const monthCyclesArr: PeriodizationCycle[][] = [];
-  for (let m = 0; m < 12; m++) {
-    const cs = cyclesActiveInMonth(data.cycles, data.year, m).sort(
+  for (let i = 0; i < 12; i++) {
+    const { year: yy, month: mm } = monthsSeq[i];
+    const cs = cyclesActiveInMonth(data.cycles, yy, mm).sort(
       (a, b) => cycleSortKey(a) - cycleSortKey(b),
     );
     monthCyclesArr.push(cs);
@@ -286,23 +304,25 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
   const today = startOfDay(new Date());
 
   // ── Month headers ──
-  for (let m = 0; m < 12; m++) {
-    const x = gridLeft + m * monthWidth;
+  for (let i = 0; i < 12; i++) {
+    const { year: yy, month: mm } = monthsSeq[i];
+    const x = gridLeft + i * monthWidth;
     pdf.setFillColor(28, 33, 50);
     pdf.rect(x, gridTop, monthWidth, monthHeaderH, "F");
     pdf.setTextColor(255, 255, 255);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(7.5);
-    pdf.text(`${monthLabels[m]} ${data.year}`, x + monthWidth / 2, gridTop + monthHeaderH / 2 + 1.4, {
+    pdf.text(`${monthLabels[mm]} ${yy}`, x + monthWidth / 2, gridTop + monthHeaderH / 2 + 1.4, {
       align: "center",
     });
   }
 
   // ── Each month ──
-  for (let m = 0; m < 12; m++) {
-    const xMonth = gridLeft + m * monthWidth;
-    const daysInMonth = getDaysInMonth(new Date(data.year, m, 1));
-    const monthCycles = monthCyclesArr[m];
+  for (let i = 0; i < 12; i++) {
+    const { year: yy, month: mm } = monthsSeq[i];
+    const xMonth = gridLeft + i * monthWidth;
+    const daysInMonth = getDaysInMonth(new Date(yy, mm, 1));
+    const monthCycles = monthCyclesArr[i];
     const subCols = Math.max(1, monthCycles.length);
     const subColW = cyclesAreaW / subCols;
     const xCyclesStart = xMonth + monthLabelW;
@@ -320,7 +340,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         continue;
       }
 
-      const date = new Date(data.year, m, d);
+      const date = new Date(yy, mm, d);
       const weekend = isWeekend(date);
       const initial = dayInitial(date);
 
@@ -364,7 +384,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
           continue;
         }
 
-        const date = new Date(data.year, m, d);
+        const date = new Date(yy, mm, d);
         const weekend = isWeekend(date);
         const cellHasCycle = cycle && cycleForDay([cycle], date) !== null;
 
@@ -395,8 +415,8 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         // Restrict the text band to the days actually colored (cycle range within this month)
         const cs = startOfDay(new Date(cycle.start_date));
         const ce = startOfDay(new Date(cycle.end_date));
-        const monthStart = new Date(data.year, m, 1);
-        const monthEnd = new Date(data.year, m, daysInMonth);
+        const monthStart = new Date(yy, mm, 1);
+        const monthEnd = new Date(yy, mm, daysInMonth);
         const firstDay = cs < monthStart ? 1 : cs.getDate();
         const lastDay = ce > monthEnd ? daysInMonth : ce.getDate();
         const bandTop = gridTop + monthHeaderH + (firstDay - 1) * dayRowH;
@@ -463,7 +483,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
 
     // Competition markers (gold trophy + name) inside the cycles area
     for (let d = 1; d <= daysInMonth; d++) {
-      const date = new Date(data.year, m, d);
+      const date = new Date(yy, mm, d);
       const dateKey = format(date, "yyyy-MM-dd");
       const dayMatches = matchesByDate.get(dateKey);
       if (dayMatches && dayMatches.length > 0) {
@@ -526,9 +546,10 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
     const maxLabel = pdf.splitTextToSize(labelText, intLabelW - 3)[0] || labelText;
     pdf.text(maxLabel, margin + 2, y + intensityRowH / 2 + 1.2);
 
-    for (let m = 0; m < 12; m++) {
-      const x = margin + intLabelW + m * intColW;
-      const { value } = monthThematicIntensity(data.cycles, catId, data.year, m);
+    for (let i = 0; i < 12; i++) {
+      const { year: yy2, month: mm2 } = monthsSeq[i];
+      const x = margin + intLabelW + i * intColW;
+      const { value } = monthThematicIntensity(data.cycles, catId, yy2, mm2);
 
       if (value === null) {
         pdf.setFillColor(245, 246, 248);
