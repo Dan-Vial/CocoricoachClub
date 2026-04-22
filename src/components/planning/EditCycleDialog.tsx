@@ -141,6 +141,14 @@ export function EditCycleDialog({ open, onOpenChange, cycle, categoryId, categor
             onIntensityChange={setIntensity}
             volume={volume}
             onVolumeChange={setVolume}
+            dominantQuality={dominantQuality}
+            onDominantQualityChange={setDominantQuality}
+            loadPattern={loadPattern}
+            onLoadPatternChange={setLoadPattern}
+            fatigueTarget={fatigueTarget}
+            onFatigueTargetChange={setFatigueTarget}
+            sessionsPerWeek={sessionsPerWeek}
+            onSessionsPerWeekChange={setSessionsPerWeek}
           />
 
           <div className="grid grid-cols-2 gap-3">
