@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Pencil, Target, Trophy } from "lucide-react";
+import { Plus, Trash2, Pencil, Target, Trophy, Copy } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES } from "@/lib/constants/sportTypes";
 import { getDefaultUnitForDiscipline } from "@/lib/athletics/recordsHelpers";
 import { MINIMA_LEVELS, getMinimaLevel } from "@/lib/athletics/minimaLevels";
@@ -36,6 +37,7 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMinima, setEditingMinima] = useState<Minima | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Minima | null>(null);
   const [discipline, setDiscipline] = useState("");
   const [specialty, setSpecialty] = useState<string>(NONE_SPECIALTY);
   const [label, setLabel] = useState("Minima fédéral");
@@ -78,6 +80,19 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
 
   const openEdit = (m: Minima) => {
     setEditingMinima(m);
+    setDiscipline(m.discipline);
+    setSpecialty(m.specialty || NONE_SPECIALTY);
+    setLabel(m.label);
+    setLevel(m.level || "national");
+    setTargetValue(String(m.target_value));
+    setUnit(m.unit);
+    setLowerIsBetter(m.lower_is_better);
+    setNotes(m.notes || "");
+    setIsDialogOpen(true);
+  };
+
+  const openDuplicate = (m: Minima) => {
+    setEditingMinima(null); // create mode → new row
     setDiscipline(m.discipline);
     setSpecialty(m.specialty || NONE_SPECIALTY);
     setLabel(m.label);
@@ -350,14 +365,25 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
                           size="icon"
                           className="h-7 w-7"
                           onClick={() => openEdit(m)}
+                          title="Modifier"
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="h-7 w-7"
+                          onClick={() => openDuplicate(m)}
+                          title="Dupliquer (utile lors d'un changement de barème)"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-7 w-7 text-destructive"
-                          onClick={() => deleteMutation.mutate(m.id)}
+                          onClick={() => setDeleteTarget(m)}
+                          title="Supprimer"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
@@ -370,6 +396,40 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
           </div>
         )}
       </CardContent>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce minima ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget && (
+                <>
+                  <span className="font-semibold">{getMinimaLevel(deleteTarget.level)?.label || deleteTarget.level}</span>
+                  {" — "}
+                  {ATHLETISME_DISCIPLINES.find(d => d.value === deleteTarget.discipline)?.label || deleteTarget.discipline}
+                  {deleteTarget.specialty ? ` (${deleteTarget.specialty})` : ""}
+                  {" : "}
+                  <span className="font-mono">{deleteTarget.target_value} {deleteTarget.unit}</span>
+                  <br />
+                  Cette action est définitive. Pense à utiliser <span className="font-semibold">Modifier</span> si tu veux juste ajuster la valeur pour la nouvelle saison.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteTarget) deleteMutation.mutate(deleteTarget.id);
+                setDeleteTarget(null);
+              }}
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
