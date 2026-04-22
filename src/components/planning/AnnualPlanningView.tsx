@@ -288,7 +288,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
               <Calendar className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-lg font-bold tracking-tight">Planification {selectedYear.getFullYear()}</h2>
+              <h2 className="text-lg font-bold tracking-tight">Planification {periodLabel}</h2>
               <p className="text-xs text-muted-foreground">
                 {categories.length} thématique{categories.length > 1 ? "s" : ""} · {cycles.length} cycle{cycles.length > 1 ? "s" : ""}
               </p>
@@ -296,6 +296,21 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Start month selector */}
+            <div className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2 py-0.5" title="Mois de départ de la planification (saison personnalisée)">
+              <span className="text-[11px] font-medium text-muted-foreground">Début :</span>
+              <Select value={String(startMonth)} onValueChange={(v) => setStartMonth(parseInt(v, 10))}>
+                <SelectTrigger className="h-7 w-[110px] text-xs border-0 bg-transparent shadow-none focus:ring-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONTH_LABELS.map((label, idx) => (
+                    <SelectItem key={idx} value={String(idx)} className="text-xs">{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Year nav */}
             <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5">
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedYear(subYears(selectedYear, 1))}>
