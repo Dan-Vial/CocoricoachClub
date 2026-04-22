@@ -223,33 +223,33 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
               {/* Inject team play-time tiles (TJE / Séq. max / Séq. moy.) in "general" category */}
               {isGeneral && playTimeSummary && (
                 <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1.5">
-                  {playTimeSummary.effectivePlayTime != null && (
-                    <div className="p-1.5 rounded-md text-center space-y-0 border bg-sky-500/10 border-sky-500/30">
-                      <p className="text-base font-bold text-sky-600 dark:text-sky-400 leading-tight">
-                        {playTimeSummary.effectivePlayTime}
-                      </p>
-                      <p className="text-[9px] text-muted-foreground leading-tight">Tps de jeu effectif (min)</p>
-                      <p className="text-[9px] text-muted-foreground leading-tight">Moy / match</p>
-                    </div>
-                  )}
-                  {playTimeSummary.longestSequence != null && (
-                    <div className="p-1.5 rounded-md text-center space-y-0 border bg-violet-500/10 border-violet-500/30">
-                      <p className="text-base font-bold text-violet-600 dark:text-violet-400 leading-tight">
-                        {playTimeSummary.longestSequence}
-                      </p>
-                      <p className="text-[9px] text-muted-foreground leading-tight">Séquence la + longue</p>
-                      <p className="text-[9px] text-muted-foreground leading-tight">Record équipe</p>
-                    </div>
-                  )}
-                  {playTimeSummary.averageSequence != null && (
-                    <div className="p-1.5 rounded-md text-center space-y-0 border bg-amber-500/10 border-amber-500/30">
-                      <p className="text-base font-bold text-amber-600 dark:text-amber-400 leading-tight">
-                        {playTimeSummary.averageSequence}
-                      </p>
-                      <p className="text-[9px] text-muted-foreground leading-tight">Séquence moyenne</p>
-                      <p className="text-[9px] text-muted-foreground leading-tight">Moy / match</p>
-                    </div>
-                  )}
+                  <div className="p-1.5 rounded-md text-center space-y-0 border bg-sky-500/10 border-sky-500/30">
+                    <p className="text-base font-bold text-sky-600 dark:text-sky-400 leading-tight">
+                      {playTimeSummary.effectivePlayTime != null ? playTimeSummary.effectivePlayTime : "—"}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground leading-tight">Tps de jeu effectif (min)</p>
+                    <p className="text-[9px] text-muted-foreground leading-tight">
+                      {playTimeSummary.filledEpt > 0 ? `Moy / ${playTimeSummary.filledEpt} match${playTimeSummary.filledEpt > 1 ? "s" : ""}` : "Non renseigné"}
+                    </p>
+                  </div>
+                  <div className="p-1.5 rounded-md text-center space-y-0 border bg-violet-500/10 border-violet-500/30">
+                    <p className="text-base font-bold text-violet-600 dark:text-violet-400 leading-tight">
+                      {playTimeSummary.longestSequence != null ? playTimeSummary.longestSequence : "—"}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground leading-tight">Séquence la + longue</p>
+                    <p className="text-[9px] text-muted-foreground leading-tight">
+                      {playTimeSummary.filledLong > 0 ? "Record équipe" : "Non renseigné"}
+                    </p>
+                  </div>
+                  <div className="p-1.5 rounded-md text-center space-y-0 border bg-amber-500/10 border-amber-500/30">
+                    <p className="text-base font-bold text-amber-600 dark:text-amber-400 leading-tight">
+                      {playTimeSummary.averageSequence != null ? playTimeSummary.averageSequence : "—"}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground leading-tight">Séquence moyenne</p>
+                    <p className="text-[9px] text-muted-foreground leading-tight">
+                      {playTimeSummary.filledAvg > 0 ? `Moy / ${playTimeSummary.filledAvg} match${playTimeSummary.filledAvg > 1 ? "s" : ""}` : "Non renseigné"}
+                    </p>
+                  </div>
                 </div>
               )}
 
