@@ -365,7 +365,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
                     size="sm"
                     className="h-8 gap-1 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
                     onClick={() => {
-                      if (confirm(`Supprimer tous les cycles de ${selectedYear.getFullYear()} ? Cette action est irréversible.`)) {
+                      if (confirm(`Supprimer tous les cycles de la période ${periodLabel} ? Cette action est irréversible.`)) {
                         deleteAllCycles.mutate();
                       }
                     }}
