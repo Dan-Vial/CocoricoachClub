@@ -446,12 +446,13 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         const titleX = rightLaneCenter + titleFs * 0.16;
         drawVerticalText(pdf, cycle.name, titleX, titleY, titleMaxChars);
 
-        // ── Type label (Préparation Générale, etc.) — left lane only ──
+        // ── Type label (Préparation Générale, etc.) — left lane only — gray italic, discreet ──
         if (hasTypeLabel) {
           const typeFs = Math.max(2.9, Math.min(5.2, laneW * 0.72));
-          pdf.setFont("helvetica", "normal");
+          pdf.setFont("helvetica", "italic");
           pdf.setFontSize(typeFs);
-          pdf.setTextColor(0, 0, 0);
+          // Discreet gray, adapted for dark vs light cycle backgrounds
+          pdf.setTextColor(...(lightOnDark ? ([220, 222, 228] as [number, number, number]) : ([110, 115, 130] as [number, number, number])));
           const typeMaxChars = Math.floor((bandHeight - 4) / (typeFs * 0.42));
           const typeX = leftLaneCenter + typeFs * 0.12;
           drawVerticalText(pdf, typeFullLabel, typeX, titleY, typeMaxChars);
