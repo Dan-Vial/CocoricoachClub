@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar, Settings2, ChevronLeft, ChevronRight, Check, BarChart3, Clock, Trash2 } from "lucide-react";
+import { Plus, Calendar, Settings2, ChevronLeft, ChevronRight, Check, BarChart3, Clock, Trash2, Trophy } from "lucide-react";
 import { format, startOfYear, endOfYear, addYears, subYears } from "date-fns";
 import { fr } from "date-fns/locale";
 import { YearCalendarGrid } from "./YearCalendarGrid";
@@ -12,6 +12,7 @@ import { AddCycleCategoryDialog } from "./AddCycleCategoryDialog";
 import { AddCycleDialog } from "./AddCycleDialog";
 import { EditCycleDialog } from "./EditCycleDialog";
 import { FisCalendarSync } from "./FisCalendarSync";
+import { AddMultipleCompetitionsDialog } from "./AddMultipleCompetitionsDialog";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -56,6 +57,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("timeline");
   const [addCategoryOpen, setAddCategoryOpen] = useState(false);
   const [addCycleOpen, setAddCycleOpen] = useState(false);
+  const [addCompetitionsOpen, setAddCompetitionsOpen] = useState(false);
   const [addCyclePreselectedCategory, setAddCyclePreselectedCategory] = useState<string | null>(null);
   const [editingCycle, setEditingCycle] = useState<PeriodizationCycle | null>(null);
   const [prefilledStartDate, setPrefilledStartDate] = useState<Date | undefined>();
@@ -295,6 +297,16 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
                   <Settings2 className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Ligne</span>
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1 text-xs"
+                  onClick={() => setAddCompetitionsOpen(true)}
+                >
+                  <Trophy className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Ajouter les compétitions</span>
+                  <span className="sm:hidden">Compét.</span>
+                </Button>
                 <Button size="sm" className="h-8 gap-1 text-xs" onClick={() => { setAddCyclePreselectedCategory(null); setAddCycleOpen(true); }}>
                   <Plus className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Cycle</span>
@@ -455,6 +467,12 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
         preselectedCategoryId={addCyclePreselectedCategory}
         prefilledStartDate={prefilledStartDate}
         prefilledEndDate={prefilledEndDate}
+      />
+      <AddMultipleCompetitionsDialog
+        open={addCompetitionsOpen}
+        onOpenChange={setAddCompetitionsOpen}
+        categoryId={categoryId}
+        sportType={categoryData?.rugby_type}
       />
       {editingCycle && (
         <EditCycleDialog
