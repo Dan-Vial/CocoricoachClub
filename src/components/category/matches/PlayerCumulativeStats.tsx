@@ -1008,7 +1008,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
               }
 
               const colWidths = [55, 18, ...chunk.flatMap(() => [20, 16])];
-              const headers = ["Athlète", "M", ...chunk.flatMap(s => [s.shortLabel, "+/-"])];
+              const headers = ["Athlète", "M", ...chunk.flatMap(s => [s.label || s.shortLabel, "+/-"])];
               // Header row tinted with the sub-group's body color
               doc.setFillColor(...palette.body);
               doc.rect(14, y, pageW - 28, 7, "F");
@@ -1017,7 +1017,9 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
               doc.setTextColor(...palette.accent);
               let x = 14;
               headers.forEach((h, i) => {
-                doc.text(h.substring(0, 10), x + 1, y + 5);
+                const maxLen = i <= 1 ? 10 : 14;
+                const txt = h.length > maxLen ? h.substring(0, maxLen - 1) + "…" : h;
+                doc.text(txt, x + 1, y + 5);
                 x += colWidths[i] || 18;
               });
               y += 9;
