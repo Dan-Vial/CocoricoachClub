@@ -502,11 +502,8 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
       const x = margin + col * itemW;
       const y = itemY + row * 4.5;
 
-      // Gold pastille
-      pdf.setFillColor(212, 160, 23);
-      pdf.setDrawColor(140, 100, 10);
-      pdf.setLineWidth(0.2);
-      pdf.circle(x + 1.5, y - 0.6, 1.1, "FD");
+      // Gold trophy icon
+      drawTrophyIcon(pdf, x + 1.6, y - 0.6, 2.4);
 
       // Date + opponent/competition
       const dateLabel = format(new Date(mt.match_date), "dd/MM", { locale: fr });
