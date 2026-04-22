@@ -1,5 +1,6 @@
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 const CYCLE_TYPES = [
   { value: "PG", label: "PG - Préparation Générale" },
@@ -8,11 +9,43 @@ const CYCLE_TYPES = [
   { value: "recuperation", label: "Récupération" },
 ];
 
+const DOMINANT_QUALITIES = [
+  { value: "force", label: "Force" },
+  { value: "puissance", label: "Puissance" },
+  { value: "vitesse", label: "Vitesse / Explosivité" },
+  { value: "endurance_aerobie", label: "Endurance aérobie" },
+  { value: "endurance_anaerobie", label: "Endurance anaérobie" },
+  { value: "endurance_force", label: "Endurance de force" },
+  { value: "hypertrophie", label: "Hypertrophie" },
+  { value: "technique", label: "Technique" },
+  { value: "tactique", label: "Tactique" },
+  { value: "mobilite", label: "Mobilité / Souplesse" },
+  { value: "prevention", label: "Prévention / Prophylaxie" },
+  { value: "mental", label: "Préparation mentale" },
+  { value: "mixte", label: "Mixte / Polyvalent" },
+];
+
+const LOAD_PATTERNS = [
+  { value: "linear", label: "Linéaire (charge croissante)" },
+  { value: "undulating", label: "Ondulatoire (alternance)" },
+  { value: "block", label: "Bloc concentré" },
+  { value: "step", label: "Marches (3:1 - 3 sem charge / 1 sem décharge)" },
+  { value: "taper", label: "Affûtage / Taper (avant compétition)" },
+  { value: "maintenance", label: "Maintien" },
+];
+
+const FATIGUE_TARGETS = [
+  { value: "low", label: "Faible (fraîcheur)" },
+  { value: "moderate", label: "Modérée (équilibre)" },
+  { value: "high", label: "Élevée (surcharge)" },
+  { value: "supercompensation", label: "Surcompensation (rebond)" },
+];
+
 function getSliderColor(value: number) {
-  if (value <= 1) return "#facc15";
-  if (value <= 2) return "#f59e0b";
-  if (value <= 3) return "#f97316";
-  if (value <= 4) return "#ef4444";
+  if (value <= 2) return "#22c55e";
+  if (value <= 4) return "#facc15";
+  if (value <= 6) return "#f59e0b";
+  if (value <= 8) return "#ef4444";
   return "#dc2626";
 }
 
@@ -26,19 +59,19 @@ function IntensitySlider({ value, onChange, label }: { value: number; onChange: 
           className="text-xs font-bold px-1.5 py-0.5 rounded"
           style={{ backgroundColor: `${color}20`, color }}
         >
-          {value}/5
+          {value}/10
         </span>
       </Label>
       <div className="relative flex items-center w-full h-6">
         <div className="absolute h-2 w-full rounded-full bg-secondary" />
         <div
           className="absolute h-2 rounded-full transition-all"
-          style={{ width: `${(value / 5) * 100}%`, backgroundColor: color }}
+          style={{ width: `${(value / 10) * 100}%`, backgroundColor: color }}
         />
         <input
           type="range"
           min={0}
-          max={5}
+          max={10}
           step={1}
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
@@ -47,7 +80,7 @@ function IntensitySlider({ value, onChange, label }: { value: number; onChange: 
         <div
           className="absolute w-5 h-5 rounded-full border-2 bg-background shadow-sm transition-all pointer-events-none"
           style={{
-            left: `calc(${(value / 5) * 100}% - 10px)`,
+            left: `calc(${(value / 10) * 100}% - 10px)`,
             borderColor: color,
           }}
         />
@@ -67,6 +100,14 @@ interface CycleFormFieldsProps {
   onIntensityChange: (value: number) => void;
   volume: number;
   onVolumeChange: (value: number) => void;
+  dominantQuality?: string;
+  onDominantQualityChange?: (value: string) => void;
+  loadPattern?: string;
+  onLoadPatternChange?: (value: string) => void;
+  fatigueTarget?: string;
+  onFatigueTargetChange?: (value: string) => void;
+  sessionsPerWeek?: number | null;
+  onSessionsPerWeekChange?: (value: number | null) => void;
 }
 
 export function CycleFormFields({
@@ -76,29 +117,112 @@ export function CycleFormFields({
   onIntensityChange,
   volume,
   onVolumeChange,
+  dominantQuality = "",
+  onDominantQualityChange,
+  loadPattern = "",
+  onLoadPatternChange,
+  fatigueTarget = "",
+  onFatigueTargetChange,
+  sessionsPerWeek = null,
+  onSessionsPerWeekChange,
 }: CycleFormFieldsProps) {
   return (
     <>
-      <div>
-        <Label>Type de cycle</Label>
-        <Select value={cycleType} onValueChange={onCycleTypeChange}>
-          <SelectTrigger>
-            <SelectValue placeholder="Choisir un type..." />
-          </SelectTrigger>
-          <SelectContent>
-            {CYCLE_TYPES.map((t) => (
-              <SelectItem key={t.value} value={t.value}>
-                {t.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label>Type de cycle</Label>
+          <Select value={cycleType} onValueChange={onCycleTypeChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Choisir..." />
+            </SelectTrigger>
+            <SelectContent>
+              {CYCLE_TYPES.map((t) => (
+                <SelectItem key={t.value} value={t.value}>
+                  {t.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {onDominantQualityChange && (
+          <div>
+            <Label>Qualité dominante</Label>
+            <Select value={dominantQuality} onValueChange={onDominantQualityChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choisir..." />
+              </SelectTrigger>
+              <SelectContent>
+                {DOMINANT_QUALITIES.map((q) => (
+                  <SelectItem key={q.value} value={q.value}>
+                    {q.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <IntensitySlider label="Intensité" value={intensity} onChange={onIntensityChange} />
         <IntensitySlider label="Volume" value={volume} onChange={onVolumeChange} />
       </div>
+
+      {(onLoadPatternChange || onFatigueTargetChange) && (
+        <div className="grid grid-cols-2 gap-3">
+          {onLoadPatternChange && (
+            <div>
+              <Label>Structure de charge</Label>
+              <Select value={loadPattern} onValueChange={onLoadPatternChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choisir..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {LOAD_PATTERNS.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {onFatigueTargetChange && (
+            <div>
+              <Label>Fatigue cible (fin de cycle)</Label>
+              <Select value={fatigueTarget} onValueChange={onFatigueTargetChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choisir..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {FATIGUE_TARGETS.map((f) => (
+                    <SelectItem key={f.value} value={f.value}>
+                      {f.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+      )}
+
+      {onSessionsPerWeekChange && (
+        <div className="w-1/2">
+          <Label>Séances / semaine</Label>
+          <Input
+            type="number"
+            min={0}
+            max={20}
+            placeholder="Ex: 5"
+            value={sessionsPerWeek ?? ""}
+            onChange={(e) => {
+              const v = e.target.value;
+              onSessionsPerWeekChange(v === "" ? null : Number(v));
+            }}
+          />
+        </div>
+      )}
     </>
   );
 }

@@ -48,22 +48,24 @@ const CYCLE_TYPE_META: Record<string, { label: string; shortLabel: string; bgCla
 };
 
 function getIntensityColor(value: number) {
-  if (value <= 1) return "#facc15";
-  if (value <= 2) return "#f59e0b";
-  if (value <= 3) return "#f97316";
-  if (value <= 4) return "#ef4444";
+  if (value <= 2) return "#22c55e";
+  if (value <= 4) return "#facc15";
+  if (value <= 6) return "#f59e0b";
+  if (value <= 8) return "#ef4444";
   return "#dc2626";
 }
 
-function IntensityDots({ value, max = 5 }: { value: number; max?: number }) {
+function IntensityDots({ value, max = 10 }: { value: number; max?: number }) {
+  const displayDots = 5;
+  const filled = Math.round((value / max) * displayDots);
   return (
     <div className="flex gap-0.5">
-      {Array.from({ length: max }).map((_, i) => (
+      {Array.from({ length: displayDots }).map((_, i) => (
         <div
           key={i}
           className="w-1.5 h-1.5 rounded-full transition-colors"
           style={{
-            backgroundColor: i < value ? getIntensityColor(value) : "hsl(var(--muted))",
+            backgroundColor: i < filled ? getIntensityColor(value) : "hsl(var(--muted))",
           }}
         />
       ))}

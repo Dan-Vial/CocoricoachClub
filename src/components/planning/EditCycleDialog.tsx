@@ -32,6 +32,10 @@ interface EditCycleDialogProps {
     cycle_type: string | null;
     intensity: number | null;
     volume: number | null;
+    dominant_quality?: string | null;
+    load_pattern?: string | null;
+    fatigue_target?: string | null;
+    sessions_per_week?: number | null;
   };
   categoryId: string;
   categories: { id: string; name: string; color: string }[];
@@ -52,6 +56,10 @@ export function EditCycleDialog({ open, onOpenChange, cycle, categoryId, categor
   const [cycleType, setCycleType] = useState(cycle.cycle_type || "");
   const [intensity, setIntensity] = useState(cycle.intensity || 0);
   const [volume, setVolume] = useState(cycle.volume || 0);
+  const [dominantQuality, setDominantQuality] = useState(cycle.dominant_quality || "");
+  const [loadPattern, setLoadPattern] = useState(cycle.load_pattern || "");
+  const [fatigueTarget, setFatigueTarget] = useState(cycle.fatigue_target || "");
+  const [sessionsPerWeek, setSessionsPerWeek] = useState<number | null>(cycle.sessions_per_week ?? null);
   const queryClient = useQueryClient();
 
   const updateCycle = useMutation({
@@ -69,6 +77,10 @@ export function EditCycleDialog({ open, onOpenChange, cycle, categoryId, categor
           cycle_type: cycleType || null,
           intensity: intensity || null,
           volume: volume || null,
+          dominant_quality: dominantQuality || null,
+          load_pattern: loadPattern || null,
+          fatigue_target: fatigueTarget || null,
+          sessions_per_week: sessionsPerWeek,
         })
         .eq("id", cycle.id);
       if (error) throw error;
@@ -129,6 +141,14 @@ export function EditCycleDialog({ open, onOpenChange, cycle, categoryId, categor
             onIntensityChange={setIntensity}
             volume={volume}
             onVolumeChange={setVolume}
+            dominantQuality={dominantQuality}
+            onDominantQualityChange={setDominantQuality}
+            loadPattern={loadPattern}
+            onLoadPatternChange={setLoadPattern}
+            fatigueTarget={fatigueTarget}
+            onFatigueTargetChange={setFatigueTarget}
+            sessionsPerWeek={sessionsPerWeek}
+            onSessionsPerWeekChange={setSessionsPerWeek}
           />
 
           <div className="grid grid-cols-2 gap-3">
