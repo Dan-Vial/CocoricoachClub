@@ -144,8 +144,8 @@ export function AnnualLoadHeatmap({ year, periodStart, periodEnd, categories, cy
   }, [weeks]);
 
   return (
-    <div className="overflow-x-auto">
-      <div style={{ minWidth: "900px" }}>
+    <div className="w-full">
+      <div className="w-full">
         {/* Header - months */}
         <div className="flex mb-1">
           <div className="w-36 min-w-[144px] shrink-0" />
