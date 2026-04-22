@@ -604,8 +604,6 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         const usableW = Math.max(1, subColW - innerPadding * 2);
         const usableH = Math.max(1, bandHeight - innerPaddingV * 2);
         const hasTypeLabel = Boolean(typeFullLabel);
-        const isTinyBlock = usableW < 4.6 || usableH < 10;
-        const canUseHorizontal = usableW >= 7.5 && usableH >= 6;
 
         const textColor = lightOnDark
           ? ([255, 255, 255] as [number, number, number])
@@ -614,87 +612,9 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
           ? ([228, 231, 239] as [number, number, number])
           : ([90, 98, 116] as [number, number, number]);
 
-        if (isTinyBlock) {
-          const compactLabel = fitHorizontalTextBlock(
-            pdf,
-            [cycleShortLabel, typeShortLabel, cycle.name, typeFullLabel],
-            Math.max(0.5, usableW),
-            Math.max(0.5, usableH),
-            3.2,
-            6.6,
-            2,
-            "bold",
-          );
-
-          if (compactLabel.text && compactLabel.fontSize > 0) {
-            pdf.setFont("helvetica", "bold");
-            pdf.setFontSize(compactLabel.fontSize);
-            pdf.setTextColor(...textColor);
-            const lineHeight = compactLabel.fontSize * 1.05;
-            const blockHeight = measureTextBlockHeight(compactLabel.fontSize, compactLabel.lines.length);
-            let yText = bandTop + (bandHeight - blockHeight) / 2 + compactLabel.fontSize * 0.8;
-            compactLabel.lines.forEach((line) => {
-              pdf.text(line, xCol + subColW / 2, yText, { align: "center" });
-              yText += lineHeight;
-            });
-          }
-        } else if (canUseHorizontal) {
-          const titleBoxW = usableW;
-          const titleBoxH = hasTypeLabel ? usableH * 0.62 : usableH;
-          const typeBoxH = hasTypeLabel ? usableH * 0.28 : 0;
-
-          const titleLayout = fitHorizontalTextBlock(
-            pdf,
-            [cycle.name, cycleShortLabel, ellipsizeToWidth(pdf, cycle.name, titleBoxW * 1.35)],
-            titleBoxW,
-            titleBoxH,
-            4.2,
-            8.8,
-            3,
-            "bold",
-          );
-
-          const typeLayout = hasTypeLabel
-            ? fitHorizontalTextBlock(
-                pdf,
-                [typeFullLabel, typeShortLabel],
-                titleBoxW,
-                typeBoxH,
-                3.2,
-                5.6,
-                2,
-                "italic",
-              )
-            : { fontSize: 0, lines: [], text: "" };
-
-          const topBlockHeight = measureTextBlockHeight(titleLayout.fontSize, titleLayout.lines.length);
-          const bottomBlockHeight = measureTextBlockHeight(typeLayout.fontSize, typeLayout.lines.length);
-          const combinedHeight = topBlockHeight + (typeLayout.lines.length > 0 ? 0.9 : 0) + bottomBlockHeight;
-          let yCursor = bandTop + (bandHeight - combinedHeight) / 2 + titleLayout.fontSize * 0.8;
-
-          if (titleLayout.text && titleLayout.fontSize > 0) {
-            pdf.setFont("helvetica", "bold");
-            pdf.setFontSize(titleLayout.fontSize);
-            pdf.setTextColor(...textColor);
-            const lineHeight = titleLayout.fontSize * 1.05;
-            titleLayout.lines.forEach((line) => {
-              pdf.text(line, xCol + subColW / 2, yCursor, { align: "center" });
-              yCursor += lineHeight;
-            });
-          }
-
-          if (typeLayout.text && typeLayout.fontSize > 0) {
-            yCursor += 0.9;
-            pdf.setFont("helvetica", "italic");
-            pdf.setFontSize(typeLayout.fontSize);
-            pdf.setTextColor(...secondaryTextColor);
-            const lineHeight = typeLayout.fontSize * 1.02;
-            typeLayout.lines.forEach((line) => {
-              pdf.text(line, xCol + subColW / 2, yCursor, { align: "center" });
-              yCursor += lineHeight;
-            });
-          }
-        } else {
+        // ALWAYS render cycle text VERTICALLY — never horizontal.
+        // Two lanes (left = type, right = title) when both labels exist.
+        {
           const laneW = hasTypeLabel
             ? Math.max(1.1, (usableW - laneGap) / 2)
             : usableW;
@@ -702,33 +622,56 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
           const rightLaneCenter = hasTypeLabel
             ? xCol + innerPadding + laneW + laneGap + laneW / 2
             : xCol + innerPadding + laneW / 2;
-          const lateralBudget = Math.max(0, laneW - 0.45);
-          const titleMaxFs = Math.min(11, lateralBudget);
-          const typeMaxFs = Math.min(8.5, lateralBudget);
+          const lateralBudget = Math.max(0, laneW - 0.35);
+          const titleMaxFs = Math.min(11, Math.max(3, lateralBudget));
+          const typeMaxFs = Math.min(8.5, Math.max(2.6, lateralBudget));
           const reservedDescender = Math.max(titleMaxFs, typeMaxFs) * 0.28 + 0.45;
           const verticalBudget = Math.max(0, usableH - reservedDescender);
 
-          const titleFit = fitVerticalText(
+          // Try full names first; fallback to short labels only if vertical fitting fails.
+          let titleFit = fitVerticalText(
             pdf,
-            cycleShortLabel || cycle.name,
+            cycle.name,
             verticalBudget,
-            3.8,
+            3.2,
             titleMaxFs,
             "bold",
             lateralBudget,
           );
+          if (!titleFit.text && cycleShortLabel) {
+            titleFit = fitVerticalText(
+              pdf,
+              cycleShortLabel,
+              verticalBudget,
+              2.8,
+              titleMaxFs,
+              "bold",
+              lateralBudget,
+            );
+          }
 
-          const typeFit = hasTypeLabel
+          let typeFit = hasTypeLabel
             ? fitVerticalText(
                 pdf,
-                typeShortLabel || typeFullLabel,
+                typeFullLabel,
                 verticalBudget,
-                3.2,
+                2.8,
                 typeMaxFs,
                 "italic",
                 lateralBudget,
               )
             : { fontSize: 0, text: "" };
+          if (hasTypeLabel && !typeFit.text && typeShortLabel) {
+            typeFit = fitVerticalText(
+              pdf,
+              typeShortLabel,
+              verticalBudget,
+              2.4,
+              typeMaxFs,
+              "italic",
+              lateralBudget,
+            );
+          }
 
           const maxFs = Math.max(titleFit.fontSize, typeFit.fontSize);
           const descenderPad = maxFs * 0.28 + 0.45;
