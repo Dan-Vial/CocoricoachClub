@@ -130,11 +130,17 @@ export function CycleFormFields({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label>Type de cycle</Label>
-          <Select value={cycleType} onValueChange={onCycleTypeChange}>
+          <Select
+            value={cycleType || "__none__"}
+            onValueChange={(v) => onCycleTypeChange(v === "__none__" ? "" : v)}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Choisir..." />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="__none__">
+                <span className="text-muted-foreground">Aucun type</span>
+              </SelectItem>
               {CYCLE_TYPES.map((t) => (
                 <SelectItem key={t.value} value={t.value}>
                   {t.label}
