@@ -7320,6 +7320,7 @@ export type Database = {
           created_at: string
           dietary_requirements: string | null
           discipline: string | null
+          disciplines: string[] | null
           email: string | null
           emergency_notes: string | null
           first_name: string | null
@@ -7343,6 +7344,7 @@ export type Database = {
           position: string | null
           pwa_install_dismissed: boolean | null
           season_id: string | null
+          specialties: string[] | null
           specialty: string | null
           user_id: string | null
         }
@@ -7356,6 +7358,7 @@ export type Database = {
           created_at?: string
           dietary_requirements?: string | null
           discipline?: string | null
+          disciplines?: string[] | null
           email?: string | null
           emergency_notes?: string | null
           first_name?: string | null
@@ -7379,6 +7382,7 @@ export type Database = {
           position?: string | null
           pwa_install_dismissed?: boolean | null
           season_id?: string | null
+          specialties?: string[] | null
           specialty?: string | null
           user_id?: string | null
         }
@@ -7392,6 +7396,7 @@ export type Database = {
           created_at?: string
           dietary_requirements?: string | null
           discipline?: string | null
+          disciplines?: string[] | null
           email?: string | null
           emergency_notes?: string | null
           first_name?: string | null
@@ -7415,6 +7420,7 @@ export type Database = {
           position?: string | null
           pwa_install_dismissed?: boolean | null
           season_id?: string | null
+          specialties?: string[] | null
           specialty?: string | null
           user_id?: string | null
         }

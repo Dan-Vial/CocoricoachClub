@@ -31,6 +31,8 @@ interface Player {
   first_name: string | null;
   discipline: string | null;
   specialty: string | null;
+  disciplines: string[] | null;
+  specialties: string[] | null;
 }
 
 export function AthleticsRecordsManager({ categoryId, playerId, singlePlayer = false, canEdit }: Props) {
@@ -53,20 +55,38 @@ export function AthleticsRecordsManager({ categoryId, playerId, singlePlayer = f
   const [seasonYear, setSeasonYear] = useState(new Date().getFullYear());
   const [notes, setNotes] = useState("");
 
-  // Fetch players (only if not restricted to single player)
+  // Fetch players (always — we also need the current athlete's disciplines in singlePlayer mode)
   const { data: players = [] } = useQuery({
-    queryKey: ["category_players_minimal", categoryId],
+    queryKey: ["category_players_minimal_athletics", categoryId, playerId || "all"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("players")
-        .select("id, name, first_name, discipline, specialty")
-        .eq("category_id", categoryId)
-        .order("name");
+        .select("id, name, first_name, discipline, specialty, disciplines, specialties")
+        .eq("category_id", categoryId);
+      if (singlePlayer && playerId) q = q.eq("id", playerId);
+      const { data, error } = await q.order("name");
       if (error) throw error;
-      return (data || []) as Player[];
+      return (data || []) as unknown as Player[];
     },
-    enabled: !singlePlayer,
   });
+
+  /**
+   * Returns the list of (discipline, specialty) pairs the given player practices.
+   * Falls back to the legacy single discipline if the new arrays are empty.
+   */
+  const getAthletePairs = (
+    p: Player | undefined,
+  ): Array<{ discipline: string; specialty: string | null }> => {
+    if (!p) return [];
+    if (p.disciplines && p.disciplines.length > 0) {
+      return p.disciplines.map((d, i) => ({
+        discipline: d,
+        specialty: p.specialties?.[i] || null,
+      }));
+    }
+    if (p.discipline) return [{ discipline: p.discipline, specialty: p.specialty || null }];
+    return [];
+  };
 
   // Fetch records
   const { data: records = [], isLoading } = useQuery({
@@ -101,15 +121,43 @@ export function AthleticsRecordsManager({ categoryId, playerId, singlePlayer = f
 
   const openCreate = (forPlayerId?: string, autoDiscipline?: string, autoSpecialty?: string | null) => {
     resetForm();
-    if (forPlayerId) setSelectedPlayerId(forPlayerId);
-    if (autoDiscipline) {
-      setDiscipline(autoDiscipline);
-      const defaults = getDefaultUnitForDiscipline(autoDiscipline, autoSpecialty);
+    const targetPlayerId = forPlayerId || playerId || "";
+    if (targetPlayerId) setSelectedPlayerId(targetPlayerId);
+
+    // Auto-prefill discipline & specialty from the athlete's profile when not given explicitly.
+    let disc = autoDiscipline;
+    let spec: string | null | undefined = autoSpecialty;
+    if (!disc && targetPlayerId) {
+      const pairs = getAthletePairs(playerMap.get(targetPlayerId));
+      if (pairs.length > 0) {
+        disc = pairs[0].discipline;
+        spec = pairs[0].specialty;
+      }
+    }
+
+    if (disc) {
+      setDiscipline(disc);
+      const defaults = getDefaultUnitForDiscipline(disc, spec ?? undefined);
       setUnit(defaults.unit);
       setLowerIsBetter(defaults.lowerIsBetter);
     }
-    if (autoSpecialty) setSpecialty(autoSpecialty);
+    if (spec) setSpecialty(spec);
     setIsDialogOpen(true);
+  };
+
+  // When the user selects a different athlete inside the dialog, refresh the
+  // discipline/specialty defaults from that athlete's profile.
+  const handlePlayerChange = (newPlayerId: string) => {
+    setSelectedPlayerId(newPlayerId);
+    const pairs = getAthletePairs(playerMap.get(newPlayerId));
+    if (pairs.length > 0) {
+      const first = pairs[0];
+      setDiscipline(first.discipline);
+      setSpecialty(first.specialty || NONE_SPECIALTY);
+      const defaults = getDefaultUnitForDiscipline(first.discipline, first.specialty ?? undefined);
+      setUnit(defaults.unit);
+      setLowerIsBetter(defaults.lowerIsBetter);
+    }
   };
 
   const openEdit = (r: AthleticsRecord) => {
@@ -196,6 +244,17 @@ export function AthleticsRecordsManager({ categoryId, playerId, singlePlayer = f
 
   const availableSpecialties = discipline ? ATHLETISME_SPECIALTIES[discipline] || [] : [];
 
+  // ── Auto-filter: restrict the discipline dropdown to those the selected athlete actually practices.
+  const selectedAthletePairs = getAthletePairs(playerMap.get(selectedPlayerId));
+  const athleteDisciplineValues = Array.from(
+    new Set(selectedAthletePairs.map((p) => p.discipline)),
+  );
+  // If athlete has 0 declared disciplines (legacy/empty), fall back to the full list so we don't block them.
+  const filteredDisciplines =
+    athleteDisciplineValues.length > 0
+      ? ATHLETISME_DISCIPLINES.filter((d) => athleteDisciplineValues.includes(d.value))
+      : ATHLETISME_DISCIPLINES;
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -226,7 +285,7 @@ export function AthleticsRecordsManager({ categoryId, playerId, singlePlayer = f
                 {!singlePlayer && (
                   <div>
                     <Label className="text-xs">Athlète *</Label>
-                    <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId} disabled={!!editing}>
+                    <Select value={selectedPlayerId} onValueChange={handlePlayerChange} disabled={!!editing}>
                       <SelectTrigger>
                         <SelectValue placeholder="Choisir..." />
                       </SelectTrigger>
@@ -248,13 +307,18 @@ export function AthleticsRecordsManager({ categoryId, playerId, singlePlayer = f
                         <SelectValue placeholder="Choisir..." />
                       </SelectTrigger>
                       <SelectContent className="z-[200]">
-                        {ATHLETISME_DISCIPLINES.map((d) => (
+                        {filteredDisciplines.map((d) => (
                           <SelectItem key={d.value} value={d.value}>
                             {d.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {selectedPlayerId && athleteDisciplineValues.length > 0 && (
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Disciplines pratiquées par cet athlète uniquement
+                      </p>
+                    )}
                   </div>
                   {availableSpecialties.length > 0 && (
                     <div>
