@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { SuperAdminShieldButton } from "@/components/notifications/SuperAdminShieldButton";
 import { InjuryReturnAlerts } from "@/components/injuries/InjuryReturnAlerts";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export default function Clubs() {
   const navigate = useNavigate();
@@ -214,13 +215,17 @@ export default function Clubs() {
       <div className="bg-gradient-hero py-16 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="flex justify-between items-start mb-4">
-            <div>
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                CocoriCoach Club
-              </h1>
-              <p className="text-lg text-white/90">
-                Gestion des clubs et suivi des performances
-              </p>
+            <div className="flex items-center gap-4">
+              {/* On a dark hero, always use the dark-theme logo */}
+              <BrandLogo variant="dark" className="h-16 md:h-20 w-auto drop-shadow-lg" />
+              <div>
+                <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
+                  CocoriCoach Club
+                </h1>
+                <p className="text-lg text-white/90">
+                  Gestion des clubs et suivi des performances
+                </p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <NotificationBell />
