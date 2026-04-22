@@ -27,6 +27,7 @@ export interface AthleticsMinima {
   discipline: string;
   specialty: string | null;
   label: string;
+  level: string;
   target_value: number;
   unit: string;
   lower_is_better: boolean;
