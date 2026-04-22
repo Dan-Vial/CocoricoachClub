@@ -642,6 +642,86 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
           y += 28;
         }
 
+        // ---- Team play-time metrics (TJE / Séq. la + longue / Séq. moyenne) ----
+        {
+          const fmtSecToMin = (totalSeconds: number) => {
+            const safe = Math.max(0, Math.round(totalSeconds));
+            const mins = Math.floor(safe / 60);
+            const secs = safe % 60;
+            return `${mins}'${secs.toString().padStart(2, "0")}`;
+          };
+          const epts = selectedMatches
+            .map(m => m.effective_play_time)
+            .filter((v): v is number => typeof v === "number");
+          const longs = selectedMatches
+            .map(m => m.longest_play_sequence)
+            .filter((v): v is number => typeof v === "number");
+          const avgs = selectedMatches
+            .map(m => m.average_play_sequence)
+            .filter((v): v is number => typeof v === "number");
+
+          if (epts.length > 0 || longs.length > 0 || avgs.length > 0) {
+            const avg = (arr: number[]) =>
+              arr.length > 0 ? Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10 : null;
+            const eptVal = avg(epts);
+            const longVal = longs.length > 0 ? Math.max(...longs) : null;
+            const avgVal = avg(avgs);
+
+            if (y > pageH - 40) { doc.addPage(); y = 15; }
+
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(30, 41, 59);
+            doc.text("Temps de jeu & Séquences", 14, y);
+            y += 7;
+
+            const ptCardW = (pageW - 28 - 10) / 3;
+            const ptCards: Array<{
+              label: string;
+              value: string;
+              sub: string;
+              color: [number, number, number];
+            }> = [
+              {
+                label: "Tps de jeu effectif (min)",
+                value: eptVal != null ? String(eptVal) : "—",
+                sub: epts.length > 0 ? `Moy / ${epts.length} match${epts.length > 1 ? "s" : ""}` : "Non renseigné",
+                color: [14, 165, 233],
+              },
+              {
+                label: "Séquence la + longue (min)",
+                value: longVal != null ? fmtSecToMin(longVal) : "—",
+                sub: longs.length > 0 ? "Record équipe" : "Non renseigné",
+                color: [139, 92, 246],
+              },
+              {
+                label: "Séquence moyenne (min)",
+                value: avgVal != null ? fmtSecToMin(avgVal) : "—",
+                sub: avgs.length > 0 ? `Moy / ${avgs.length} match${avgs.length > 1 ? "s" : ""}` : "Non renseigné",
+                color: [245, 158, 11],
+              },
+            ];
+            ptCards.forEach((card, i) => {
+              const cx = 14 + i * (ptCardW + 5);
+              doc.setFillColor(248, 250, 252);
+              doc.roundedRect(cx, y, ptCardW, 22, 2, 2, "F");
+              doc.setDrawColor(226, 232, 240);
+              doc.roundedRect(cx, y, ptCardW, 22, 2, 2, "S");
+              doc.setFontSize(16);
+              doc.setFont("helvetica", "bold");
+              doc.setTextColor(card.color[0], card.color[1], card.color[2]);
+              doc.text(card.value, cx + ptCardW / 2, y + 10, { align: "center" });
+              doc.setFontSize(7);
+              doc.setFont("helvetica", "normal");
+              doc.setTextColor(100, 116, 139);
+              doc.text(card.label, cx + ptCardW / 2, y + 16, { align: "center" });
+              doc.setFontSize(6);
+              doc.text(card.sub, cx + ptCardW / 2, y + 20, { align: "center" });
+            });
+            y += 28;
+          }
+        }
+
         // ---- Stats by category, organised in colored sub-blocks (mirrors UI) ----
         statCategories.forEach(cat => {
           const categoryStats = sportStats.filter(s => s.category === cat.key);
