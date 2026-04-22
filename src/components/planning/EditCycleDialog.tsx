@@ -32,6 +32,10 @@ interface EditCycleDialogProps {
     cycle_type: string | null;
     intensity: number | null;
     volume: number | null;
+    dominant_quality?: string | null;
+    load_pattern?: string | null;
+    fatigue_target?: string | null;
+    sessions_per_week?: number | null;
   };
   categoryId: string;
   categories: { id: string; name: string; color: string }[];
