@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, Pencil, Target, Trophy } from "lucide-react";
 import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES } from "@/lib/constants/sportTypes";
 import { getDefaultUnitForDiscipline } from "@/lib/athletics/recordsHelpers";
+import { MINIMA_LEVELS, getMinimaLevel } from "@/lib/athletics/minimaLevels";
 import { toast } from "sonner";
 
 interface Props {
