@@ -158,6 +158,7 @@ export function MatchLineupDialog({
             discipline: pair.discipline,
             specialty: pair.specialty,
             isSelected: !!existing,
+            startOrder: (existing as any)?.start_order ?? null,
           });
         });
       });
