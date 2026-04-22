@@ -295,14 +295,24 @@ export function AddPlayerDialogWithInvite({
       return;
     }
 
-    // Validate discipline for sports with disciplines
-    if (hasDisciplines && !discipline) {
-      setValidationError("Veuillez sélectionner une discipline");
-      return;
-    }
-    if (hasDisciplines && discipline && availableSpecialties.length > 0 && !specialty) {
-      setValidationError("Veuillez sélectionner une spécialité");
-      return;
+    // Validate discipline(s) for sports with disciplines
+    if (isAthletics) {
+      // Athlétisme : multi-disciplines obligatoire (au moins 1 paire)
+      if (disciplinePairs.length === 0) {
+        setValidationError(
+          "Ajoutez au moins une discipline (clique sur + après ton choix de discipline/spécialité)",
+        );
+        return;
+      }
+    } else if (hasDisciplines) {
+      if (!discipline) {
+        setValidationError("Veuillez sélectionner une discipline");
+        return;
+      }
+      if (discipline && availableSpecialties.length > 0 && !specialty) {
+        setValidationError("Veuillez sélectionner une spécialité");
+        return;
+      }
     }
 
     // Validate weight category for judo
