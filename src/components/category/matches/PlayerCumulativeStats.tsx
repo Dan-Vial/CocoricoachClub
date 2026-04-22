@@ -1958,7 +1958,11 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                       const val = player.sportData[stat.key] || 0;
                       const prog = playerProgressions[player.playerId]?.[stat.key] || 0;
                       return (
-                        <div key={stat.key} className={`${large ? "p-2" : "p-1"} bg-muted/50 rounded text-center space-y-0 border border-border/50`}>
+                        <div
+                          key={stat.key}
+                          title={stat.label}
+                          className={`${large ? "p-2" : "p-1"} bg-muted/50 rounded text-center space-y-0 border border-border/50 cursor-help`}
+                        >
                           <p className={`${large ? "text-base" : "text-xs"} font-bold leading-tight`}>{stat.computedFrom ? `${val}%` : val}</p>
                           <p className={`${large ? "text-[10px]" : "text-[9px]"} text-muted-foreground leading-tight`}>{stat.shortLabel}</p>
                           {matchesDataForCharts.length >= 2 && (
@@ -2181,7 +2185,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                             group.items.map((stat, sIdx) => (
                               <TableHead
                                 key={stat.key}
-                                className={`text-center ${group.color?.head || ""} ${
+                                title={stat.label}
+                                className={`text-center cursor-help ${group.color?.head || ""} ${
                                   gIdx > 0 && sIdx === 0 ? "border-l-2 border-l-background" : ""
                                 }`}
                               >
