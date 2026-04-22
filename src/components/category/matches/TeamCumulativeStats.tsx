@@ -217,18 +217,43 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
                   </div>
                 </div>
               )}
-              {groups.map(group => (
-                <div key={group.key} className={group.label ? "rounded-md border border-border/50 bg-muted/20 p-1.5 space-y-1" : ""}>
-                  {group.label && (
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-0.5">
-                      {group.label}
-                    </p>
-                  )}
-                  <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1.5">
-                    {group.items.map(renderStatTile)}
-                  </div>
-                </div>
-              ))}
+              {(() => {
+                const labeledGroups = groups.filter(g => g.label);
+                const unlabeledGroups = groups.filter(g => !g.label);
+                return (
+                  <>
+                    {/* Labeled sub-blocks rendered side-by-side */}
+                    {labeledGroups.length > 0 && (
+                      <div
+                        className="grid gap-2"
+                        style={{ gridTemplateColumns: `repeat(${labeledGroups.length}, minmax(0, 1fr))` }}
+                      >
+                        {labeledGroups.map(group => (
+                          <div
+                            key={group.key}
+                            className="rounded-md border border-border/50 bg-muted/20 p-1.5 space-y-1"
+                          >
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-0.5">
+                              {group.label}
+                            </p>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                              {group.items.map(renderStatTile)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {/* Unlabeled (full-width) groups remain as a single grid */}
+                    {unlabeledGroups.map(group => (
+                      <div key={group.key}>
+                        <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1.5">
+                          {group.items.map(renderStatTile)}
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                );
+              })()}
             </CardContent>
           </Card>
         );
