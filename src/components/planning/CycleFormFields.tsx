@@ -110,6 +110,7 @@ interface CycleFormFieldsProps {
   onVolumeChange: (value: number) => void;
   dominantQuality?: string;
   onDominantQualityChange?: (value: string) => void;
+  periodizationLineName?: string;
 }
 
 export function CycleFormFields({
@@ -121,7 +122,9 @@ export function CycleFormFields({
   onVolumeChange,
   dominantQuality = "",
   onDominantQualityChange,
+  periodizationLineName,
 }: CycleFormFieldsProps) {
+  const qualities = getQualitiesForLine(periodizationLineName);
   return (
     <>
       <div className="grid grid-cols-2 gap-3">
@@ -142,13 +145,13 @@ export function CycleFormFields({
         </div>
         {onDominantQualityChange && (
           <div>
-            <Label>Qualité dominante</Label>
+            <Label>Thématique</Label>
             <Select value={dominantQuality} onValueChange={onDominantQualityChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Choisir..." />
               </SelectTrigger>
               <SelectContent>
-                {DOMINANT_QUALITIES.map((q) => (
+                {qualities.map((q) => (
                   <SelectItem key={q.value} value={q.value}>
                     {q.label}
                   </SelectItem>
