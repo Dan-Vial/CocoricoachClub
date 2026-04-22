@@ -322,7 +322,15 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
                       key={m.id}
                       className="flex items-center justify-between gap-2 rounded-md border bg-card p-2.5 text-sm"
                     >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
+                        {(() => {
+                          const lvl = getMinimaLevel(m.level);
+                          return lvl ? (
+                            <Badge className={`text-xs border-transparent ${lvl.badgeClass}`}>
+                              {lvl.label}
+                            </Badge>
+                          ) : null;
+                        })()}
                         {m.specialty && (
                           <Badge variant="outline" className="text-xs">
                             {m.specialty}
