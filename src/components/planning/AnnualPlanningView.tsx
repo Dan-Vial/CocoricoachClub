@@ -105,7 +105,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
       ? `${ps.getFullYear()}`
       : sameYear
         ? `${MONTH_LABELS[startMonth]} ${ps.getFullYear()}`
-        : `${MONTH_LABELS[startMonth]} ${ps.getFullYear()} → ${MONTH_LABELS[pe.getMonth()]} ${pe.getFullYear()}`;
+        : `${MONTH_LABELS[startMonth]} ${ps.getFullYear()} à ${MONTH_LABELS[pe.getMonth()]} ${pe.getFullYear()}`;
     return { periodStart: ps, periodEnd: pe, periodLabel: label };
   }, [selectedYear, startMonth]);
 
