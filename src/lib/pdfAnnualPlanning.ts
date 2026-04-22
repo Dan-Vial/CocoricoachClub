@@ -340,7 +340,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         continue;
       }
 
-      const date = new Date(data.year, m, d);
+      const date = new Date(yy, mm, d);
       const weekend = isWeekend(date);
       const initial = dayInitial(date);
 
@@ -384,7 +384,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
           continue;
         }
 
-        const date = new Date(data.year, m, d);
+        const date = new Date(yy, mm, d);
         const weekend = isWeekend(date);
         const cellHasCycle = cycle && cycleForDay([cycle], date) !== null;
 
@@ -415,8 +415,8 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         // Restrict the text band to the days actually colored (cycle range within this month)
         const cs = startOfDay(new Date(cycle.start_date));
         const ce = startOfDay(new Date(cycle.end_date));
-        const monthStart = new Date(data.year, m, 1);
-        const monthEnd = new Date(data.year, m, daysInMonth);
+        const monthStart = new Date(yy, mm, 1);
+        const monthEnd = new Date(yy, mm, daysInMonth);
         const firstDay = cs < monthStart ? 1 : cs.getDate();
         const lastDay = ce > monthEnd ? daysInMonth : ce.getDate();
         const bandTop = gridTop + monthHeaderH + (firstDay - 1) * dayRowH;
@@ -483,7 +483,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
 
     // Competition markers (gold trophy + name) inside the cycles area
     for (let d = 1; d <= daysInMonth; d++) {
-      const date = new Date(data.year, m, d);
+      const date = new Date(yy, mm, d);
       const dateKey = format(date, "yyyy-MM-dd");
       const dayMatches = matchesByDate.get(dateKey);
       if (dayMatches && dayMatches.length > 0) {
