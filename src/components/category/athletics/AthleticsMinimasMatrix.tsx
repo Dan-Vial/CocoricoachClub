@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -12,11 +13,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Trophy, Target, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Trophy, Target, TrendingUp, TrendingDown, Minus, FileDown } from "lucide-react";
 import { ATHLETISME_DISCIPLINES } from "@/lib/constants/sportTypes";
 import { computeDelta, type AthleticsMinima, type AthleticsRecord } from "@/lib/athletics/recordsHelpers";
 import { getMinimaLevel } from "@/lib/athletics/minimaLevels";
+import { exportAthleticsMinimasReport } from "@/lib/athletics/exportPdf";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Props {
   categoryId: string;
