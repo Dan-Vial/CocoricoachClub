@@ -5332,13 +5332,17 @@ export type Database = {
           color: string
           created_at: string
           cycle_type: string | null
+          dominant_quality: string | null
           end_date: string
+          fatigue_target: string | null
           id: string
           intensity: number | null
+          load_pattern: string | null
           name: string
           notes: string | null
           objective: string | null
           periodization_category_id: string
+          sessions_per_week: number | null
           start_date: string
           updated_at: string
           volume: number | null
@@ -5348,13 +5352,17 @@ export type Database = {
           color?: string
           created_at?: string
           cycle_type?: string | null
+          dominant_quality?: string | null
           end_date: string
+          fatigue_target?: string | null
           id?: string
           intensity?: number | null
+          load_pattern?: string | null
           name: string
           notes?: string | null
           objective?: string | null
           periodization_category_id: string
+          sessions_per_week?: number | null
           start_date: string
           updated_at?: string
           volume?: number | null
@@ -5364,13 +5372,17 @@ export type Database = {
           color?: string
           created_at?: string
           cycle_type?: string | null
+          dominant_quality?: string | null
           end_date?: string
+          fatigue_target?: string | null
           id?: string
           intensity?: number | null
+          load_pattern?: string | null
           name?: string
           notes?: string | null
           objective?: string | null
           periodization_category_id?: string
+          sessions_per_week?: number | null
           start_date?: string
           updated_at?: string
           volume?: number | null
