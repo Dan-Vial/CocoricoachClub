@@ -283,7 +283,13 @@ export function MatchLineupDialog({
     }));
   };
 
-  const selectedCount = lineupData?.filter((p) => p.isSelected).length ?? 0;
+  const athleticsSelectedCount = athleticsEntries.filter((e) => e.isSelected).length;
+  const athleticsAthleteCount = new Set(
+    athleticsEntries.filter((e) => e.isSelected).map((e) => e.playerId),
+  ).size;
+  const selectedCount = isAthletics
+    ? athleticsAthleteCount
+    : (lineupData?.filter((p) => p.isSelected).length ?? 0);
   const starterCount = lineupData?.filter((p) => p.isSelected && p.isStarter).length ?? 0;
   const substituteCount = lineupData?.filter((p) => p.isSelected && !p.isStarter).length ?? 0;
   
