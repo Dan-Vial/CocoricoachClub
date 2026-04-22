@@ -421,6 +421,7 @@ export function CompetitionRoundsDialog({
           newBowlingBlocks[l.player_id] = Array.from(blockMap.values());
           
           return {
+            entryKey: buildEntryKey(l.player_id, effectiveDiscipline, effectiveSpecialty),
             playerId: l.player_id,
             playerName: [player?.first_name, player?.name].filter(Boolean).join(" ") || "Athlète",
             discipline: effectiveDiscipline,
@@ -434,6 +435,7 @@ export function CompetitionRoundsDialog({
         
         // Non-bowling path
         return {
+          entryKey: buildEntryKey(l.player_id, effectiveDiscipline, effectiveSpecialty),
           playerId: l.player_id,
           playerName: [player?.first_name, player?.name].filter(Boolean).join(" ") || "Athlète",
           discipline: effectiveDiscipline,
