@@ -39,9 +39,6 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
   const [intensity, setIntensity] = useState(0);
   const [volume, setVolume] = useState(0);
   const [dominantQuality, setDominantQuality] = useState("");
-  const [loadPattern, setLoadPattern] = useState("");
-  const [fatigueTarget, setFatigueTarget] = useState("");
-  const [sessionsPerWeek, setSessionsPerWeek] = useState<number | null>(null);
   const [customColor, setCustomColor] = useState("");
   const queryClient = useQueryClient();
 
