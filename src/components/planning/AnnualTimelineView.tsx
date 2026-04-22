@@ -4,7 +4,7 @@ import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Target, Flame, Activity } from "lucide-react";
+import { Plus, Target, Flame, Activity, Trophy } from "lucide-react";
 
 interface PeriodizationCategory {
   id: string;
@@ -201,6 +201,7 @@ export function AnnualTimelineView({
         {/* CATEGORY ROWS */}
         {categories.map((cat) => {
           const catCycles = cycles.filter(c => c.periodization_category_id === cat.id);
+          const isCompetitionRow = /comp[ée]tition/i.test(cat.name);
           // Sort by duration desc so wider blocks render first (behind)
           const sortedCycles = [...catCycles].sort((a, b) => {
             const da = differenceInDays(new Date(a.end_date), new Date(a.start_date));
@@ -250,6 +251,49 @@ export function AnnualTimelineView({
                     );
                   })}
                 </div>
+
+                {/* Competition markers (only in Compétitions row) */}
+                {isCompetitionRow && matches.map((m) => {
+                  const md = new Date(m.match_date);
+                  if (md < yearStart || md > yearEnd) return null;
+                  const offsetPct = (differenceInDays(md, yearStart) / totalDays) * 100;
+                  return (
+                    <TooltipProvider key={m.id} delayDuration={150}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            className="absolute -translate-x-1/2 flex flex-col items-center justify-center rounded-md shadow-sm hover:shadow-md hover:scale-110 transition-all"
+                            style={{
+                              left: `${offsetPct}%`,
+                              top: "50%",
+                              transform: `translate(-50%, -50%)`,
+                              backgroundColor: cat.color,
+                              width: "22px",
+                              height: "22px",
+                              zIndex: 10,
+                            }}
+                          >
+                            <Trophy className="h-3 w-3 text-white" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs p-2">
+                          <div className="space-y-1">
+                            <p className="font-bold text-xs flex items-center gap-1">
+                              <Trophy className="h-3 w-3" />
+                              {m.opponent || "Compétition"}
+                            </p>
+                            {m.competition && (
+                              <p className="text-[11px] text-muted-foreground">{m.competition}</p>
+                            )}
+                            <p className="text-[10px] text-muted-foreground">
+                              {format(md, "EEEE dd MMMM yyyy", { locale: fr })}
+                            </p>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  );
+                })}
 
                 {/* Cycle blocks with macrocycle badge */}
                 {sortedCycles.map((cycle) => {
