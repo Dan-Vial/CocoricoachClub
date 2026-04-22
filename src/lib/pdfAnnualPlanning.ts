@@ -153,16 +153,13 @@ function fitVerticalText(
   if (!text) return { fontSize: minFs, text: "" };
   const CHAR_RATIO = 0.55; // approximate char width / font size for helvetica
   let fs = maxFs;
-  while (fs > minFs) {
+  while (fs > 0.6) {
     const charsThatFit = Math.floor(availableHeight / (fs * CHAR_RATIO));
-    if (charsThatFit >= text.length) return { fontSize: fs, text };
-    fs -= 0.2;
+    if (charsThatFit >= text.length) return { fontSize: Math.max(fs, 0.8), text };
+    fs -= 0.15;
   }
-  // At minFs: truncate if needed
-  const charsAtMin = Math.max(1, Math.floor(availableHeight / (minFs * CHAR_RATIO)));
-  const finalText =
-    text.length > charsAtMin ? text.slice(0, Math.max(1, charsAtMin - 1)) + "…" : text;
-  return { fontSize: minFs, text: finalText };
+  // Never truncate — return full text at the smallest readable size.
+  return { fontSize: Math.max(0.8, minFs * 0.5), text };
 }
 
 // Draws a refined gold trophy/cup icon centered on (cx, cy)
@@ -515,7 +512,8 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
       }
     }
 
-    // Competition markers — only the gold trophy icon (names are listed in the legend below)
+    // Competition markers — drawn over the day-number cell (left of the cycles area)
+    // so the trophy never overlaps the vertical cycle text.
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(yy, mm, d);
       const dateKey = format(date, "yyyy-MM-dd");
@@ -523,8 +521,10 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
       if (dayMatches && dayMatches.length > 0) {
         const y = gridTop + monthHeaderH + (d - 1) * dayRowH;
         const cy = y + dayRowH / 2;
-        const trophyX = xCyclesStart + 1.6;
-        const trophySize = Math.min(2.4, dayRowH * 0.7);
+        // Place the trophy at the right edge of the day-number cell (still inside
+        // the month label band, before the cycles area starts).
+        const trophySize = Math.min(2.2, dayRowH * 0.65);
+        const trophyX = xMonth + monthLabelW - trophySize / 2 - 0.2;
         drawTrophyIcon(pdf, trophyX, cy, trophySize);
       }
     }
