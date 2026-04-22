@@ -485,14 +485,25 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         const rightLaneCenter = hasTypeLabel
           ? xCol + innerPadding + laneW + laneGap + laneW / 2
           : xCol + innerPadding + laneW / 2;
-        // Anchor text at the bottom of the band; vertical text reads upward toward bandTop.
-        const titleY = bandBottom - innerPaddingV;
-
         // ── Title (cycle name) — right lane ──
         // Cap font size by lane width (so the glyph height doesn't overflow horizontally
         // when rotated 90°). Allow a generous max so we use the full available band height.
         const titleMaxFs = Math.max(4, Math.min(14, laneW * 0.95));
-        const titleFit = fitVerticalText(cycle.name, usableH, 2.5, titleMaxFs);
+        // Reserve room for the descender so the last glyph stays inside the band.
+        const titleFit = fitVerticalText(cycle.name, Math.max(1, usableH - 1.2), 2.5, titleMaxFs);
+
+        // Type label sizing (computed before drawing so we can align baselines)
+        const typeMaxFs = Math.max(3.2, Math.min(11, laneW * 0.85));
+        const typeFit = hasTypeLabel
+          ? fitVerticalText(typeFullLabel, Math.max(1, usableH - 1.2), 2.2, typeMaxFs)
+          : { fontSize: 0, text: "" };
+
+        // Anchor text at the bottom of the band; vertical text reads upward toward bandTop.
+        // Add a descender pad (~22% of largest font size) so glyphs like g/p/j don't get clipped.
+        const maxFs = Math.max(titleFit.fontSize, typeFit.fontSize);
+        const descenderPad = maxFs * 0.22 + 0.3;
+        const titleY = bandBottom - innerPaddingV - descenderPad;
+
         pdf.setFont("helvetica", "bold");
         pdf.setFontSize(titleFit.fontSize);
         pdf.setTextColor(...(lightOnDark ? ([255, 255, 255] as [number, number, number]) : ([30, 35, 50] as [number, number, number])));
@@ -501,8 +512,6 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
 
         // ── Type label (Préparation Générale, etc.) — left lane — gray italic ──
         if (hasTypeLabel) {
-          const typeMaxFs = Math.max(3.2, Math.min(11, laneW * 0.85));
-          const typeFit = fitVerticalText(typeFullLabel, usableH, 2.2, typeMaxFs);
           pdf.setFont("helvetica", "italic");
           pdf.setFontSize(typeFit.fontSize);
           pdf.setTextColor(...(lightOnDark ? ([220, 222, 228] as [number, number, number]) : ([110, 115, 130] as [number, number, number])));
