@@ -5,7 +5,7 @@ import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Target, Flame, Activity, Trophy } from "lucide-react";
+import { Plus, Target, Flame, Activity, Trophy, Dumbbell } from "lucide-react";
 
 interface PeriodizationCategory {
   id: string;
