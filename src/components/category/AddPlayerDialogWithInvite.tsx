@@ -194,6 +194,9 @@ export function AddPlayerDialogWithInvite({
     setBirthDate("");
     setDiscipline("");
     setSpecialty("");
+    setDisciplinePairs([]);
+    setDraftDiscipline("");
+    setDraftSpecialty("");
     setPosition("");
     setSendInvitation(true);
     setValidationError("");
@@ -233,6 +236,8 @@ export function AddPlayerDialogWithInvite({
       birth_date?: string; 
       discipline?: string; 
       specialty?: string; 
+      disciplines?: string[];
+      specialties?: string[];
       position?: string;
       fis_code?: string;
       fis_objective?: string;
@@ -250,11 +255,13 @@ export function AddPlayerDialogWithInvite({
           birth_date: data.birth_date || null,
           discipline: data.discipline || null,
           specialty: data.specialty || null,
+          disciplines: data.disciplines && data.disciplines.length > 0 ? data.disciplines : null,
+          specialties: data.specialties && data.specialties.length > 0 ? data.specialties : null,
           position: data.position || null,
           fis_code: data.fis_code || null,
           fis_objective: data.fis_objective || null,
           fis_objective_date: data.fis_objective_date || null,
-        })
+        } as any)
         .select()
         .single();
       if (error) throw error;
