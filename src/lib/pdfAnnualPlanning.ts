@@ -157,9 +157,10 @@ function fitVerticalText(
   const prevSize = pdf.getFontSize();
   const prevFont = pdf.getFont();
   let fs = maxFs;
+  const floor = Math.max(0.6, minFs);
 
   pdf.setFont("helvetica", fontStyle);
-  while (fs >= 0.6) {
+  while (fs >= floor) {
     pdf.setFontSize(fs);
     const measuredHeight = pdf.getTextWidth(text);
     if (measuredHeight <= availableHeight) {
@@ -170,9 +171,11 @@ function fitVerticalText(
     fs -= 0.1;
   }
 
+  // Even at the floor it doesn't fit — keep readable size, accept slight overflow rather
+  // than rendering an unreadable label.
   pdf.setFont(prevFont.fontName || "helvetica", (prevFont.fontStyle as "normal" | "bold" | "italic") || "normal");
   pdf.setFontSize(prevSize);
-  return { fontSize: 0.6, text };
+  return { fontSize: floor, text };
 }
 
 // Draws a refined gold trophy/cup icon centered on (cx, cy)
