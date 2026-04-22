@@ -155,28 +155,42 @@ export function CompetitionRoundsDialog({
   const isAviron = sportType.toLowerCase().includes("aviron");
   const isAthletics = isAthletismeCategory(sportType);
 
+  // Stat keys exclus pour athlétisme dans la grille (déjà saisis en haut : classement, temps, RP, vent…)
+  const ATHLETICS_HIDDEN_STAT_KEYS = new Set([
+    "finalRanking", // remplacé par le champ Classement en haut
+    "personalBest", // remplacé par le bouton 🏆 RP en haut
+    "seasonBest",
+    "windSpeed",    // remplacé par le champ Vent (m/s) en haut
+    "time",         // remplacé par le champ Temps en haut (synchronise final_time_seconds)
+  ]);
+
   // Get discipline-specific stats for a player (athletics: each athlete may have different stats)
   const getPlayerStats = (player: PlayerRounds): StatField[] => {
     if (isAthletics) {
       // Try specialty first (e.g. "100mH", "200m", "poids"), then discipline (e.g. "athletisme_haies")
+      let resolved: StatField[] = ATHLETISME_GENERAL_STATS;
       const specStats = getAthletismeStatsForDiscipline(player.specialty);
       if (player.specialty && specStats !== ATHLETISME_GENERAL_STATS) {
-        return specStats;
-      }
-      // Fallback to discipline field
-      const discStats = getAthletismeStatsForDiscipline(player.discipline);
-      if (player.discipline && discStats !== ATHLETISME_GENERAL_STATS) {
-        return discStats;
-      }
-      // Last resort: try discipline without prefix (athletisme_haies -> haies)
-      if (player.discipline) {
-        const stripped = player.discipline.replace(/^athletisme_/, '');
-        const strippedStats = getAthletismeStatsForDiscipline(stripped);
-        if (strippedStats !== ATHLETISME_GENERAL_STATS) {
-          return strippedStats;
+        resolved = specStats;
+      } else {
+        const discStats = getAthletismeStatsForDiscipline(player.discipline);
+        if (player.discipline && discStats !== ATHLETISME_GENERAL_STATS) {
+          resolved = discStats;
+        } else if (player.discipline) {
+          const stripped = player.discipline.replace(/^athletisme_/, '');
+          const strippedStats = getAthletismeStatsForDiscipline(stripped);
+          if (strippedStats !== ATHLETISME_GENERAL_STATS) {
+            resolved = strippedStats;
+          } else {
+            resolved = specStats;
+          }
+        } else {
+          resolved = specStats;
         }
       }
-      return specStats; // Falls back to general
+      // Athletics: hide stats already captured in the header row (date/classement/temps/RP/vent)
+      // and drop the entire "general" category (date/RP/vent/SB déjà gérés en haut).
+      return resolved.filter(s => !ATHLETICS_HIDDEN_STAT_KEYS.has(s.key) && s.category !== "general");
     }
     return sportStats;
   };
@@ -188,12 +202,14 @@ export function CompetitionRoundsDialog({
     if (isAthletics) {
       const uniqueCats = [...new Set(pStats.map(s => s.category))];
       const catLabels: Record<string, string> = {
-        general: "Général",
         scoring: "Performance",
         attack: "Classement",
         defense: "Détails",
       };
-      return uniqueCats.map(key => ({ key, label: catLabels[key] || key }));
+      // "general" déjà filtrée dans getPlayerStats
+      return uniqueCats
+        .filter(key => key !== "general")
+        .map(key => ({ key, label: catLabels[key] || key }));
     }
     return allStatCategories.filter(cat => pStats.some(s => s.category === cat.key));
   };
