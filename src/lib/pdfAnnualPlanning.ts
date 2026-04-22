@@ -139,6 +139,113 @@ function drawVerticalText(
   pdf.text(safe, x, y, { angle: 90 });
 }
 
+const CYCLE_TYPE_LABELS: Record<string, string> = {
+  PG: "Préparation Générale",
+  PS: "Préparation Spécifique",
+  PC: "Préparation Compétition",
+  recuperation: "Récupération",
+  transition: "Transition",
+  general_prep: "Préparation Générale",
+  specific_prep: "Préparation Spécifique",
+  competition: "Préparation Compétition",
+  recovery: "Récupération",
+};
+
+const ABBREVIATION_MAP: Record<string, string> = {
+  "Préparation Générale": "Prépa G.",
+  "Préparation Spécifique": "Prépa Spé.",
+  "Préparation Compétition": "Prépa Comp.",
+  "Développement des qualités Physiques": "Dév. Phys.",
+  "Développement des qualités physiques": "Dév. Phys.",
+  "Travail de gestion des émotions": "Gestion émotions",
+  "Travail de Switch": "Switch",
+  "Récupération": "Récup.",
+  "Compétition": "Compét.",
+  "Spécifique": "Spéc.",
+  "Générale": "Gén.",
+  "Finale": "Finale",
+  "Stage ED": "Stage",
+  "Stage EI": "Stage",
+};
+
+function abbreviateCycleLabel(text: string): string {
+  if (!text) return "";
+  if (ABBREVIATION_MAP[text]) return ABBREVIATION_MAP[text];
+
+  return text
+    .replace(/Préparation/gi, "Prépa")
+    .replace(/Développement/gi, "Dév.")
+    .replace(/qualités physiques/gi, "qualités phys.")
+    .replace(/Compétition/gi, "Compét.")
+    .replace(/Spécifique/gi, "Spé.")
+    .replace(/Générale/gi, "Gén.")
+    .replace(/Récupération/gi, "Récup.")
+    .replace(/Travail de/gi, "Travail")
+    .replace(/gestion des/gi, "gest.")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function ellipsizeToWidth(pdf: jsPDF, text: string, maxWidth: number): string {
+  if (!text) return "";
+  if (pdf.getTextWidth(text) <= maxWidth) return text;
+  const ellipsis = "...";
+  let result = text.trim();
+  while (result.length > 0 && pdf.getTextWidth(result + ellipsis) > maxWidth) {
+    result = result.slice(0, -1).trimEnd();
+  }
+  return result ? `${result}${ellipsis}` : "";
+}
+
+function splitIntoMaxLines(pdf: jsPDF, text: string, maxWidth: number, maxLines: number): string[] {
+  if (!text) return [];
+  const lines = (pdf.splitTextToSize(text, maxWidth) as string[]).filter(Boolean);
+  if (lines.length <= maxLines) return lines;
+  const kept = lines.slice(0, maxLines);
+  kept[maxLines - 1] = ellipsizeToWidth(pdf, kept[maxLines - 1], maxWidth);
+  return kept.filter(Boolean);
+}
+
+function measureTextBlockHeight(fontSize: number, lineCount: number, lineHeightFactor = 1.05): number {
+  return lineCount <= 0 ? 0 : fontSize * lineHeightFactor * lineCount;
+}
+
+function fitHorizontalTextBlock(
+  pdf: jsPDF,
+  candidates: string[],
+  boxWidth: number,
+  boxHeight: number,
+  minFs: number,
+  maxFs: number,
+  maxLines: number,
+  fontStyle: "normal" | "bold" | "italic" = "normal",
+): { fontSize: number; lines: string[]; text: string } {
+  const prevSize = pdf.getFontSize();
+  const prevFont = pdf.getFont();
+
+  pdf.setFont("helvetica", fontStyle);
+
+  for (const candidate of candidates.filter(Boolean)) {
+    let fs = maxFs;
+    while (fs >= minFs) {
+      pdf.setFontSize(fs);
+      const lines = splitIntoMaxLines(pdf, candidate, boxWidth, maxLines);
+      const maxMeasuredWidth = lines.length > 0 ? Math.max(...lines.map((line) => pdf.getTextWidth(line))) : 0;
+      const blockHeight = measureTextBlockHeight(fs, lines.length);
+      if (lines.length > 0 && maxMeasuredWidth <= boxWidth && blockHeight <= boxHeight) {
+        pdf.setFont(prevFont.fontName || "helvetica", (prevFont.fontStyle as "normal" | "bold" | "italic") || "normal");
+        pdf.setFontSize(prevSize);
+        return { fontSize: fs, lines, text: candidate };
+      }
+      fs -= 0.2;
+    }
+  }
+
+  pdf.setFont(prevFont.fontName || "helvetica", (prevFont.fontStyle as "normal" | "bold" | "italic") || "normal");
+  pdf.setFontSize(prevSize);
+  return { fontSize: 0, lines: [], text: "" };
+}
+
 /**
  * Auto-fit a font size so that `text` rendered vertically fits within `availableHeight` (mm)
  * AND the chosen font size stays below `maxLateralFs` (visual width of rotated text ≈ font size in mm).
@@ -159,7 +266,6 @@ function fitVerticalText(
   const prevSize = pdf.getFontSize();
   const prevFont = pdf.getFont();
   const floor = Math.max(0.6, minFs);
-  // Hard cap by both the explicit maxFs and the lateral budget (avoid horizontal overflow).
   let fs = Math.min(maxFs, maxLateralFs);
 
   pdf.setFont("helvetica", fontStyle);
@@ -174,7 +280,6 @@ function fitVerticalText(
     fs -= 0.1;
   }
 
-  // Doesn't fit at the readable floor — caller should not draw anything.
   pdf.setFont(prevFont.fontName || "helvetica", (prevFont.fontStyle as "normal" | "bold" | "italic") || "normal");
   pdf.setFontSize(prevSize);
   return { fontSize: 0, text: "" };
