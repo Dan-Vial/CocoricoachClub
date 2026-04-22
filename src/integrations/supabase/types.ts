@@ -4066,6 +4066,7 @@ export type Database = {
           boat_type: string | null
           created_at: string
           crew_role: string | null
+          discipline: string | null
           id: string
           is_starter: boolean | null
           match_id: string
@@ -4073,11 +4074,13 @@ export type Database = {
           player_id: string
           position: string | null
           seat_position: number | null
+          specialty: string | null
         }
         Insert: {
           boat_type?: string | null
           created_at?: string
           crew_role?: string | null
+          discipline?: string | null
           id?: string
           is_starter?: boolean | null
           match_id: string
@@ -4085,11 +4088,13 @@ export type Database = {
           player_id: string
           position?: string | null
           seat_position?: number | null
+          specialty?: string | null
         }
         Update: {
           boat_type?: string | null
           created_at?: string
           crew_role?: string | null
+          discipline?: string | null
           id?: string
           is_starter?: boolean | null
           match_id?: string
@@ -4097,6 +4102,7 @@ export type Database = {
           player_id?: string
           position?: string | null
           seat_position?: number | null
+          specialty?: string | null
         }
         Relationships: [
           {

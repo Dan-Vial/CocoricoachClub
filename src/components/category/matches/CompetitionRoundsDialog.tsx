@@ -311,7 +311,7 @@ export function CompetitionRoundsDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("match_lineups")
-        .select("player_id, boat_type, crew_role, seat_position, players(id, name, first_name, discipline, specialty)")
+        .select("id, player_id, boat_type, crew_role, seat_position, discipline, specialty, players(id, name, first_name, discipline, specialty)")
         .eq("match_id", matchId);
       if (error) throw error;
       return data;
@@ -341,8 +341,12 @@ export function CompetitionRoundsDialog({
     if (lineup && lineup.length > 0) {
       const newBowlingBlocks: Record<string, BowlingBlock[]> = {};
       
-      const playersData = lineup.map((l) => {
+      const playersData = lineup.map((l: any) => {
         const player = l.players as { id: string; name: string; first_name?: string; discipline?: string; specialty?: string } | null;
+        // Prefer the lineup's discipline/specialty (per-event inscription).
+        // Fallback to the player's primary discipline/specialty for backward compat.
+        const effectiveDiscipline = l.discipline || player?.discipline || undefined;
+        const effectiveSpecialty = l.specialty || player?.specialty || undefined;
         const playerRounds = existingRounds?.filter(r => r.player_id === l.player_id) || [];
         
         // For bowling: reconstruct blocks from existing rounds
@@ -357,7 +361,6 @@ export function CompetitionRoundsDialog({
             const ballData = statData.ballData as any | undefined;
             const { bowlingFrames: _, bowlingCategory: _bc, roundDate: _rd, blockId: _bi, ballData: _bd, ...cleanStats } = statData;
             
-            // Create or find block
             const effectiveBlockId = blockId || `legacy_${roundDate || "nodate"}_${bowlingCategory || "nocat"}_${r.phase || "nophase"}`;
             if (!blockMap.has(effectiveBlockId)) {
               blockMap.set(effectiveBlockId, {
@@ -402,8 +405,8 @@ export function CompetitionRoundsDialog({
           return {
             playerId: l.player_id,
             playerName: [player?.first_name, player?.name].filter(Boolean).join(" ") || "Athlète",
-            discipline: player?.discipline || undefined,
-            specialty: player?.specialty || undefined,
+            discipline: effectiveDiscipline,
+            specialty: effectiveSpecialty,
             boat_type: l.boat_type || undefined,
             crew_role: l.crew_role || undefined,
             seat_position: l.seat_position || undefined,
@@ -411,12 +414,12 @@ export function CompetitionRoundsDialog({
           };
         }
         
-        // Non-bowling path (unchanged)
+        // Non-bowling path
         return {
           playerId: l.player_id,
           playerName: [player?.first_name, player?.name].filter(Boolean).join(" ") || "Athlète",
-          discipline: player?.discipline || undefined,
-          specialty: player?.specialty || undefined,
+          discipline: effectiveDiscipline,
+          specialty: effectiveSpecialty,
           boat_type: l.boat_type || undefined,
           crew_role: l.crew_role || undefined,
           seat_position: l.seat_position || undefined,
@@ -598,27 +601,18 @@ export function CompetitionRoundsDialog({
               stats: r.stats ?? null,
             })),
           );
+          // Pour le multi-épreuves : on s'appuie strictement sur la discipline/spécialité
+          // saisie au niveau de l'inscription (lineup) et plus sur les arrays globaux du joueur.
+          // Si rien n'est renseigné côté lineup, on retombe sur la discipline principale.
           const playersForSync = playerRoundsData.map((p) => ({
             id: p.playerId,
             discipline: p.discipline ?? null,
             specialty: p.specialty ?? null,
+            // Forcer un seul couple : on n'élargit pas aux autres disciplines de l'athlète
+            disciplines: p.discipline ? [p.discipline] : null,
+            specialties: p.discipline ? [p.specialty || null] : null,
           }));
-          // Enrichit avec disciplines/specialties (multi-épreuves) si dispo
-          const { data: extraPlayers } = await supabase
-            .from("players")
-            .select("id, disciplines, specialties")
-            .in(
-              "id",
-              playersForSync.map((p) => p.id),
-            );
-          const enriched = playersForSync.map((p) => {
-            const extra = extraPlayers?.find((e) => e.id === p.id);
-            return {
-              ...p,
-              disciplines: (extra as any)?.disciplines ?? null,
-              specialties: (extra as any)?.specialties ?? null,
-            };
-          });
+          const enriched = playersForSync;
 
           await syncAthleticsRecordsFromRounds({
             categoryId,

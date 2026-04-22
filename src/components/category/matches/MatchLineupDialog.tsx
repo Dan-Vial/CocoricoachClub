@@ -18,7 +18,12 @@ import { toast } from "sonner";
 import { Users, UserCheck, LayoutGrid, List } from "lucide-react";
 import { SportFieldLineup } from "@/components/matches/SportFieldLineup";
 import { getSportFieldConfig } from "@/lib/constants/sportPositions";
-import { isIndividualSport } from "@/lib/constants/sportTypes";
+import { isIndividualSport, isAthletismeCategory } from "@/lib/constants/sportTypes";
+import {
+  AthleticsLineupSection,
+  type AthleticsLineupEntry,
+  type AthleticsLineupPlayer,
+} from "./AthleticsLineupSection";
 
 interface MatchLineupDialogProps {
   open: boolean;
@@ -45,6 +50,7 @@ export function MatchLineupDialog({
   matchFormat,
 }: MatchLineupDialogProps) {
   const [lineupData, setLineupData] = useState<LineupPlayer[]>([]);
+  const [athleticsEntries, setAthleticsEntries] = useState<AthleticsLineupEntry[]>([]);
   const [viewMode, setViewMode] = useState<"list" | "field">("field");
   const queryClient = useQueryClient();
 
@@ -64,21 +70,31 @@ export function MatchLineupDialog({
   const sportType = category?.rugby_type || "XV";
   const fieldConfig = getSportFieldConfig(sportType);
   const isIndividual = isIndividualSport(sportType);
+  const isAthletics = isAthletismeCategory(sportType);
   const isPadel = sportType.toLowerCase().includes("padel");
   const isTennis = sportType.toLowerCase().includes("tennis");
   const isDoublesMatch = isPadel || (isTennis && (matchFormat === "double" || matchFormat === "double_mixte"));
   const maxPairSize = isDoublesMatch ? 2 : undefined;
 
   const { data: players } = useQuery({
-    queryKey: ["players", categoryId],
+    queryKey: ["players", categoryId, isAthletics ? "athletics" : "default"],
     queryFn: async () => {
+      if (isAthletics) {
+        const { data, error } = await supabase
+          .from("players")
+          .select("id, name, first_name, position, discipline, specialty, disciplines, specialties")
+          .eq("category_id", categoryId)
+          .order("name");
+        if (error) throw error;
+        return data as any[];
+      }
       const { data, error } = await supabase
         .from("players")
         .select("id, name, first_name, position")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
-      return data;
+      return data as any[];
     },
   });
 
@@ -95,23 +111,74 @@ export function MatchLineupDialog({
     enabled: !!matchId,
   });
 
+  // Build athletics players (with their pairs) from the players query
+  const athleticsPlayers: AthleticsLineupPlayer[] = isAthletics && players
+    ? (players as any[]).map((p) => {
+        const fullName = [p.first_name, p.name].filter(Boolean).join(" ") || "Athlète inconnu";
+        const pairs: { discipline: string; specialty: string | null }[] = [];
+        const arr = Array.isArray(p.disciplines) ? p.disciplines : [];
+        const arrSpec = Array.isArray(p.specialties) ? p.specialties : [];
+        if (arr.length > 0) {
+          arr.forEach((d: string, i: number) => {
+            if (d) pairs.push({ discipline: d, specialty: arrSpec[i] || null });
+          });
+        } else if (p.discipline) {
+          pairs.push({ discipline: p.discipline, specialty: p.specialty || null });
+        }
+        return { playerId: p.id, playerName: fullName, pairs };
+      })
+    : [];
+
   useEffect(() => {
-    if (players && players.length > 0) {
-      const lineup = players.map((player) => {
-        const existing = existingLineup?.find((l) => l.player_id === player.id);
-        const fullName = [player.first_name, player.name].filter(Boolean).join(" ") || "Athlète inconnu";
-        return {
-          playerId: player.id,
-          playerName: fullName,
-          isStarter: existing?.is_starter ?? false,
-          position: existing?.position ?? "",
-          minutesPlayed: existing?.minutes_played ?? 0,
-          isSelected: !!existing,
-        };
+    if (!players || players.length === 0) return;
+
+    if (isAthletics) {
+      // Build entries: one per (player × pair); pre-check those already saved in the lineup
+      const initialEntries: AthleticsLineupEntry[] = [];
+      (players as any[]).forEach((p) => {
+        const arr = Array.isArray(p.disciplines) ? p.disciplines : [];
+        const arrSpec = Array.isArray(p.specialties) ? p.specialties : [];
+        const pairs: { discipline: string; specialty: string | null }[] = [];
+        if (arr.length > 0) {
+          arr.forEach((d: string, i: number) => {
+            if (d) pairs.push({ discipline: d, specialty: arrSpec[i] || null });
+          });
+        } else if (p.discipline) {
+          pairs.push({ discipline: p.discipline, specialty: p.specialty || null });
+        }
+        pairs.forEach((pair) => {
+          const existing = existingLineup?.find(
+            (l: any) =>
+              l.player_id === p.id &&
+              (l.discipline ?? null) === pair.discipline &&
+              (l.specialty ?? null) === (pair.specialty || null),
+          );
+          initialEntries.push({
+            playerId: p.id,
+            discipline: pair.discipline,
+            specialty: pair.specialty,
+            isSelected: !!existing,
+          });
+        });
       });
-      setLineupData(lineup);
+      setAthleticsEntries(initialEntries);
+      return;
     }
-  }, [players, existingLineup]);
+
+    const lineup = (players as any[]).map((player) => {
+      const existing = existingLineup?.find((l) => l.player_id === player.id);
+      const fullName = [player.first_name, player.name].filter(Boolean).join(" ") || "Athlète inconnu";
+      return {
+        playerId: player.id,
+        playerName: fullName,
+        isStarter: existing?.is_starter ?? false,
+        position: existing?.position ?? "",
+        minutesPlayed: existing?.minutes_played ?? 0,
+        isSelected: !!existing,
+      };
+    });
+    setLineupData(lineup);
+  }, [players, existingLineup, isAthletics]);
 
   const saveLineup = useMutation({
     mutationFn: async () => {
@@ -121,6 +188,25 @@ export function MatchLineupDialog({
         .delete()
         .eq("match_id", matchId);
       if (deleteError) throw deleteError;
+
+      if (isAthletics) {
+        const selected = athleticsEntries.filter((e) => e.isSelected);
+        if (selected.length > 0) {
+          const { error } = await supabase.from("match_lineups").insert(
+            selected.map((e) => ({
+              match_id: matchId,
+              player_id: e.playerId,
+              discipline: e.discipline,
+              specialty: e.specialty,
+              is_starter: true,
+              position: null,
+              minutes_played: 0,
+            })),
+          );
+          if (error) throw error;
+        }
+        return { selectedCount: selected.length };
+      }
 
       // Insert new lineup
       const selectedPlayers = lineupData.filter((p) => p.isSelected);
@@ -161,6 +247,24 @@ export function MatchLineupDialog({
     );
   };
 
+  const toggleAthleticsEntry = (
+    playerId: string,
+    discipline: string | null,
+    specialty: string | null,
+    selected: boolean,
+  ) => {
+    setAthleticsEntries((prev) =>
+      prev.map((e) =>
+        e.playerId === playerId &&
+        (e.discipline ?? null) === (discipline ?? null) &&
+        (e.specialty ?? null) === (specialty ?? null)
+          ? { ...e, isSelected: selected }
+          : e,
+      ),
+    );
+  };
+
+
   const handleFieldLineupChange = (fieldLineup: Record<string, string>, substitutes: string[]) => {
     // Update lineup from field visualization
     setLineupData(prev => prev.map(p => {
@@ -179,7 +283,13 @@ export function MatchLineupDialog({
     }));
   };
 
-  const selectedCount = lineupData?.filter((p) => p.isSelected).length ?? 0;
+  const athleticsSelectedCount = athleticsEntries.filter((e) => e.isSelected).length;
+  const athleticsAthleteCount = new Set(
+    athleticsEntries.filter((e) => e.isSelected).map((e) => e.playerId),
+  ).size;
+  const selectedCount = isAthletics
+    ? athleticsAthleteCount
+    : (lineupData?.filter((p) => p.isSelected).length ?? 0);
   const starterCount = lineupData?.filter((p) => p.isSelected && p.isStarter).length ?? 0;
   const substituteCount = lineupData?.filter((p) => p.isSelected && !p.isStarter).length ?? 0;
   
@@ -208,9 +318,9 @@ export function MatchLineupDialog({
               <Users className="h-5 w-5" />
               {isDoublesMatch 
                 ? `Paire${isPadel ? " de Padel" : " de Double"}`
-                : isIndividual ? "Participants" : `Composition - ${fieldConfig.label}`}
+                : isAthletics ? "Inscriptions par épreuve" : isIndividual ? "Participants" : `Composition - ${fieldConfig.label}`}
             </div>
-            {hasFieldLayout && !isIndividual && !isDoublesMatch && (
+            {hasFieldLayout && !isIndividual && !isDoublesMatch && !isAthletics && (
               <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "list" | "field")}>
                 <TabsList className="h-8">
                   <TabsTrigger value="field" className="px-2 h-7">
@@ -228,11 +338,13 @@ export function MatchLineupDialog({
         <div className="flex gap-4 text-sm text-muted-foreground mb-2 flex-shrink-0 flex-wrap">
           <span className="flex items-center gap-1">
             <UserCheck className="h-4 w-4" />
-            {isDoublesMatch 
-              ? `${selectedCount}/2 joueurs sélectionnés`
-              : `${selectedCount} ${isIndividual ? "participants" : "athlètes"}`}
+            {isAthletics
+              ? `${selectedCount} athlète${selectedCount > 1 ? "s" : ""} • ${athleticsSelectedCount} épreuve${athleticsSelectedCount > 1 ? "s" : ""}`
+              : isDoublesMatch
+                ? `${selectedCount}/2 joueurs sélectionnés`
+                : `${selectedCount} ${isIndividual ? "participants" : "athlètes"}`}
           </span>
-          {!isIndividual && !isDoublesMatch && (
+          {!isIndividual && !isDoublesMatch && !isAthletics && (
             <>
               <span>{starterCount}/{fieldConfig.starters} titulaires</span>
               <span>{substituteCount}/{fieldConfig.substitutes} remplaçants</span>
@@ -242,8 +354,14 @@ export function MatchLineupDialog({
 
         <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="pr-2">
-            {/* Doubles match: pair selection (max 2) */}
-            {isDoublesMatch ? (
+            {/* Athletics: per-event selection */}
+            {isAthletics ? (
+              <AthleticsLineupSection
+                players={athleticsPlayers}
+                entries={athleticsEntries}
+                onToggle={toggleAthleticsEntry}
+              />
+            ) : isDoublesMatch ? (
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground mb-3">
                   Sélectionnez les 2 joueurs qui forment la paire pour ce match.
