@@ -297,6 +297,16 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
                   <Settings2 className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Ligne</span>
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1 text-xs border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+                  onClick={() => setAddCompetitionsOpen(true)}
+                >
+                  <Trophy className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Ajouter les compétitions</span>
+                  <span className="sm:hidden">Compét.</span>
+                </Button>
                 <Button size="sm" className="h-8 gap-1 text-xs" onClick={() => { setAddCyclePreselectedCategory(null); setAddCycleOpen(true); }}>
                   <Plus className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Cycle</span>
