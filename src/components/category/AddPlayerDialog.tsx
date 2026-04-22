@@ -371,47 +371,99 @@ export function AddPlayerDialog({
             )}
 
             {isAthletics && (
-              <div className="space-y-2">
-                <Label htmlFor="discipline">Discipline *</Label>
-                <Select 
-                  value={discipline} 
-                  onValueChange={(val) => {
-                    setDiscipline(val);
-                    setSpecialty(""); // Reset specialty when discipline changes
-                  }}
-                >
-                  <SelectTrigger className="w-full bg-background">
-                    <SelectValue placeholder="Sélectionner une discipline" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border z-50">
-                    {ATHLETISME_DISCIPLINES.map((disc) => (
-                      <SelectItem key={disc.value} value={disc.value}>
-                        {disc.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {isAthletics && discipline && availableSpecialties.length > 0 && (
-              <div className="space-y-2">
-                <Label htmlFor="specialty">Spécialité *</Label>
-                <Select value={specialty} onValueChange={setSpecialty}>
-                  <SelectTrigger className="w-full bg-background">
-                    <SelectValue placeholder="Sélectionner une spécialité" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border z-50">
-                    {availableSpecialties.map((spec) => (
-                      <SelectItem key={spec.value} value={spec.value}>
-                        {spec.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-2 rounded-lg border p-3 bg-muted/20">
+                <Label className="text-sm font-medium">Disciplines pratiquées *</Label>
                 <p className="text-xs text-muted-foreground">
-                  Permet de comparer les athlètes sur la même épreuve
+                  Un athlète peut pratiquer plusieurs disciplines (ex. sprint + saut). La 1ʳᵉ ajoutée est la discipline principale.
                 </p>
+
+                {/* Existing pairs */}
+                {disciplinePairs.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {disciplinePairs.map((pair, i) => {
+                      const discLabel =
+                        ATHLETISME_DISCIPLINES.find((d) => d.value === pair.discipline)?.label ||
+                        pair.discipline;
+                      const specLabel = pair.specialty
+                        ? (ATHLETISME_SPECIALTIES[pair.discipline] || []).find(
+                            (s) => s.value === pair.specialty,
+                          )?.label || pair.specialty
+                        : null;
+                      return (
+                        <Badge
+                          key={`${pair.discipline}-${pair.specialty}-${i}`}
+                          variant={i === 0 ? "default" : "secondary"}
+                          className="gap-1.5 pr-1"
+                        >
+                          <span>
+                            {discLabel}
+                            {specLabel ? ` · ${specLabel}` : ""}
+                            {i === 0 ? " (principale)" : ""}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeDisciplinePair(i)}
+                            className="ml-1 rounded-sm hover:bg-foreground/10 p-0.5"
+                            aria-label="Retirer cette discipline"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Draft adder row */}
+                <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                  <Select
+                    value={draftDiscipline}
+                    onValueChange={(val) => {
+                      setDraftDiscipline(val);
+                      setDraftSpecialty("");
+                    }}
+                  >
+                    <SelectTrigger className="w-full bg-background">
+                      <SelectValue placeholder="Discipline" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border z-50">
+                      {ATHLETISME_DISCIPLINES.map((disc) => (
+                        <SelectItem key={disc.value} value={disc.value}>
+                          {disc.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {availableSpecialties.length > 0 && (
+                    <Select value={draftSpecialty} onValueChange={setDraftSpecialty}>
+                      <SelectTrigger className="w-full bg-background">
+                        <SelectValue placeholder="Spécialité" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border z-50">
+                        {availableSpecialties.map((spec) => (
+                          <SelectItem key={spec.value} value={spec.value}>
+                            {spec.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={addDisciplinePair}
+                    disabled={
+                      !draftDiscipline ||
+                      (availableSpecialties.length > 0 && !draftSpecialty)
+                    }
+                    aria-label="Ajouter cette discipline"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             )}
 
