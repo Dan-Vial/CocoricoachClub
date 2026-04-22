@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, Pencil, Target, Trophy } from "lucide-react";
 import { ATHLETISME_DISCIPLINES, ATHLETISME_SPECIALTIES } from "@/lib/constants/sportTypes";
 import { getDefaultUnitForDiscipline } from "@/lib/athletics/recordsHelpers";
+import { MINIMA_LEVELS, getMinimaLevel } from "@/lib/athletics/minimaLevels";
 import { toast } from "sonner";
 
 interface Props {
@@ -22,6 +23,7 @@ interface Minima {
   discipline: string;
   specialty: string | null;
   label: string;
+  level: string;
   target_value: number;
   unit: string;
   lower_is_better: boolean;
@@ -37,6 +39,7 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
   const [discipline, setDiscipline] = useState("");
   const [specialty, setSpecialty] = useState<string>(NONE_SPECIALTY);
   const [label, setLabel] = useState("Minima fédéral");
+  const [level, setLevel] = useState("national");
   const [targetValue, setTargetValue] = useState("");
   const [unit, setUnit] = useState("sec");
   const [lowerIsBetter, setLowerIsBetter] = useState(true);
@@ -61,6 +64,7 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
     setDiscipline("");
     setSpecialty(NONE_SPECIALTY);
     setLabel("Minima fédéral");
+    setLevel("national");
     setTargetValue("");
     setUnit("sec");
     setLowerIsBetter(true);
@@ -77,6 +81,7 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
     setDiscipline(m.discipline);
     setSpecialty(m.specialty || NONE_SPECIALTY);
     setLabel(m.label);
+    setLevel(m.level || "national");
     setTargetValue(String(m.target_value));
     setUnit(m.unit);
     setLowerIsBetter(m.lower_is_better);
@@ -106,6 +111,7 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
         discipline,
         specialty: specialty === NONE_SPECIALTY ? null : specialty,
         label: label || "Minima fédéral",
+        level,
         target_value: target,
         unit,
         lower_is_better: lowerIsBetter,
@@ -145,13 +151,16 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
     onError: () => toast.error("Erreur lors de la suppression"),
   });
 
-  // Group by discipline
+  // Group by discipline + sort by level rank desc (most prestigious first)
   const grouped = minimas.reduce((acc, m) => {
     const disc = ATHLETISME_DISCIPLINES.find((d) => d.value === m.discipline)?.label || m.discipline;
     if (!acc[disc]) acc[disc] = [];
     acc[disc].push(m);
     return acc;
   }, {} as Record<string, Minima[]>);
+  Object.values(grouped).forEach((items) => {
+    items.sort((a, b) => (getMinimaLevel(b.level)?.rank || 0) - (getMinimaLevel(a.level)?.rank || 0));
+  });
 
   const availableSpecialties = discipline ? ATHLETISME_SPECIALTIES[discipline] || [] : [];
 
@@ -213,11 +222,26 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
                 </div>
               )}
               <div>
+                <Label className="text-xs">Niveau du minima *</Label>
+                <Select value={level} onValueChange={setLevel}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisir un niveau" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[200]">
+                    {MINIMA_LEVELS.map((l) => (
+                      <SelectItem key={l.value} value={l.value}>
+                        {l.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <Label className="text-xs">Libellé</Label>
                 <Input
                   value={label}
                   onChange={(e) => setLabel(e.target.value)}
-                  placeholder="Ex: Minima France élite"
+                  placeholder="Ex: Minima France élite, Standard A JO Paris…"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -301,7 +325,15 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
                       key={m.id}
                       className="flex items-center justify-between gap-2 rounded-md border bg-card p-2.5 text-sm"
                     >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
+                        {(() => {
+                          const lvl = getMinimaLevel(m.level);
+                          return lvl ? (
+                            <Badge className={`text-xs border-transparent ${lvl.badgeClass}`}>
+                              {lvl.label}
+                            </Badge>
+                          ) : null;
+                        })()}
                         {m.specialty && (
                           <Badge variant="outline" className="text-xs">
                             {m.specialty}
