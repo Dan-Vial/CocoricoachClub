@@ -425,6 +425,7 @@ export function MatchLineupDialog({
                 players={athleticsPlayers}
                 entries={athleticsEntries}
                 onToggle={toggleAthleticsEntry}
+                onPromoteFirst={promoteAthleticsEntry}
               />
             ) : isDoublesMatch ? (
               <div className="space-y-2">
