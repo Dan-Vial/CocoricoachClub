@@ -220,9 +220,16 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   const handleDateRangeSelect = useCallback((start: Date, end: Date) => {
     setPrefilledStartDate(start);
     setPrefilledEndDate(end);
+    // If the active line is the "Compétitions" line, open the competitions dialog
+    // pre-filled with the selected period instead of creating a periodization cycle.
+    const activeCat = categories.find(c => c.id === activeCategoryId);
+    if (activeCat && /comp[ée]tition/i.test(activeCat.name)) {
+      setAddCompetitionsOpen(true);
+      return;
+    }
     setAddCyclePreselectedCategory(activeCategoryId);
     setAddCycleOpen(true);
-  }, [activeCategoryId]);
+  }, [activeCategoryId, categories]);
 
   return (
     <div className="space-y-4">
@@ -470,9 +477,17 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
       />
       <AddMultipleCompetitionsDialog
         open={addCompetitionsOpen}
-        onOpenChange={setAddCompetitionsOpen}
+        onOpenChange={(open) => {
+          setAddCompetitionsOpen(open);
+          if (!open) {
+            setPrefilledStartDate(undefined);
+            setPrefilledEndDate(undefined);
+          }
+        }}
         categoryId={categoryId}
         sportType={categoryData?.rugby_type}
+        prefilledStartDate={prefilledStartDate}
+        prefilledEndDate={prefilledEndDate}
       />
       {editingCycle && (
         <EditCycleDialog
