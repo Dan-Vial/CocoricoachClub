@@ -101,6 +101,8 @@ function IntensityDots({ value, max = 10 }: { value: number; max?: number }) {
 
 export function AnnualTimelineView({
   year,
+  periodStart,
+  periodEnd,
   categories,
   cycles,
   sessions,
@@ -113,8 +115,8 @@ export function AnnualTimelineView({
   const navigate = useNavigate();
   const params = useParams();
   const routeCategoryId = params.id || params.categoryId;
-  const yearStart = startOfYear(new Date(year, 0, 1));
-  const yearEnd = endOfYear(new Date(year, 0, 1));
+  const yearStart = periodStart ?? startOfYear(new Date(year, 0, 1));
+  const yearEnd = periodEnd ?? endOfYear(new Date(year, 0, 1));
   const months = eachMonthOfInterval({ start: yearStart, end: yearEnd });
   const totalDays = differenceInDays(yearEnd, yearStart) + 1;
 
