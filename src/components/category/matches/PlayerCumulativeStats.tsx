@@ -1145,72 +1145,86 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
             }
 
             chunks.forEach((chunk, chunkIdx) => {
-              if (y > pageH - 50) { doc.addPage(); y = 15; }
+              const rowH = 6.5;
+              const headerH = 7.5;
+              const titleH = group.label ? 6.5 : 0;
+              const sortedPlayers = [...exportStats].sort((a, b) => {
+                const firstStat = chunk[0]?.key;
+                return firstStat ? (b.sportData[firstStat] || 0) - (a.sportData[firstStat] || 0) : 0;
+              });
+              const blockH = titleH + headerH + sortedPlayers.length * rowH + 4;
+              if (y + blockH > pageH - 12) { doc.addPage(); y = 15; }
 
-              // Sub-group colored title band
+              // Sub-group title band
               if (group.label) {
                 doc.setFillColor(...palette.head);
                 doc.setDrawColor(...palette.border);
                 doc.setLineWidth(0.4);
-                doc.roundedRect(14, y, pageW - 28, 6, 1.5, 1.5, "FD");
-                doc.setFontSize(7);
+                doc.roundedRect(14, y, innerW, titleH, 1.5, 1.5, "FD");
+                doc.setFontSize(7.5);
                 doc.setFont("helvetica", "bold");
                 doc.setTextColor(...palette.accent);
                 const subTitle = `${String(group.label).toUpperCase()}${chunks.length > 1 ? ` (${chunkIdx + 1}/${chunks.length})` : ""}`;
-                doc.text(subTitle, 17, y + 4.2);
-                y += 7;
+                doc.text(subTitle, 17, y + 4.6);
+                y += titleH + 1;
               }
 
-              const colWidths = [55, 18, ...chunk.flatMap(() => [20, 16])];
-              const headers = ["Athlète", "M", ...chunk.flatMap(s => [s.label || s.shortLabel, "+/-"])];
-              // Header row tinted with the sub-group's body color
+              // Header row — full-width with adaptive column count
               doc.setFillColor(...palette.body);
-              doc.rect(14, y, pageW - 28, 7, "F");
-              doc.setFontSize(7);
+              doc.rect(14, y, innerW, headerH, "F");
+              doc.setFontSize(6.5);
               doc.setFont("helvetica", "bold");
               doc.setTextColor(...palette.accent);
-              let x = 14;
-              headers.forEach((h, i) => {
-                const maxLen = i <= 1 ? 10 : 14;
-                const txt = h.length > maxLen ? h.substring(0, maxLen - 1) + "…" : h;
-                doc.text(txt, x + 1, y + 5);
-                x += colWidths[i] || 18;
+              doc.text("Athlète", 14 + 2, y + 4.8);
+              doc.text("M", 14 + athleteColW + matchesColW / 2, y + 4.8, { align: "center" });
+
+              chunk.forEach((s, i) => {
+                const sx = 14 + athleteColW + matchesColW + i * statPairW;
+                const fullLabel = s.label || s.shortLabel || "";
+                const labelMax = Math.max(8, Math.floor(statPairW * 0.55));
+                const labelTxt = fullLabel.length > labelMax ? fullLabel.substring(0, labelMax - 1) + "…" : fullLabel;
+                doc.setFontSize(6.5);
+                doc.setTextColor(...palette.accent);
+                doc.text(labelTxt, sx + 2, y + 4.8);
+                doc.setFontSize(5.5);
+                doc.setTextColor(100, 116, 139);
+                doc.text("+/-", sx + valColW + progColW / 2, y + 4.8, { align: "center" });
               });
-              y += 9;
+              y += headerH + 0.5;
+
+              // Data rows
               doc.setFont("helvetica", "normal");
-
-              const sorted = [...exportStats].sort((a, b) => {
-                const firstStat = chunk[0]?.key;
-                return firstStat ? (b.sportData[firstStat] || 0) - (a.sportData[firstStat] || 0) : 0;
-              });
-
-              sorted.forEach((p, rowIdx) => {
-                if (y > pageH - 15) { doc.addPage(); y = 15; }
-                // Subtle zebra tint with the sub-group palette
+              sortedPlayers.forEach((p, rowIdx) => {
+                if (y > pageH - 10) { doc.addPage(); y = 15; }
                 if (rowIdx % 2 === 0) {
                   doc.setFillColor(...palette.body);
-                  doc.rect(14, y - 2, pageW - 28, 7, "F");
+                  doc.rect(14, y - 1, innerW, rowH, "F");
                 }
-                x = 14;
+
                 doc.setTextColor(30, 41, 59);
                 doc.setFontSize(7);
-                doc.text(p.playerName.substring(0, 18), x + 1, y + 4);
-                x += colWidths[0];
-                doc.text(String(p.matchesPlayed), x + 1, y + 4);
-                x += colWidths[1];
+                doc.setFont("helvetica", "normal");
+                const nameMax = Math.floor(athleteColW / 1.6);
+                const nameTxt = p.playerName.length > nameMax ? p.playerName.substring(0, nameMax - 1) + "…" : p.playerName;
+                doc.text(nameTxt, 14 + 2, y + 3.5);
+                doc.text(String(p.matchesPlayed), 14 + athleteColW + matchesColW / 2, y + 3.5, { align: "center" });
+
                 chunk.forEach((s, i) => {
+                  const sx = 14 + athleteColW + matchesColW + i * statPairW;
                   const val = p.sportData[s.key] || 0;
+                  doc.setFont("helvetica", "normal");
                   doc.setTextColor(30, 41, 59);
-                  doc.text(s.computedFrom ? `${val}%` : String(val), x + 1, y + 4);
-                  x += colWidths[2 + i * 2];
+                  doc.text(s.computedFrom ? `${val}%` : String(val), sx + valColW / 2, y + 3.5, { align: "center" });
+
+                  // +/- in BOLD with color coding
                   const prog = playerProgressions[p.playerId]?.[s.key] || 0;
+                  doc.setFont("helvetica", "bold");
                   if (prog > 0) doc.setTextColor(22, 163, 74);
                   else if (prog < 0) doc.setTextColor(220, 38, 38);
-                  else doc.setTextColor(100, 116, 139);
-                  doc.text(prog > 0 ? `+${prog}` : String(prog), x + 1, y + 4);
-                  x += colWidths[3 + i * 2] || 16;
+                  else doc.setTextColor(148, 163, 184);
+                  doc.text(prog > 0 ? `+${prog}` : String(prog), sx + valColW + progColW / 2, y + 3.5, { align: "center" });
                 });
-                y += 7;
+                y += rowH;
               });
               y += 4;
             });
