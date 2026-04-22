@@ -183,24 +183,29 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
       else toneClass = "bg-amber-500/10 border-amber-500/30";
     }
     return (
-      <div
-        key={stat.key}
-        title={stat.label}
-        className={`${large ? "p-2.5" : "p-1.5"} rounded-md text-center space-y-0 border ${toneClass}`}
-      >
-        <p className={`${large ? "text-xl" : "text-base"} font-bold leading-tight`}>
-          {stat.computedFrom ? `${val}%` : val}
-        </p>
-        <p className={`${large ? "text-[11px]" : "text-[9px]"} text-muted-foreground leading-tight`}>{stat.shortLabel}</p>
-        <div className="flex items-center justify-center gap-0.5 flex-wrap">
-          {!stat.computedFrom && (
-            <span className={`${large ? "text-[10px]" : "text-[9px]"} text-muted-foreground`}>Moy {avg}</span>
-          )}
-          {!neutral && matchesData.length >= 2 && !stat.computedFrom && (
-            <ProgressionBadge value={prog} />
-          )}
-        </div>
-      </div>
+      <Tooltip key={stat.key}>
+        <TooltipTrigger asChild>
+          <div
+            className={`${large ? "p-2.5" : "p-1.5"} rounded-md text-center space-y-0 border ${toneClass}`}
+          >
+            <p className={`${large ? "text-xl" : "text-base"} font-bold leading-tight`}>
+              {stat.computedFrom ? `${val}%` : val}
+            </p>
+            <p className={`${large ? "text-[11px]" : "text-[9px]"} text-muted-foreground leading-tight`}>{stat.shortLabel}</p>
+            <div className="flex items-center justify-center gap-0.5 flex-wrap">
+              {!stat.computedFrom && (
+                <span className={`${large ? "text-[10px]" : "text-[9px]"} text-muted-foreground`}>Moy {avg}</span>
+              )}
+              {!neutral && matchesData.length >= 2 && !stat.computedFrom && (
+                <ProgressionBadge value={prog} />
+              )}
+            </div>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs">
+          <p className="font-semibold">{stat.label}</p>
+        </TooltipContent>
+      </Tooltip>
     );
   };
 
