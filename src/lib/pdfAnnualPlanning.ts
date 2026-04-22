@@ -546,9 +546,10 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
     const maxLabel = pdf.splitTextToSize(labelText, intLabelW - 3)[0] || labelText;
     pdf.text(maxLabel, margin + 2, y + intensityRowH / 2 + 1.2);
 
-    for (let m = 0; m < 12; m++) {
-      const x = margin + intLabelW + m * intColW;
-      const { value } = monthThematicIntensity(data.cycles, catId, data.year, m);
+    for (let i = 0; i < 12; i++) {
+      const { year: yy2, month: mm2 } = monthsSeq[i];
+      const x = margin + intLabelW + i * intColW;
+      const { value } = monthThematicIntensity(data.cycles, catId, yy2, mm2);
 
       if (value === null) {
         pdf.setFillColor(245, 246, 248);
