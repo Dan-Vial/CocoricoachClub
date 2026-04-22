@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { format, startOfYear, endOfYear, differenceInDays, startOfMonth, endOfMonth, eachMonthOfInterval, isWithinInterval, eachWeekOfInterval, startOfWeek, endOfWeek } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -463,67 +463,143 @@ export function AnnualTimelineView({
 
         {/* LOAD BAR (global intensity visualization)
             Pour chaque jour de l'année, on calcule la moyenne des intensités
-            de tous les cycles actifs ce jour-là, puis on associe la couleur
-            correspondante (référentiel 0→10 : vert clair → rouge foncé). */}
-        {categories.length > 0 && (() => {
-          // Calcule l'intensité moyenne de chaque jour de l'année
-          const dailyAvg: number[] = [];
-          for (let d = 0; d < totalDays; d++) {
-            const day = new Date(yearStart);
-            day.setDate(yearStart.getDate() + d);
-            const active = cycles.filter(c => {
-              const cs = new Date(c.start_date);
-              const ce = new Date(c.end_date);
-              return day >= cs && day <= ce;
-            });
-            const sum = active.reduce((s, c) => s + (c.intensity || 0), 0);
-            dailyAvg.push(active.length > 0 ? sum / active.length : 0);
-          }
+            de tous les cycles actifs ce jour-là (filtrés par thématique sélectionnée),
+            puis on associe la couleur (référentiel 0→10 : vert clair → rouge foncé). */}
+        {categories.length > 0 && (
+          <LoadBar
+            categories={categories}
+            cycles={cycles}
+            yearStart={yearStart}
+            totalDays={totalDays}
+            labelWidth={labelWidth}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
 
-          // Moyenne globale (pour la légende / tooltip)
-          const overallAvg = dailyAvg.reduce((a, b) => a + b, 0) / Math.max(1, dailyAvg.filter(v => v > 0).length || 1);
+// ─── LoadBar : barre de charge globale avec filtre par thématique ───
+interface LoadBarProps {
+  categories: PeriodizationCategory[];
+  cycles: PeriodizationCycle[];
+  yearStart: Date;
+  totalDays: number;
+  labelWidth: string;
+}
 
-          // Regroupe les jours consécutifs ayant la même couleur (pour limiter le nombre de div)
-          const segments: { start: number; length: number; color: string }[] = [];
-          let cursor = 0;
-          while (cursor < dailyAvg.length) {
-            const color = getLoadColor(dailyAvg[cursor]);
-            let len = 1;
-            while (cursor + len < dailyAvg.length && getLoadColor(dailyAvg[cursor + len]) === color) {
-              len++;
-            }
-            segments.push({ start: cursor, length: len, color });
-            cursor += len;
-          }
+function LoadBar({ categories, cycles, yearStart, totalDays, labelWidth }: LoadBarProps) {
+  // null = toutes les thématiques (moyenne globale)
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
+  const { segments, overallAvg } = useMemo(() => {
+    const filteredCycles = selectedCategoryId
+      ? cycles.filter(c => c.periodization_category_id === selectedCategoryId)
+      : cycles;
+
+    const dailyAvg: number[] = [];
+    for (let d = 0; d < totalDays; d++) {
+      const day = new Date(yearStart);
+      day.setDate(yearStart.getDate() + d);
+      const active = filteredCycles.filter(c => {
+        const cs = new Date(c.start_date);
+        const ce = new Date(c.end_date);
+        return day >= cs && day <= ce;
+      });
+      const sum = active.reduce((s, c) => s + (c.intensity || 0), 0);
+      dailyAvg.push(active.length > 0 ? sum / active.length : 0);
+    }
+
+    const nonZero = dailyAvg.filter(v => v > 0);
+    const avg = nonZero.length > 0
+      ? nonZero.reduce((a, b) => a + b, 0) / nonZero.length
+      : 0;
+
+    const segs: { start: number; length: number; color: string }[] = [];
+    let cursor = 0;
+    while (cursor < dailyAvg.length) {
+      const color = getLoadColor(dailyAvg[cursor]);
+      let len = 1;
+      while (cursor + len < dailyAvg.length && getLoadColor(dailyAvg[cursor + len]) === color) {
+        len++;
+      }
+      segs.push({ start: cursor, length: len, color });
+      cursor += len;
+    }
+    return { segments: segs, overallAvg: avg };
+  }, [selectedCategoryId, cycles, yearStart, totalDays]);
+
+  const sortedCats = [...categories].sort((a, b) => a.sort_order - b.sort_order);
+
+  return (
+    <div className="mt-1 space-y-1.5">
+      {/* Filter chips */}
+      <div className="flex items-center gap-1.5 flex-wrap pl-3">
+        <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/70 mr-1">
+          Filtre :
+        </span>
+        <button
+          type="button"
+          onClick={() => setSelectedCategoryId(null)}
+          className={cn(
+            "px-2 py-0.5 rounded-full text-[10px] font-medium border transition-all",
+            selectedCategoryId === null
+              ? "bg-foreground text-background border-foreground shadow-sm"
+              : "bg-background text-muted-foreground border-border/50 hover:border-foreground/40 hover:text-foreground"
+          )}
+        >
+          Toutes
+        </button>
+        {sortedCats.map(cat => {
+          const isActive = selectedCategoryId === cat.id;
           return (
-            <div className="flex mt-1">
-              <div style={{ width: labelWidth, minWidth: labelWidth }} className="shrink-0 flex items-center px-3">
-                <Flame className="h-3.5 w-3.5 text-orange-500 mr-1.5" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  Charge
-                </span>
-                <span className="ml-2 text-[10px] text-muted-foreground">
-                  ⌀ {overallAvg.toFixed(1)}/10
-                </span>
-              </div>
-              <div className="flex-1 relative h-6 rounded-md overflow-hidden border border-border/30">
-                {segments.map((seg, i) => (
-                  <div
-                    key={i}
-                    className="absolute top-0 h-full"
-                    style={{
-                      left: `${(seg.start / totalDays) * 100}%`,
-                      width: `${(seg.length / totalDays) * 100}%`,
-                      backgroundColor: seg.color,
-                    }}
-                    title={`Jours ${seg.start + 1}–${seg.start + seg.length}`}
-                  />
-                ))}
-              </div>
-            </div>
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setSelectedCategoryId(cat.id)}
+              className={cn(
+                "px-2 py-0.5 rounded-full text-[10px] font-medium border transition-all flex items-center gap-1",
+                isActive
+                  ? "text-white shadow-sm"
+                  : "bg-background text-muted-foreground border-border/50 hover:border-foreground/40 hover:text-foreground"
+              )}
+              style={isActive ? { backgroundColor: cat.color, borderColor: cat.color } : undefined}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: isActive ? "white" : cat.color }}
+              />
+              {cat.name}
+            </button>
           );
-        })()}
+        })}
+      </div>
+
+      {/* Load bar */}
+      <div className="flex">
+        <div style={{ width: labelWidth, minWidth: labelWidth }} className="shrink-0 flex items-center px-3">
+          <Flame className="h-3.5 w-3.5 text-orange-500 mr-1.5" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            Charge
+          </span>
+          <span className="ml-2 text-[10px] text-muted-foreground">
+            ⌀ {overallAvg.toFixed(1)}/10
+          </span>
+        </div>
+        <div className="flex-1 relative h-6 rounded-md overflow-hidden border border-border/30">
+          {segments.map((seg, i) => (
+            <div
+              key={i}
+              className="absolute top-0 h-full"
+              style={{
+                left: `${(seg.start / totalDays) * 100}%`,
+                width: `${(seg.length / totalDays) * 100}%`,
+                backgroundColor: seg.color,
+              }}
+              title={`Jours ${seg.start + 1}–${seg.start + seg.length}`}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
