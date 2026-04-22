@@ -510,6 +510,8 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
           )}
           <YearCalendarGrid
             year={selectedYear.getFullYear()}
+            periodStart={periodStart}
+            periodEnd={periodEnd}
             cycles={cycles}
             sessions={sessions}
             matches={matches}
