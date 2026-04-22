@@ -1234,7 +1234,17 @@ export function CompetitionRoundsDialog({
 
                           {/* Athletics-specific round info */}
                           {isAthletics && (
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                              <div>
+                                <Label className="text-xs">Date de l'épreuve</Label>
+                                <Input
+                                  type="date"
+                                  value={round.roundDate || matchData?.match_date?.split("T")[0] || ""}
+                                  onChange={(e) => updateRound(selectedPlayer.entryKey, round.round_number, { roundDate: e.target.value })}
+                                  className="h-8"
+                                  disabled={round.isLocked}
+                                />
+                              </div>
                               <div>
                                 <Label className="text-xs">Classement</Label>
                                 <Input
@@ -1244,6 +1254,26 @@ export function CompetitionRoundsDialog({
                                   value={round.ranking || ""}
                                   onChange={(e) => updateRound(selectedPlayer.entryKey, round.round_number, { ranking: parseInt(e.target.value) || undefined })}
                                   placeholder="1"
+                                  className="h-8"
+                                  disabled={round.isLocked}
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Temps / Perf</Label>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  onWheel={blurOnWheel}
+                                  value={round.final_time_seconds ?? ""}
+                                  onChange={(e) => {
+                                    const v = parseFloat(e.target.value);
+                                    updateRound(
+                                      selectedPlayer.entryKey,
+                                      round.round_number,
+                                      { final_time_seconds: Number.isFinite(v) ? v : undefined },
+                                    );
+                                  }}
+                                  placeholder="ex: 11.42"
                                   className="h-8"
                                   disabled={round.isLocked}
                                 />
