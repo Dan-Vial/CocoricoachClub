@@ -185,7 +185,7 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
       <div
         key={stat.key}
         title={stat.label}
-        className={`${large ? "p-2.5" : "p-1.5"} rounded-md text-center space-y-0 border ${toneClass} cursor-help`}
+        className={`${large ? "p-2.5" : "p-1.5"} rounded-md text-center space-y-0 border ${toneClass}`}
       >
         <p className={`${large ? "text-xl" : "text-base"} font-bold leading-tight`}>
           {stat.computedFrom ? `${val}%` : val}
