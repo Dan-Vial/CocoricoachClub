@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Users, TrendingUp, TrendingDown, Minus, Trophy, Target, Shield, Activity, Dumbbell } from "lucide-react";
 import type { StatField } from "@/lib/constants/sportStats";
 import { getStatCategories } from "@/lib/constants/sportStats";
+import { groupStatsByTheme } from "@/lib/statSubGroups";
 
 interface CumulativeStats {
   playerId: string;
