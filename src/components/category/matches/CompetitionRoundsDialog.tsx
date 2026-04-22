@@ -313,10 +313,16 @@ export function CompetitionRoundsDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("match_lineups")
-        .select("id, player_id, boat_type, crew_role, seat_position, discipline, specialty, players(id, name, first_name, discipline, specialty)")
+        .select("id, player_id, boat_type, crew_role, seat_position, discipline, specialty, start_order, players(id, name, first_name, discipline, specialty)")
         .eq("match_id", matchId);
       if (error) throw error;
-      return data;
+      // Sort by athlete name then by start_order so events appear in starting order
+      return (data || []).sort((a: any, b: any) => {
+        const nameA = [a.players?.first_name, a.players?.name].filter(Boolean).join(" ");
+        const nameB = [b.players?.first_name, b.players?.name].filter(Boolean).join(" ");
+        if (nameA !== nameB) return nameA.localeCompare(nameB);
+        return (a.start_order ?? 999) - (b.start_order ?? 999);
+      });
     },
     enabled: open && !!matchId,
   });
