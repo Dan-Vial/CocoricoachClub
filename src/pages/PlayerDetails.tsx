@@ -253,10 +253,8 @@ function PlayerDetailsContent() {
   const fullName = player.first_name ? `${player.first_name} ${player.name}` : player.name;
   const attributeValue = getAttributeValue();
   const specialtyValue = getSpecialtyValue();
-  // En athlétisme, l'édition discipline/spécialité se fait via l'éditeur multi
-  // (AthleticsDisciplinesEditor) plus bas, qui supporte plusieurs paires.
-  const showAttributeEditor = isTeamSport || isJudo || isAviron;
-  const showSpecialtyEditor = false;
+  const showAttributeEditor = isTeamSport || isAthletics || isJudo || isAviron;
+  const showSpecialtyEditor = isAthletics && player?.discipline;
 
   return (
     <div className="min-h-screen bg-background">

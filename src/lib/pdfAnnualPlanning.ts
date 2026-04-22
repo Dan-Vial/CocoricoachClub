@@ -140,9 +140,10 @@ function drawVerticalText(
 }
 
 /**
- * Auto-fit a font size so that `text` rendered vertically fits within `availableHeight` (mm).
- * Uses jsPDF's real text measurement instead of a rough character ratio so exported labels
- * never get cut off.
+ * Auto-fit a font size so that `text` rendered vertically fits within `availableHeight` (mm)
+ * AND the chosen font size stays below `maxLateralFs` (visual width of rotated text ≈ font size in mm).
+ * If even the smallest readable size doesn't fit, returns an empty text — the caller must
+ * skip rendering rather than draw something that would overflow the colored band.
  */
 function fitVerticalText(
   pdf: jsPDF,
@@ -151,13 +152,15 @@ function fitVerticalText(
   minFs: number,
   maxFs: number,
   fontStyle: "normal" | "bold" | "italic" = "normal",
+  maxLateralFs: number = Infinity,
 ): { fontSize: number; text: string } {
   if (!text) return { fontSize: minFs, text: "" };
 
   const prevSize = pdf.getFontSize();
   const prevFont = pdf.getFont();
-  let fs = maxFs;
   const floor = Math.max(0.6, minFs);
+  // Hard cap by both the explicit maxFs and the lateral budget (avoid horizontal overflow).
+  let fs = Math.min(maxFs, maxLateralFs);
 
   pdf.setFont("helvetica", fontStyle);
   while (fs >= floor) {
@@ -171,11 +174,10 @@ function fitVerticalText(
     fs -= 0.1;
   }
 
-  // Even at the floor it doesn't fit — keep readable size, accept slight overflow rather
-  // than rendering an unreadable label.
+  // Doesn't fit at the readable floor — caller should not draw anything.
   pdf.setFont(prevFont.fontName || "helvetica", (prevFont.fontStyle as "normal" | "bold" | "italic") || "normal");
   pdf.setFontSize(prevSize);
-  return { fontSize: floor, text };
+  return { fontSize: 0, text: "" };
 }
 
 // Draws a refined gold trophy/cup icon centered on (cx, cy)
@@ -515,32 +517,57 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         const rightLaneCenter = hasTypeLabel
           ? xCol + innerPadding + laneW + laneGap + laneW / 2
           : xCol + innerPadding + laneW / 2;
-        // ── Title (cycle name) — right lane ──
-        // Cap by lane width but with a high floor to keep labels readable, even if it
-        // means slightly using the gap area between lanes.
-        const titleMaxFs = Math.max(5.5, Math.min(12, laneW * 1.0));
-        const titleFit = fitVerticalText(pdf, cycle.name, Math.max(1, usableH - 1.6), 5.0, titleMaxFs, "bold");
+        // Lateral budget: rotated text width ≈ font size in mm. Keep a small safety margin
+        // so the glyph never crosses into the adjacent lane / colored band edge.
+        const lateralBudget = Math.max(0, laneW - 0.4);
 
-        // Type label sizing (computed before drawing so we can align baselines)
-        const typeMaxFs = Math.max(4.5, Math.min(9.5, laneW * 0.9));
+        // Vertical budget: reserve a descender pad up-front so we never overflow downward.
+        // We pre-allocate based on the maximum font size we're willing to consider.
+        const titleMaxFs = Math.min(12, lateralBudget);
+        const typeMaxFs = Math.min(9.5, lateralBudget);
+        const reservedDescender = Math.max(titleMaxFs, typeMaxFs) * 0.3 + 0.5;
+        const verticalBudget = Math.max(0, usableH - reservedDescender);
+
+        // Title (cycle name) — right lane. Skip entirely if it can't fit at a readable size.
+        const titleFit = fitVerticalText(
+          pdf,
+          cycle.name,
+          verticalBudget,
+          3.5,
+          titleMaxFs,
+          "bold",
+          lateralBudget,
+        );
+
+        // Type label — left lane.
         const typeFit = hasTypeLabel
-          ? fitVerticalText(pdf, typeFullLabel, Math.max(1, usableH - 1.6), 4.0, typeMaxFs, "italic")
+          ? fitVerticalText(
+              pdf,
+              typeFullLabel,
+              verticalBudget,
+              3.0,
+              typeMaxFs,
+              "italic",
+              lateralBudget,
+            )
           : { fontSize: 0, text: "" };
 
         // Anchor text at the bottom of the band; vertical text reads upward toward bandTop.
-        // Use a larger descender and side safety pad to forbid any clipping in the export.
         const maxFs = Math.max(titleFit.fontSize, typeFit.fontSize);
         const descenderPad = maxFs * 0.3 + 0.5;
         const titleY = bandBottom - innerPaddingV - descenderPad;
 
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(titleFit.fontSize);
-        pdf.setTextColor(...(lightOnDark ? ([255, 255, 255] as [number, number, number]) : ([30, 35, 50] as [number, number, number])));
-        const titleX = rightLaneCenter + titleFit.fontSize * 0.06;
-        pdf.text(titleFit.text, titleX, titleY, { angle: 90 });
+        // Only draw the title if it actually fits — otherwise leave the band clean.
+        if (titleFit.text && titleFit.fontSize > 0) {
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(titleFit.fontSize);
+          pdf.setTextColor(...(lightOnDark ? ([255, 255, 255] as [number, number, number]) : ([30, 35, 50] as [number, number, number])));
+          const titleX = rightLaneCenter + titleFit.fontSize * 0.06;
+          pdf.text(titleFit.text, titleX, titleY, { angle: 90 });
+        }
 
-        // ── Type label (Préparation Générale, etc.) — left lane — gray italic ──
-        if (hasTypeLabel) {
+        // Type label — only if it fits.
+        if (hasTypeLabel && typeFit.text && typeFit.fontSize > 0) {
           pdf.setFont("helvetica", "italic");
           pdf.setFontSize(typeFit.fontSize);
           pdf.setTextColor(...(lightOnDark ? ([220, 222, 228] as [number, number, number]) : ([110, 115, 130] as [number, number, number])));
