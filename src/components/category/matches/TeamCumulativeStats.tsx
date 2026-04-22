@@ -122,41 +122,8 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
   const isNeutralStat = (key: string) =>
     /minutesplayed|playingtime|starts|manofmatch/i.test(key);
 
-  // Sub-group definitions per category. Order matters; first matching group wins.
-  // Each group bundles related stats inside a category for clearer reading.
-  const subGroupDefs: Record<string, { key: string; label: string; match: (k: string) => boolean }[]> = {
-    general: [
-      { key: "scrums", label: "Mêlées", match: (k) => /^scrum/i.test(k) },
-      { key: "lineouts", label: "Touches", match: (k) => /^lineout/i.test(k) },
-    ],
-    scoring: [
-      { key: "tries", label: "Essais", match: (k) => /^tries$|^tryassists$/i.test(k) },
-      { key: "conversions", label: "Transformations", match: (k) => /^conversion/i.test(k) },
-      { key: "penalties", label: "Pénalités", match: (k) => /^penalt(y|ies)(scored|attempts)?$/i.test(k) || /^penaltyattempts$|^penaltiesscored$/i.test(k) },
-      { key: "drops", label: "Drops", match: (k) => /^drop/i.test(k) },
-    ],
-  };
-
-  const groupStats = (catKey: string, statsList: StatField[]) => {
-    const defs = subGroupDefs[catKey] || [];
-    if (defs.length === 0) return [{ key: "_all", label: null as string | null, items: statsList }];
-    const buckets: { key: string; label: string | null; items: StatField[] }[] = defs.map(d => ({
-      key: d.key, label: d.label, items: [],
-    }));
-    const others: StatField[] = [];
-    statsList.forEach(s => {
-      const def = defs.find(d => d.match(s.key));
-      if (def) {
-        const bucket = buckets.find(b => b.key === def.key)!;
-        bucket.items.push(s);
-      } else {
-        others.push(s);
-      }
-    });
-    const result = buckets.filter(b => b.items.length > 0);
-    if (others.length > 0) result.push({ key: "_others", label: result.length > 0 ? "Autres" : null, items: others });
-    return result;
-  };
+  // Use shared sub-group helper (same logic as PlayerCumulativeStats and stats input)
+  const groupStats = (catKey: string, statsList: StatField[]) => groupStatsByTheme(catKey, statsList);
 
   const renderStatTile = (stat: StatField, opts?: { large?: boolean }) => {
     const large = opts?.large;
