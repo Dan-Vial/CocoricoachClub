@@ -519,12 +519,14 @@ export function CompetitionRoundsDialog({
               phase: round.phase || null,
               lane: round.lane || null,
               wind_conditions: round.wind_conditions || null,
+              wind_direction: round.wind_direction || null,
               current_conditions: round.current_conditions || null,
               temperature_celsius: round.temperature_celsius || null,
               final_time_seconds: round.final_time_seconds || null,
               ranking: round.ranking || null,
               gap_to_first: round.gap_to_first || null,
-            })
+              is_personal_record: !!round.is_personal_record,
+            } as any)
             .select()
             .single();
 
