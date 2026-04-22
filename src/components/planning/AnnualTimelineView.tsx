@@ -423,7 +423,7 @@ export function AnnualTimelineView({
                                 <Flame className="h-3 w-3 text-orange-500" />
                                 <span>Intensité</span>
                                 <IntensityDots value={cycle.intensity} />
-                                <span className="text-muted-foreground">{cycle.intensity}/5</span>
+                                <span className="text-muted-foreground">{cycle.intensity}/10</span>
                               </div>
                             )}
                             {(cycle.volume != null && cycle.volume > 0) && (
@@ -431,7 +431,7 @@ export function AnnualTimelineView({
                                 <Activity className="h-3 w-3 text-blue-500" />
                                 <span>Volume</span>
                                 <IntensityDots value={cycle.volume} />
-                                <span className="text-muted-foreground">{cycle.volume}/5</span>
+                                <span className="text-muted-foreground">{cycle.volume}/10</span>
                               </div>
                             )}
                             {cycle.notes && (
