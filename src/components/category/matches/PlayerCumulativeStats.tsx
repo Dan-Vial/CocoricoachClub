@@ -1809,14 +1809,14 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                     const categoryStats = sportStats.filter(s => s.category === cat.key);
                     return (
                       <TabsContent key={cat.key} value={cat.key}>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-6 gap-1.5">
                           {categoryStats.map(stat => {
                             const val = player.sportData[stat.key] || 0;
                             const prog = playerProgressions[player.playerId]?.[stat.key] || 0;
                             return (
-                              <div key={stat.key} className="p-3 bg-muted/50 rounded-lg text-center space-y-1">
-                                <p className="text-2xl font-bold">{stat.computedFrom ? `${val}%` : val}</p>
-                                <p className="text-xs text-muted-foreground">{stat.shortLabel}</p>
+                              <div key={stat.key} className="p-1.5 bg-muted/50 rounded-md text-center space-y-0 border border-border/50">
+                                <p className="text-base font-bold leading-tight">{stat.computedFrom ? `${val}%` : val}</p>
+                                <p className="text-[10px] text-muted-foreground leading-tight">{stat.shortLabel}</p>
                                 {matchesDataForCharts.length >= 2 && (
                                   <ProgressionIndicator value={prog} />
                                 )}
