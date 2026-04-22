@@ -2271,12 +2271,18 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                             group.items.map((stat, sIdx) => (
                               <TableHead
                                 key={stat.key}
-                                title={stat.label}
                                 className={`text-center ${group.color?.head || ""} ${
                                   gIdx > 0 && sIdx === 0 ? "border-l-2 border-l-background" : ""
                                 }`}
                               >
-                                {stat.shortLabel}
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="inline-block">{stat.shortLabel}</span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="max-w-xs">
+                                    <p className="font-semibold">{stat.label}</p>
+                                  </TooltipContent>
+                                </Tooltip>
                               </TableHead>
                             ))
                           )}
