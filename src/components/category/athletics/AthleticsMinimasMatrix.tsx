@@ -349,7 +349,16 @@ export function AthleticsMinimasMatrix({ categoryId }: Props) {
                             Athlète
                           </TableHead>
                           <TableHead className="text-center whitespace-nowrap">
-                            Meilleure perf.
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-500">PB</span>
+                              <span className="text-[9px] font-normal normal-case text-muted-foreground">Record perso</span>
+                            </div>
+                          </TableHead>
+                          <TableHead className="text-center whitespace-nowrap">
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-500">SB</span>
+                              <span className="text-[9px] font-normal normal-case text-muted-foreground">Saison</span>
+                            </div>
                           </TableHead>
                           {group.minimas.map((m) => {
                             const lvl = getMinimaLevel(m.level);
@@ -390,13 +399,12 @@ export function AthleticsMinimasMatrix({ categoryId }: Props) {
                           );
                           const pb = playerRecord?.personal_best ?? null;
                           const sb = playerRecord?.season_best ?? null;
-                          // Use the best between actual competition perf and stored season best
+                          // Use the best between actual competition perf, stored season best, and personal best
                           const lowerIsBetter = group.minimas[0]?.lower_is_better ?? true;
-                          let displayBest: number | null = best ?? sb ?? pb ?? null;
-                          if (best != null && sb != null) {
-                            displayBest = lowerIsBetter
-                              ? Math.min(best, sb)
-                              : Math.max(best, sb);
+                          const candidates = [best, sb, pb].filter((v): v is number => v != null);
+                          let displayBest: number | null = null;
+                          if (candidates.length > 0) {
+                            displayBest = lowerIsBetter ? Math.min(...candidates) : Math.max(...candidates);
                           }
 
                           return (
@@ -415,13 +423,29 @@ export function AthleticsMinimasMatrix({ categoryId }: Props) {
                                 </div>
                               </TableCell>
                               <TableCell className="text-center">
-                                {displayBest != null ? (
-                                  <span className="font-mono font-semibold text-sm">
-                                    {displayBest.toFixed(2)} {group.minimas[0]?.unit}
+                                {pb != null ? (
+                                  <span className="font-mono font-semibold text-sm text-amber-700 dark:text-amber-500">
+                                    {pb.toFixed(2)} {group.minimas[0]?.unit}
                                   </span>
                                 ) : (
                                   <span className="text-xs text-muted-foreground italic">—</span>
                                 )}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {(() => {
+                                  // SB = best between competition perf of the season and stored season_best
+                                  let sbValue: number | null = best ?? sb ?? null;
+                                  if (best != null && sb != null) {
+                                    sbValue = lowerIsBetter ? Math.min(best, sb) : Math.max(best, sb);
+                                  }
+                                  return sbValue != null ? (
+                                    <span className="font-mono font-semibold text-sm text-sky-700 dark:text-sky-500">
+                                      {sbValue.toFixed(2)} {group.minimas[0]?.unit}
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground italic">—</span>
+                                  );
+                                })()}
                               </TableCell>
                               {group.minimas.map((m) => {
                                 const delta = computeDelta(
