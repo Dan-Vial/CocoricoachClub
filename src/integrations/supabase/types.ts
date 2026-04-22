@@ -3392,6 +3392,7 @@ export type Database = {
           exercise_category: string | null
           exercise_name: string
           group_id: string | null
+          group_order: number | null
           id: string
           library_exercise_id: string | null
           method: string | null
@@ -3418,6 +3419,7 @@ export type Database = {
           exercise_category?: string | null
           exercise_name: string
           group_id?: string | null
+          group_order?: number | null
           id?: string
           library_exercise_id?: string | null
           method?: string | null
@@ -3444,6 +3446,7 @@ export type Database = {
           exercise_category?: string | null
           exercise_name?: string
           group_id?: string | null
+          group_order?: number | null
           id?: string
           library_exercise_id?: string | null
           method?: string | null
