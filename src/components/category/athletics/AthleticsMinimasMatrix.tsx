@@ -349,7 +349,16 @@ export function AthleticsMinimasMatrix({ categoryId }: Props) {
                             Athlète
                           </TableHead>
                           <TableHead className="text-center whitespace-nowrap">
-                            Meilleure perf.
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-500">PB</span>
+                              <span className="text-[9px] font-normal normal-case text-muted-foreground">Record perso</span>
+                            </div>
+                          </TableHead>
+                          <TableHead className="text-center whitespace-nowrap">
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-500">SB</span>
+                              <span className="text-[9px] font-normal normal-case text-muted-foreground">Saison</span>
+                            </div>
                           </TableHead>
                           {group.minimas.map((m) => {
                             const lvl = getMinimaLevel(m.level);
