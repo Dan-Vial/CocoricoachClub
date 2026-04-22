@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -327,22 +328,23 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
 
           {/* Main content tabs */}
           <Tabs defaultValue="chart" className="space-y-4">
-            <TabsList className="flex flex-wrap h-auto gap-1">
-              <TabsTrigger value="chart">Graphique</TabsTrigger>
-              <TabsTrigger value="calendar" className="gap-1">
-                <Calendar className="h-3 w-3" />
+            <ColoredSubTabsList colorKey="performance" className="flex flex-wrap h-auto gap-1">
+              <ColoredSubTabsTrigger value="chart" colorKey="performance" icon={<BarChart3 className="h-4 w-4" />}>
+                Graphique
+              </ColoredSubTabsTrigger>
+              <ColoredSubTabsTrigger value="calendar" colorKey="performance" icon={<Calendar className="h-4 w-4" />}>
                 Calendrier
-              </TabsTrigger>
-              <TabsTrigger value="rpe" className="gap-1">
-                <TrendingUp className="h-3 w-3" />
+              </ColoredSubTabsTrigger>
+              <ColoredSubTabsTrigger value="rpe" colorKey="performance" icon={<TrendingUp className="h-4 w-4" />}>
                 RPE Prévu/Réel
-              </TabsTrigger>
-              <TabsTrigger value="team">Comparaison</TabsTrigger>
-              <TabsTrigger value="distribution" className="gap-1">
-                <BarChart3 className="h-3 w-3" />
+              </ColoredSubTabsTrigger>
+              <ColoredSubTabsTrigger value="team" colorKey="performance" icon={<Users className="h-4 w-4" />}>
+                Comparaison
+              </ColoredSubTabsTrigger>
+              <ColoredSubTabsTrigger value="distribution" colorKey="performance" icon={<BarChart3 className="h-4 w-4" />}>
                 Répartition
-              </TabsTrigger>
-            </TabsList>
+              </ColoredSubTabsTrigger>
+            </ColoredSubTabsList>
 
             <TabsContent value="chart">
               <TrainingLoadChart
