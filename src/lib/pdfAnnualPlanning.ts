@@ -26,6 +26,7 @@ interface PeriodizationCycle {
 interface MatchInfo {
   id: string;
   match_date: string;
+  end_date?: string | null;
   opponent?: string;
   competition?: string | null;
   is_finalized?: boolean | null;
@@ -298,12 +299,26 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
   const monthWidth = totalGridW / monthsCount;
   const cyclesAreaW = monthWidth - monthLabelW;
 
-  // Matches by day
+  // Matches by day — multi-day competitions get a trophy on every day in the range.
   const matchesByDate = new Map<string, MatchInfo[]>();
   sortedMatches.forEach((m) => {
-    const key = m.match_date.split("T")[0];
-    if (!matchesByDate.has(key)) matchesByDate.set(key, []);
-    matchesByDate.get(key)!.push(m);
+    const startKey = m.match_date.split("T")[0];
+    const endKey = (m.end_date || m.match_date).split("T")[0];
+    const start = new Date(startKey + "T00:00:00");
+    const end = new Date(endKey + "T00:00:00");
+    // Safety: if end < start, fall back to start-only
+    if (isNaN(end.getTime()) || end < start) {
+      if (!matchesByDate.has(startKey)) matchesByDate.set(startKey, []);
+      matchesByDate.get(startKey)!.push(m);
+      return;
+    }
+    const cur = new Date(start);
+    while (cur <= end) {
+      const key = format(cur, "yyyy-MM-dd");
+      if (!matchesByDate.has(key)) matchesByDate.set(key, []);
+      matchesByDate.get(key)!.push(m);
+      cur.setDate(cur.getDate() + 1);
+    }
   });
 
   // Order categories
