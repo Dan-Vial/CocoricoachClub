@@ -136,15 +136,51 @@ export function AddPlayerDialog({
   const isTeamSport = !isIndividualSport(sportType);
   const positions = getPositionsForSport(sportType);
 
-  // Get available specialties based on selected discipline
-  const availableSpecialties = discipline && isAthletics ? ATHLETISME_SPECIALTIES[discipline] || [] : [];
+  // Available specialties for the *draft* discipline being added (athletics multi-discipline)
+  const availableSpecialties =
+    draftDiscipline && isAthletics ? ATHLETISME_SPECIALTIES[draftDiscipline] || [] : [];
+
+  const addDisciplinePair = () => {
+    if (!draftDiscipline) return;
+    const needsSpec = (ATHLETISME_SPECIALTIES[draftDiscipline] || []).length > 0;
+    if (needsSpec && !draftSpecialty) return;
+    const exists = disciplinePairs.some(
+      (p) => p.discipline === draftDiscipline && p.specialty === (draftSpecialty || ""),
+    );
+    if (exists) return;
+    setDisciplinePairs([
+      ...disciplinePairs,
+      { discipline: draftDiscipline, specialty: draftSpecialty || "" },
+    ]);
+    setDraftDiscipline("");
+    setDraftSpecialty("");
+  };
+
+  const removeDisciplinePair = (index: number) => {
+    setDisciplinePairs(disciplinePairs.filter((_, i) => i !== index));
+  };
 
   const addPlayer = useMutation({
-    mutationFn: async (data: { name: string; email?: string; phone?: string; birth_year?: number; birth_date?: string; discipline?: string; specialty?: string; position?: string; fis_ranking?: number; fis_points?: number; fis_objective?: string; fis_objective_date?: string }) => {
+    mutationFn: async (data: {
+      name: string;
+      email?: string;
+      phone?: string;
+      birth_year?: number;
+      birth_date?: string;
+      discipline?: string;
+      specialty?: string;
+      disciplines?: string[];
+      specialties?: string[];
+      position?: string;
+      fis_ranking?: number;
+      fis_points?: number;
+      fis_objective?: string;
+      fis_objective_date?: string;
+    }) => {
       const { error } = await supabase
         .from("players")
-        .insert({ 
-          name: data.name, 
+        .insert({
+          name: data.name,
           category_id: categoryId,
           email: data.email || null,
           phone: data.phone || null,
@@ -152,6 +188,8 @@ export function AddPlayerDialog({
           birth_date: data.birth_date || null,
           discipline: data.discipline || null,
           specialty: data.specialty || null,
+          disciplines: data.disciplines && data.disciplines.length > 0 ? data.disciplines : null,
+          specialties: data.specialties && data.specialties.length > 0 ? data.specialties : null,
           position: data.position || null,
           season_id: activeSeason?.id || null,
           fis_ranking: data.fis_ranking || null,
