@@ -57,9 +57,6 @@ export function EditCycleDialog({ open, onOpenChange, cycle, categoryId, categor
   const [intensity, setIntensity] = useState(cycle.intensity || 0);
   const [volume, setVolume] = useState(cycle.volume || 0);
   const [dominantQuality, setDominantQuality] = useState(cycle.dominant_quality || "");
-  const [loadPattern, setLoadPattern] = useState(cycle.load_pattern || "");
-  const [fatigueTarget, setFatigueTarget] = useState(cycle.fatigue_target || "");
-  const [sessionsPerWeek, setSessionsPerWeek] = useState<number | null>(cycle.sessions_per_week ?? null);
   const queryClient = useQueryClient();
 
   const updateCycle = useMutation({
