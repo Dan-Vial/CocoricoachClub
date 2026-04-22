@@ -300,7 +300,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 gap-1 text-xs border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+                  className="h-8 gap-1 text-xs"
                   onClick={() => setAddCompetitionsOpen(true)}
                 >
                   <Trophy className="h-3.5 w-3.5" />
