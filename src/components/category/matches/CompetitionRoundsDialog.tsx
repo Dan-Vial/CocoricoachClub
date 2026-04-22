@@ -639,6 +639,7 @@ export function CompetitionRoundsDialog({
               player_id: p.playerId,
               final_time_seconds: r.final_time_seconds ?? null,
               stats: r.stats ?? null,
+              round_date: r.roundDate ?? null,
             })),
           );
           // Pour le multi-épreuves : on s'appuie strictement sur la discipline/spécialité
