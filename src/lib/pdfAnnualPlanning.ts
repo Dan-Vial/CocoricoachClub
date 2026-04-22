@@ -639,9 +639,10 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
           const rightLaneCenter = hasTypeLabel
             ? xCol + innerPadding + laneW + laneGap + laneW / 2
             : xCol + innerPadding + laneW / 2;
+          const denseMonthScale = subCols >= 8 ? 0.66 : subCols === 7 ? 0.74 : subCols === 6 ? 0.82 : 1;
           const lateralBudget = Math.max(0, laneW - 0.7);
-          const titleMaxFs = Math.min(8.5, Math.max(2.6, lateralBudget));
-          const typeMaxFs = Math.min(7, Math.max(2.2, lateralBudget));
+          const titleMaxFs = Math.min(8.5 * denseMonthScale, Math.max(2.2, lateralBudget * denseMonthScale));
+          const typeMaxFs = Math.min(7 * denseMonthScale, Math.max(1.9, lateralBudget * denseMonthScale));
           // Reserve generous top + bottom padding so rotated text never touches the band edges.
           const reservedDescender = Math.max(titleMaxFs, typeMaxFs) * 0.6 + 1.4;
           const verticalBudget = Math.max(0, usableH - reservedDescender);
