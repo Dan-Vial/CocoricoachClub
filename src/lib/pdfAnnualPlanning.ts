@@ -134,36 +134,64 @@ function drawVerticalText(
   pdf.text(safe, x, y, { angle: 90 });
 }
 
-// Draws a small gold trophy/cup icon centered on (cx, cy)
+// Draws a refined gold trophy/cup icon centered on (cx, cy)
 function drawTrophyIcon(pdf: jsPDF, cx: number, cy: number, size: number) {
-  const gold: [number, number, number] = [212, 160, 23];
-  const goldDark: [number, number, number] = [140, 100, 10];
+  const gold: [number, number, number] = [230, 178, 36];
+  const goldDark: [number, number, number] = [125, 88, 8];
+  const goldLight: [number, number, number] = [255, 218, 110];
   const s = size;
 
-  pdf.setDrawColor(goldDark[0], goldDark[1], goldDark[2]);
   pdf.setLineWidth(0.18);
-  pdf.setFillColor(gold[0], gold[1], gold[2]);
+  pdf.setDrawColor(goldDark[0], goldDark[1], goldDark[2]);
 
-  // Cup bowl
-  const bowlW = s * 0.85;
-  const bowlH = s * 0.55;
-  const bowlTop = cy - s * 0.45;
-  pdf.ellipse(cx, bowlTop + bowlH * 0.45, bowlW / 2, bowlH * 0.55, "FD");
+  // ── Base (pedestal) ──
+  const baseW = s * 0.72;
+  const baseH = s * 0.13;
+  const baseY = cy + s * 0.45;
+  pdf.setFillColor(goldDark[0], goldDark[1], goldDark[2]);
+  pdf.rect(cx - baseW / 2, baseY, baseW, baseH, "FD");
 
-  // Side handles
-  const handleR = s * 0.18;
-  pdf.circle(cx - bowlW / 2 - handleR * 0.35, bowlTop + bowlH * 0.4, handleR, "FD");
-  pdf.circle(cx + bowlW / 2 + handleR * 0.35, bowlTop + bowlH * 0.4, handleR, "FD");
-
-  // Stem
+  // ── Stem ──
   const stemW = s * 0.18;
-  const stemH = s * 0.25;
-  pdf.rect(cx - stemW / 2, bowlTop + bowlH * 0.85, stemW, stemH, "FD");
+  const stemH = s * 0.22;
+  const stemY = baseY - stemH;
+  pdf.setFillColor(gold[0], gold[1], gold[2]);
+  pdf.rect(cx - stemW / 2, stemY, stemW, stemH, "FD");
 
-  // Base
-  const baseW = s * 0.7;
-  const baseH = s * 0.12;
-  pdf.rect(cx - baseW / 2, bowlTop + bowlH * 0.85 + stemH, baseW, baseH, "FD");
+  // ── Handles (left & right) — rendered as small ellipses behind the cup ──
+  const handleW = s * 0.22;
+  const handleH = s * 0.32;
+  const handleCY = cy - s * 0.05;
+  pdf.setFillColor(gold[0], gold[1], gold[2]);
+  pdf.ellipse(cx - s * 0.42, handleCY, handleW / 2, handleH / 2, "FD");
+  pdf.ellipse(cx + s * 0.42, handleCY, handleW / 2, handleH / 2, "FD");
+  // Inner cutouts to hint at handle shape
+  pdf.setFillColor(255, 255, 255);
+  pdf.setDrawColor(255, 255, 255);
+  pdf.ellipse(cx - s * 0.42, handleCY, handleW / 2 - s * 0.07, handleH / 2 - s * 0.07, "F");
+  pdf.ellipse(cx + s * 0.42, handleCY, handleW / 2 - s * 0.07, handleH / 2 - s * 0.07, "F");
+
+  // ── Cup bowl (main body) — rounded rectangle ──
+  pdf.setDrawColor(goldDark[0], goldDark[1], goldDark[2]);
+  pdf.setFillColor(gold[0], gold[1], gold[2]);
+  const bowlW = s * 0.62;
+  const bowlH = s * 0.62;
+  const bowlX = cx - bowlW / 2;
+  const bowlY = cy - s * 0.42;
+  pdf.roundedRect(bowlX, bowlY, bowlW, bowlH, s * 0.12, s * 0.12, "FD");
+
+  // ── Highlight (light shine on left side of bowl) ──
+  pdf.setFillColor(goldLight[0], goldLight[1], goldLight[2]);
+  pdf.setDrawColor(goldLight[0], goldLight[1], goldLight[2]);
+  pdf.roundedRect(
+    bowlX + s * 0.08,
+    bowlY + s * 0.08,
+    s * 0.12,
+    s * 0.36,
+    s * 0.04,
+    s * 0.04,
+    "F",
+  );
 }
 
 function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
@@ -363,26 +391,57 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
       }
 
       if (cycle && cycle.name) {
-        const colHeight = 31 * dayRowH;
-        const colCenterX = xCol + subColW / 2;
-        const colBottom = gridTop + monthHeaderH + colHeight - 2;
+        // Restrict the text band to the days actually colored (cycle range within this month)
+        const cs = startOfDay(new Date(cycle.start_date));
+        const ce = startOfDay(new Date(cycle.end_date));
+        const monthStart = new Date(data.year, m, 1);
+        const monthEnd = new Date(data.year, m, daysInMonth);
+        const firstDay = cs < monthStart ? 1 : cs.getDate();
+        const lastDay = ce > monthEnd ? daysInMonth : ce.getDate();
+        const bandTop = gridTop + monthHeaderH + (firstDay - 1) * dayRowH;
+        const bandBottom = gridTop + monthHeaderH + lastDay * dayRowH;
+        const bandHeight = bandBottom - bandTop;
+
         const lum = luminance(colColor);
-        pdf.setTextColor(...(lum > 0.55 ? ([30, 35, 50] as [number, number, number]) : ([255, 255, 255] as [number, number, number])));
-        pdf.setFont("helvetica", "bold");
-        const fs = Math.max(5, Math.min(7.5, subColW * 0.85));
-        pdf.setFontSize(fs);
-        const maxChars = Math.floor((colHeight - 4) / (fs * 0.42));
-        // Build label with cycle type prefix (PG / PS / PC / Récup)
+        const lightOnDark = lum <= 0.55;
+
+        // Map cycle types to short codes
         const typeMap: Record<string, string> = {
           general_prep: "PG",
           specific_prep: "PS",
           competition: "PC",
-          recovery: "Récup",
-          transition: "Trans",
+          recovery: "RÉCUP",
+          transition: "TRANS",
         };
-        const typeLabel = cycle.cycle_type ? (typeMap[cycle.cycle_type] || cycle.cycle_type.toUpperCase()) : "";
-        const fullLabel = typeLabel ? `${typeLabel} • ${cycle.name}` : cycle.name;
-        drawVerticalText(pdf, fullLabel, colCenterX + fs * 0.35, colBottom, maxChars);
+        const typeLabel = cycle.cycle_type
+          ? (typeMap[cycle.cycle_type] || cycle.cycle_type.toUpperCase())
+          : "";
+
+        // ── Title (cycle name) — centered in the colored band ──
+        const titleFs = Math.max(5, Math.min(7.5, subColW * 0.85));
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(titleFs);
+        pdf.setTextColor(...(lightOnDark ? ([255, 255, 255] as [number, number, number]) : ([30, 35, 50] as [number, number, number])));
+        const titleMaxChars = Math.floor((bandHeight - 4) / (titleFs * 0.42));
+        const titleX = xCol + subColW / 2 + titleFs * 0.35;
+        const titleY = bandBottom - 2;
+        drawVerticalText(pdf, cycle.name, titleX, titleY, titleMaxChars);
+
+        // ── Type label (PG / PS / PC / RÉCUP) — on its own line, left side of column, accent color ──
+        if (typeLabel) {
+          const typeFs = Math.max(4.5, Math.min(6, subColW * 0.7));
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(typeFs);
+          // Accent color: gold on dark backgrounds, deep blue on light backgrounds
+          if (lightOnDark) {
+            pdf.setTextColor(255, 213, 79); // gold accent
+          } else {
+            pdf.setTextColor(30, 90, 180); // deep blue accent
+          }
+          const typeMaxChars = Math.floor((bandHeight - 4) / (typeFs * 0.42));
+          const typeX = xCol + typeFs * 0.9 + 0.6; // left side of column
+          drawVerticalText(pdf, typeLabel, typeX, titleY, typeMaxChars);
+        }
       }
     }
 
@@ -398,7 +457,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         const trophySize = Math.min(2.4, dayRowH * 0.7);
         drawTrophyIcon(pdf, trophyX, cy, trophySize);
 
-        // Match/competition name next to the trophy
+        // Match/competition name next to the trophy — black text, no background
         const firstMatch = dayMatches[0];
         const label = firstMatch.opponent || firstMatch.competition || "Compétition";
         const extra = dayMatches.length > 1 ? ` (+${dayMatches.length - 1})` : "";
@@ -408,12 +467,16 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         pdf.setFont("helvetica", "bold");
         const labelFs = Math.max(4.5, Math.min(6.5, dayRowH * 0.55));
         pdf.setFontSize(labelFs);
-        // White text outline by drawing a small white rect under text for contrast
         const truncated = pdf.splitTextToSize(fullLabel, Math.max(8, availableW))[0] || fullLabel;
-        const textW = pdf.getTextWidth(truncated);
-        pdf.setFillColor(255, 255, 255);
-        pdf.rect(textX - 0.4, cy - labelFs * 0.4, Math.min(textW + 0.8, availableW + 0.4), labelFs * 0.7, "F");
-        pdf.setTextColor(60, 45, 10);
+        // Determine text color based on cycle background luminance under this row
+        const cycleHere = monthCycles.find((c) => {
+          const cs = startOfDay(new Date(c.start_date));
+          const ce = startOfDay(new Date(c.end_date));
+          return date >= cs && date <= ce;
+        });
+        const bgRgb: [number, number, number] = cycleHere ? hexToRgb(cycleHere.color) : [255, 255, 255];
+        const useWhite = luminance(bgRgb) <= 0.55;
+        pdf.setTextColor(useWhite ? 255 : 0, useWhite ? 255 : 0, useWhite ? 255 : 0);
         pdf.text(truncated, textX, cy + labelFs * 0.18);
       }
     }
