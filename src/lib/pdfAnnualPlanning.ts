@@ -134,6 +134,38 @@ function drawVerticalText(
   pdf.text(safe, x, y, { angle: 90 });
 }
 
+// Draws a small gold trophy/cup icon centered on (cx, cy)
+function drawTrophyIcon(pdf: jsPDF, cx: number, cy: number, size: number) {
+  const gold: [number, number, number] = [212, 160, 23];
+  const goldDark: [number, number, number] = [140, 100, 10];
+  const s = size;
+
+  pdf.setDrawColor(goldDark[0], goldDark[1], goldDark[2]);
+  pdf.setLineWidth(0.18);
+  pdf.setFillColor(gold[0], gold[1], gold[2]);
+
+  // Cup bowl
+  const bowlW = s * 0.85;
+  const bowlH = s * 0.55;
+  const bowlTop = cy - s * 0.45;
+  pdf.ellipse(cx, bowlTop + bowlH * 0.45, bowlW / 2, bowlH * 0.55, "FD");
+
+  // Side handles
+  const handleR = s * 0.18;
+  pdf.circle(cx - bowlW / 2 - handleR * 0.35, bowlTop + bowlH * 0.4, handleR, "FD");
+  pdf.circle(cx + bowlW / 2 + handleR * 0.35, bowlTop + bowlH * 0.4, handleR, "FD");
+
+  // Stem
+  const stemW = s * 0.18;
+  const stemH = s * 0.25;
+  pdf.rect(cx - stemW / 2, bowlTop + bowlH * 0.85, stemW, stemH, "FD");
+
+  // Base
+  const baseW = s * 0.7;
+  const baseH = s * 0.12;
+  pdf.rect(cx - baseW / 2, bowlTop + bowlH * 0.85 + stemH, baseW, baseH, "FD");
+}
+
 function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
@@ -340,26 +372,50 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         const fs = Math.max(5, Math.min(7.5, subColW * 0.85));
         pdf.setFontSize(fs);
         const maxChars = Math.floor((colHeight - 4) / (fs * 0.42));
-        drawVerticalText(pdf, cycle.name, colCenterX + fs * 0.35, colBottom, maxChars);
+        // Build label with cycle type prefix (PG / PS / PC / Récup)
+        const typeMap: Record<string, string> = {
+          general_prep: "PG",
+          specific_prep: "PS",
+          competition: "PC",
+          recovery: "Récup",
+          transition: "Trans",
+        };
+        const typeLabel = cycle.cycle_type ? (typeMap[cycle.cycle_type] || cycle.cycle_type.toUpperCase()) : "";
+        const fullLabel = typeLabel ? `${typeLabel} • ${cycle.name}` : cycle.name;
+        drawVerticalText(pdf, fullLabel, colCenterX + fs * 0.35, colBottom, maxChars);
       }
     }
 
-    // Competition markers (gold) inside the cycles area
+    // Competition markers (gold trophy + name) inside the cycles area
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(data.year, m, d);
       const dateKey = format(date, "yyyy-MM-dd");
       const dayMatches = matchesByDate.get(dateKey);
       if (dayMatches && dayMatches.length > 0) {
         const y = gridTop + monthHeaderH + (d - 1) * dayRowH;
-        const cx = xCyclesStart + cyclesAreaW / 2;
         const cy = y + dayRowH / 2;
-        pdf.setFillColor(212, 160, 23); // gold
-        pdf.setDrawColor(140, 100, 10);
-        pdf.setLineWidth(0.3);
-        pdf.circle(cx, cy, Math.min(1.5, dayRowH * 0.38), "FD");
-      }
+        const trophyX = xCyclesStart + 1.6;
+        const trophySize = Math.min(2.4, dayRowH * 0.7);
+        drawTrophyIcon(pdf, trophyX, cy, trophySize);
 
-      // (today highlight removed per user request)
+        // Match/competition name next to the trophy
+        const firstMatch = dayMatches[0];
+        const label = firstMatch.opponent || firstMatch.competition || "Compétition";
+        const extra = dayMatches.length > 1 ? ` (+${dayMatches.length - 1})` : "";
+        const fullLabel = `${label}${extra}`;
+        const textX = trophyX + trophySize + 0.8;
+        const availableW = (xCyclesStart + cyclesAreaW) - textX - 0.5;
+        pdf.setFont("helvetica", "bold");
+        const labelFs = Math.max(4.5, Math.min(6.5, dayRowH * 0.55));
+        pdf.setFontSize(labelFs);
+        // White text outline by drawing a small white rect under text for contrast
+        const truncated = pdf.splitTextToSize(fullLabel, Math.max(8, availableW))[0] || fullLabel;
+        const textW = pdf.getTextWidth(truncated);
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(textX - 0.4, cy - labelFs * 0.4, Math.min(textW + 0.8, availableW + 0.4), labelFs * 0.7, "F");
+        pdf.setTextColor(60, 45, 10);
+        pdf.text(truncated, textX, cy + labelFs * 0.18);
+      }
     }
   }
 
@@ -446,11 +502,8 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
       const x = margin + col * itemW;
       const y = itemY + row * 4.5;
 
-      // Gold pastille
-      pdf.setFillColor(212, 160, 23);
-      pdf.setDrawColor(140, 100, 10);
-      pdf.setLineWidth(0.2);
-      pdf.circle(x + 1.5, y - 0.6, 1.1, "FD");
+      // Gold trophy icon
+      drawTrophyIcon(pdf, x + 1.6, y - 0.6, 2.4);
 
       // Date + opponent/competition
       const dateLabel = format(new Date(mt.match_date), "dd/MM", { locale: fr });
@@ -491,10 +544,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
   });
 
   const rightLegendX = pageW - margin - 55;
-  pdf.setFillColor(212, 160, 23);
-  pdf.setDrawColor(140, 100, 10);
-  pdf.setLineWidth(0.2);
-  pdf.circle(rightLegendX, legendY - 1, 1, "FD");
+  drawTrophyIcon(pdf, rightLegendX, legendY - 1, 2.4);
   pdf.setTextColor(60, 65, 80);
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(7);
