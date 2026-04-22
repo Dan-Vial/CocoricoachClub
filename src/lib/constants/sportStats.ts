@@ -69,6 +69,9 @@ export const RUGBY_STATS: StatField[] = [
   { key: "lineoutDefenseRate", label: "% Touches adverses volées", shortLabel: "% T. vol.", category: "defense", type: "percentage", max: 100, computedFrom: { successKey: "lineoutSteals", totalKey: "lineoutDefenseTotal" } },
   // Individual Stats - General
   { key: "minutesPlayed", label: "Minutes jouées", shortLabel: "Min.", category: "general", type: "number" },
+  { key: "effectivePlayingTime", label: "Temps de jeu effectif (min)", shortLabel: "TJE", category: "general", type: "number" },
+  { key: "longestSequence", label: "Séquence la plus longue (min)", shortLabel: "Séq. max", category: "general", type: "number" },
+  { key: "averageSequence", label: "Séquence moyenne (min)", shortLabel: "Séq. moy.", category: "general", type: "number" },
   { key: "starts", label: "Titularisations", shortLabel: "Titu.", category: "general", type: "number" },
   { key: "totalCollisions", label: "Collisions totales", shortLabel: "Collisions", category: "general", type: "number" },
   { key: "collisionsOver5m", label: "Collision +5m (élan ≥5m)", shortLabel: "Coll. +5m", category: "general", type: "number" },
