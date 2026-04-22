@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { format, startOfYear, endOfYear, differenceInDays, startOfMonth, endOfMonth, eachMonthOfInterval, isWithinInterval, eachWeekOfInterval, startOfWeek, endOfWeek } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -81,6 +82,9 @@ export function AnnualTimelineView({
   onEditCycle,
   zoomLevel,
 }: AnnualTimelineViewProps) {
+  const navigate = useNavigate();
+  const params = useParams();
+  const routeCategoryId = params.id || params.categoryId;
   const yearStart = startOfYear(new Date(year, 0, 1));
   const yearEnd = endOfYear(new Date(year, 0, 1));
   const months = eachMonthOfInterval({ start: yearStart, end: yearEnd });
