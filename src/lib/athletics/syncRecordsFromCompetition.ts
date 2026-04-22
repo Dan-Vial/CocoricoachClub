@@ -19,6 +19,8 @@ interface RoundLike {
   stats?: Record<string, number> | null;
   /** stat_data JSON brut (si récupéré depuis la BDD) */
   stat_data?: Record<string, any> | null;
+  /** Date spécifique de l'épreuve (pour les compétitions multi-jours). */
+  round_date?: string | null;
 }
 
 interface PlayerInfo {
