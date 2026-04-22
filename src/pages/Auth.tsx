@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { signUpSchema, loginSchema } from "@/lib/validations";
+import { BrandLogo } from "@/components/BrandLogo";
 
 async function getPostLoginRedirect(userId: string): Promise<string> {
   // Check if user has only athlete role and no clubs
@@ -235,6 +236,9 @@ export default function Auth() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
+          <div className="flex justify-center mb-2">
+            <BrandLogo className="h-20 w-auto" />
+          </div>
           <CardTitle className="text-2xl text-center">CocoriCoach Club</CardTitle>
           <CardDescription className="text-center">
             Connectez-vous pour gérer vos clubs et athlètes
