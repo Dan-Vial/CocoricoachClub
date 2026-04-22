@@ -150,12 +150,6 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
             onVolumeChange={setVolume}
             dominantQuality={dominantQuality}
             onDominantQualityChange={setDominantQuality}
-            loadPattern={loadPattern}
-            onLoadPatternChange={setLoadPattern}
-            fatigueTarget={fatigueTarget}
-            onFatigueTargetChange={setFatigueTarget}
-            sessionsPerWeek={sessionsPerWeek}
-            onSessionsPerWeekChange={setSessionsPerWeek}
           />
 
           <div className="grid grid-cols-2 gap-3">
