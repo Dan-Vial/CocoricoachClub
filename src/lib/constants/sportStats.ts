@@ -141,6 +141,9 @@ export const FOOTBALL_STATS: StatField[] = [
 // Football goalkeeper stats
 export const FOOTBALL_GOALKEEPER_STATS: StatField[] = [
   { key: "minutesPlayed", label: "Minutes jouées", shortLabel: "Min.", category: "general", type: "number" },
+  { key: "effectivePlayingTime", label: "Temps de jeu effectif (min)", shortLabel: "TJE", category: "general", type: "number" },
+  { key: "longestSequence", label: "Séquence la plus longue (min)", shortLabel: "Séq. max", category: "general", type: "number" },
+  { key: "averageSequence", label: "Séquence moyenne (min)", shortLabel: "Séq. moy.", category: "general", type: "number" },
   { key: "yellowCards", label: "Cartons jaunes", shortLabel: "Jaunes", category: "general", type: "number" },
   { key: "redCards", label: "Cartons rouges", shortLabel: "Rouges", category: "general", type: "number" },
   { key: "saves", label: "Arrêts", shortLabel: "Arrêts", category: "scoring", type: "number" },
