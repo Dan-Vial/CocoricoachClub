@@ -27,6 +27,11 @@ interface AthleticsLineupSectionProps {
     specialty: string | null,
     selected: boolean,
   ) => void;
+  onPromoteFirst?: (
+    playerId: string,
+    discipline: string | null,
+    specialty: string | null,
+  ) => void;
 }
 
 const eqKey = (
@@ -43,6 +48,7 @@ export function AthleticsLineupSection({
   players,
   entries,
   onToggle,
+  onPromoteFirst,
 }: AthleticsLineupSectionProps) {
   if (!players || players.length === 0) {
     return (
