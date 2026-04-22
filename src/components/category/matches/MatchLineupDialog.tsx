@@ -294,6 +294,41 @@ export function MatchLineupDialog({
     });
   };
 
+  const promoteAthleticsEntry = (
+    playerId: string,
+    discipline: string | null,
+    specialty: string | null,
+  ) => {
+    setAthleticsEntries((prev) => {
+      // Re-rank: the targeted entry becomes #1, others keep relative order.
+      const isTarget = (e: AthleticsLineupEntry) =>
+        e.playerId === playerId &&
+        (e.discipline ?? null) === (discipline ?? null) &&
+        (e.specialty ?? null) === (specialty ?? null);
+
+      const selectedForAthlete = prev
+        .filter((e) => e.playerId === playerId && e.isSelected)
+        .sort((a, b) => (a.startOrder ?? 999) - (b.startOrder ?? 999));
+
+      const reordered = [
+        ...selectedForAthlete.filter(isTarget),
+        ...selectedForAthlete.filter((e) => !isTarget(e)),
+      ];
+
+      const orderMap = new Map<string, number>();
+      reordered.forEach((e, idx) => {
+        const key = `${e.discipline ?? ""}|${e.specialty ?? ""}`;
+        orderMap.set(key, idx + 1);
+      });
+
+      return prev.map((e) => {
+        if (e.playerId !== playerId || !e.isSelected) return e;
+        const key = `${e.discipline ?? ""}|${e.specialty ?? ""}`;
+        return { ...e, startOrder: orderMap.get(key) ?? e.startOrder };
+      });
+    });
+  };
+
 
   const handleFieldLineupChange = (fieldLineup: Record<string, string>, substitutes: string[]) => {
     // Update lineup from field visualization
@@ -390,6 +425,7 @@ export function MatchLineupDialog({
                 players={athleticsPlayers}
                 entries={athleticsEntries}
                 onToggle={toggleAthleticsEntry}
+                onPromoteFirst={promoteAthleticsEntry}
               />
             ) : isDoublesMatch ? (
               <div className="space-y-2">
