@@ -47,8 +47,10 @@ export function CumulativeKickingMap({ kicks, playerName, hasKickingStats }: Cum
     const fieldSvgHeight = fieldBotSvgPct - fieldTopSvgPct;
 
     kicks.forEach(k => {
-      // Distance from right try line in meters
-      const distPct = Math.abs(tryLineSvgPct - k.x);
+      // Distance from the NEAREST try line (rugby field is symmetric — kicker may be on either half)
+      const distRightPct = Math.abs(tryLineSvgPct - k.x);
+      const distLeftPct = Math.abs(leftTryLineSvgPct - k.x);
+      const distPct = Math.min(distRightPct, distLeftPct);
       const distM = Math.round((distPct / fieldSvgSpan) * FIELD_LENGTH_M);
       const row = distM < 22 ? "proche" : distM < 40 ? "moyen" : "loin";
 
