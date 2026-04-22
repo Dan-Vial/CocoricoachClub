@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, TrendingUp, TrendingDown, Minus, Trophy, Target, Shield, Activity, Dumbbell } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from "recharts";
 import type { StatField } from "@/lib/constants/sportStats";
 import { getStatCategories } from "@/lib/constants/sportStats";
 
@@ -23,11 +22,19 @@ interface MatchData {
   }>;
 }
 
+interface MatchScoreData {
+  id: string;
+  is_home: boolean;
+  score_home: number | null;
+  score_away: number | null;
+}
+
 interface TeamCumulativeStatsProps {
   stats: CumulativeStats[];
   matchesData: MatchData[];
   sportStats: StatField[];
   sportType: string;
+  matchesWithScores?: MatchScoreData[];
 }
 
 export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType }: TeamCumulativeStatsProps) {
