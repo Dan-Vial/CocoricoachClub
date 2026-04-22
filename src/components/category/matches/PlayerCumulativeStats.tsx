@@ -1310,9 +1310,26 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
             }
           };
 
+          // Visual legend (shapes + colors) — matches the on-screen cartography
           doc.setFontSize(7);
           doc.setTextColor(100, 116, 139);
-          doc.text("● Transformation   ■ Pénalité   ◆ Drop   |   Vert = réussi   Rouge = raté", 14, ky);
+          doc.setFillColor(59, 130, 246);
+          doc.circle(18, ky - 1, 2, "F");
+          doc.text("Transformation", 22, ky);
+          doc.setFillColor(249, 115, 22);
+          doc.rect(56, ky - 3, 4, 4, "F");
+          doc.text("Pénalité", 62, ky);
+          doc.setFillColor(139, 92, 246);
+          const kdx = 90, kdy = ky - 1;
+          (doc as any).triangle(kdx, kdy - 2.5, kdx + 2.5, kdy, kdx, kdy + 2.5, "F");
+          (doc as any).triangle(kdx, kdy - 2.5, kdx - 2.5, kdy, kdx, kdy + 2.5, "F");
+          doc.text("Drop", 94, ky);
+          doc.setFillColor(34, 197, 94);
+          doc.circle(118, ky - 1, 2, "F");
+          doc.text("Réussi", 122, ky);
+          doc.setFillColor(239, 68, 68);
+          doc.circle(144, ky - 1, 2, "F");
+          doc.text("Raté", 148, ky);
           ky += 6;
 
           const kickerIds = Object.keys(kickingByPlayerFinal).filter(pid => kickingByPlayerFinal[pid].allKicks.length > 0 && (!singlePlayerId || pid === singlePlayerId));
