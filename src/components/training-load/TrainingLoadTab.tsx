@@ -328,23 +328,25 @@ export function TrainingLoadTab({ categoryId }: TrainingLoadTabProps) {
 
           {/* Main content tabs */}
           <Tabs defaultValue="chart" className="space-y-4">
-            <ColoredSubTabsList colorKey="performance" className="flex flex-wrap h-auto gap-1">
-              <ColoredSubTabsTrigger value="chart" colorKey="performance" icon={<BarChart3 className="h-4 w-4" />}>
-                Graphique
-              </ColoredSubTabsTrigger>
-              <ColoredSubTabsTrigger value="calendar" colorKey="performance" icon={<Calendar className="h-4 w-4" />}>
-                Calendrier
-              </ColoredSubTabsTrigger>
-              <ColoredSubTabsTrigger value="rpe" colorKey="performance" icon={<TrendingUp className="h-4 w-4" />}>
-                RPE Prévu/Réel
-              </ColoredSubTabsTrigger>
-              <ColoredSubTabsTrigger value="team" colorKey="performance" icon={<Users className="h-4 w-4" />}>
-                Comparaison
-              </ColoredSubTabsTrigger>
-              <ColoredSubTabsTrigger value="distribution" colorKey="performance" icon={<BarChart3 className="h-4 w-4" />}>
-                Répartition
-              </ColoredSubTabsTrigger>
-            </ColoredSubTabsList>
+            <div className="flex justify-center">
+              <ColoredSubTabsList colorKey="performance" className="inline-flex flex-wrap h-auto gap-1 w-max">
+                <ColoredSubTabsTrigger value="chart" colorKey="performance" icon={<BarChart3 className="h-4 w-4" />}>
+                  Graphique
+                </ColoredSubTabsTrigger>
+                <ColoredSubTabsTrigger value="calendar" colorKey="performance" icon={<Calendar className="h-4 w-4" />}>
+                  Calendrier
+                </ColoredSubTabsTrigger>
+                <ColoredSubTabsTrigger value="rpe" colorKey="performance" icon={<TrendingUp className="h-4 w-4" />}>
+                  RPE Prévu/Réel
+                </ColoredSubTabsTrigger>
+                <ColoredSubTabsTrigger value="team" colorKey="performance" icon={<Users className="h-4 w-4" />}>
+                  Comparaison
+                </ColoredSubTabsTrigger>
+                <ColoredSubTabsTrigger value="distribution" colorKey="performance" icon={<BarChart3 className="h-4 w-4" />}>
+                  Répartition
+                </ColoredSubTabsTrigger>
+              </ColoredSubTabsList>
+            </div>
 
             <TabsContent value="chart">
               <TrainingLoadChart
