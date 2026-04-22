@@ -1356,7 +1356,7 @@ export function CompetitionRoundsDialog({
             </TabsContent>
 
             <TabsContent value="summary" className="flex-1 min-h-0 mt-0 overflow-hidden">
-              <ScrollArea className="h-[calc(90vh-280px)]">
+              <ScrollArea className="h-[calc(95vh-200px)]">
               {isBowling ? (
                 <BowlingCompetitionSummary
                   rounds={selectedPlayer.rounds}
