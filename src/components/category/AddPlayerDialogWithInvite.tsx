@@ -152,7 +152,7 @@ export function AddPlayerDialogWithInvite({
   const showSkiDiscipline = isSki && skiDisciplines.length > 1;
   const disciplineOptions = getDisciplineOptions();
   
-  // Determine specialties
+  // Determine specialties (sélecteur unique non-athlétisme)
   const getSpecialtyOptions = () => {
     if (!discipline) return [];
     if (isAthletics) return ATHLETISME_SPECIALTIES[discipline] || [];
@@ -160,6 +160,30 @@ export function AddPlayerDialogWithInvite({
     return [];
   };
   const availableSpecialties = getSpecialtyOptions();
+
+  // Spécialités disponibles pour la *paire* en cours d'ajout (athlétisme multi-disciplines)
+  const draftAvailableSpecialties =
+    draftDiscipline && isAthletics ? ATHLETISME_SPECIALTIES[draftDiscipline] || [] : [];
+
+  const addDisciplinePair = () => {
+    if (!draftDiscipline) return;
+    const needsSpec = (ATHLETISME_SPECIALTIES[draftDiscipline] || []).length > 0;
+    if (needsSpec && !draftSpecialty) return;
+    const exists = disciplinePairs.some(
+      (p) => p.discipline === draftDiscipline && p.specialty === (draftSpecialty || ""),
+    );
+    if (exists) return;
+    setDisciplinePairs([
+      ...disciplinePairs,
+      { discipline: draftDiscipline, specialty: draftSpecialty || "" },
+    ]);
+    setDraftDiscipline("");
+    setDraftSpecialty("");
+  };
+
+  const removeDisciplinePair = (index: number) => {
+    setDisciplinePairs(disciplinePairs.filter((_, i) => i !== index));
+  };
 
   const resetForm = () => {
     setFirstName("");
