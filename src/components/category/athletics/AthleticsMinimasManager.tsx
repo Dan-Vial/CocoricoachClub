@@ -81,6 +81,7 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
     setDiscipline(m.discipline);
     setSpecialty(m.specialty || NONE_SPECIALTY);
     setLabel(m.label);
+    setLevel(m.level || "national");
     setTargetValue(String(m.target_value));
     setUnit(m.unit);
     setLowerIsBetter(m.lower_is_better);
