@@ -320,7 +320,7 @@ export function MatchLineupDialog({
                 ? `Paire${isPadel ? " de Padel" : " de Double"}`
                 : isIndividual ? "Participants" : `Composition - ${fieldConfig.label}`}
             </div>
-            {hasFieldLayout && !isIndividual && !isDoublesMatch && (
+            {hasFieldLayout && !isIndividual && !isDoublesMatch && !isAthletics && (
               <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "list" | "field")}>
                 <TabsList className="h-8">
                   <TabsTrigger value="field" className="px-2 h-7">
