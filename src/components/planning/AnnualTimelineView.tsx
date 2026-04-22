@@ -498,12 +498,13 @@ function LoadBar({ categories, cycles, yearStart, totalDays, labelWidth }: LoadB
   // null = toutes les thématiques (moyenne globale)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
-  const { segments, overallAvg } = useMemo(() => {
+  const { intensitySegments, intensityAvg, volumeSegments, volumeAvg } = useMemo(() => {
     const filteredCycles = selectedCategoryId
       ? cycles.filter(c => c.periodization_category_id === selectedCategoryId)
       : cycles;
 
-    const dailyAvg: number[] = [];
+    const dailyIntensity: number[] = [];
+    const dailyVolume: number[] = [];
     for (let d = 0; d < totalDays; d++) {
       const day = new Date(yearStart);
       day.setDate(yearStart.getDate() + d);
@@ -512,30 +513,74 @@ function LoadBar({ categories, cycles, yearStart, totalDays, labelWidth }: LoadB
         const ce = new Date(c.end_date);
         return day >= cs && day <= ce;
       });
-      const sum = active.reduce((s, c) => s + (c.intensity || 0), 0);
-      dailyAvg.push(active.length > 0 ? sum / active.length : 0);
+      const sumI = active.reduce((s, c) => s + (c.intensity || 0), 0);
+      const sumV = active.reduce((s, c) => s + (c.volume || 0), 0);
+      dailyIntensity.push(active.length > 0 ? sumI / active.length : 0);
+      dailyVolume.push(active.length > 0 ? sumV / active.length : 0);
     }
 
-    const nonZero = dailyAvg.filter(v => v > 0);
-    const avg = nonZero.length > 0
-      ? nonZero.reduce((a, b) => a + b, 0) / nonZero.length
-      : 0;
+    const computeAvg = (arr: number[]) => {
+      const nz = arr.filter(v => v > 0);
+      return nz.length > 0 ? nz.reduce((a, b) => a + b, 0) / nz.length : 0;
+    };
 
-    const segs: { start: number; length: number; color: string }[] = [];
-    let cursor = 0;
-    while (cursor < dailyAvg.length) {
-      const color = getLoadColor(dailyAvg[cursor]);
-      let len = 1;
-      while (cursor + len < dailyAvg.length && getLoadColor(dailyAvg[cursor + len]) === color) {
-        len++;
+    const buildSegments = (arr: number[]) => {
+      const segs: { start: number; length: number; color: string }[] = [];
+      let cursor = 0;
+      while (cursor < arr.length) {
+        const color = getLoadColor(arr[cursor]);
+        let len = 1;
+        while (cursor + len < arr.length && getLoadColor(arr[cursor + len]) === color) {
+          len++;
+        }
+        segs.push({ start: cursor, length: len, color });
+        cursor += len;
       }
-      segs.push({ start: cursor, length: len, color });
-      cursor += len;
-    }
-    return { segments: segs, overallAvg: avg };
+      return segs;
+    };
+
+    return {
+      intensitySegments: buildSegments(dailyIntensity),
+      intensityAvg: computeAvg(dailyIntensity),
+      volumeSegments: buildSegments(dailyVolume),
+      volumeAvg: computeAvg(dailyVolume),
+    };
   }, [selectedCategoryId, cycles, yearStart, totalDays]);
 
   const sortedCats = [...categories].sort((a, b) => a.sort_order - b.sort_order);
+
+  const renderBar = (
+    segments: { start: number; length: number; color: string }[],
+    avg: number,
+    label: string,
+    icon: React.ReactNode,
+  ) => (
+    <div className="flex">
+      <div style={{ width: labelWidth, minWidth: labelWidth }} className="shrink-0 flex items-center px-3">
+        {icon}
+        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+          {label}
+        </span>
+        <span className="ml-2 text-[10px] text-muted-foreground">
+          ⌀ {avg.toFixed(1)}/10
+        </span>
+      </div>
+      <div className="flex-1 relative h-6 rounded-md overflow-hidden border border-border/30">
+        {segments.map((seg, i) => (
+          <div
+            key={i}
+            className="absolute top-0 h-full"
+            style={{
+              left: `${(seg.start / totalDays) * 100}%`,
+              width: `${(seg.length / totalDays) * 100}%`,
+              backgroundColor: seg.color,
+            }}
+            title={`Jours ${seg.start + 1}–${seg.start + seg.length}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className="mt-1 space-y-1.5">
@@ -581,32 +626,21 @@ function LoadBar({ categories, cycles, yearStart, totalDays, labelWidth }: LoadB
         })}
       </div>
 
-      {/* Load bar */}
-      <div className="flex">
-        <div style={{ width: labelWidth, minWidth: labelWidth }} className="shrink-0 flex items-center px-3">
-          <Flame className="h-3.5 w-3.5 text-orange-500 mr-1.5" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-            Charge
-          </span>
-          <span className="ml-2 text-[10px] text-muted-foreground">
-            ⌀ {overallAvg.toFixed(1)}/10
-          </span>
-        </div>
-        <div className="flex-1 relative h-6 rounded-md overflow-hidden border border-border/30">
-          {segments.map((seg, i) => (
-            <div
-              key={i}
-              className="absolute top-0 h-full"
-              style={{
-                left: `${(seg.start / totalDays) * 100}%`,
-                width: `${(seg.length / totalDays) * 100}%`,
-                backgroundColor: seg.color,
-              }}
-              title={`Jours ${seg.start + 1}–${seg.start + seg.length}`}
-            />
-          ))}
-        </div>
-      </div>
+      {/* Charge (intensité) */}
+      {renderBar(
+        intensitySegments,
+        intensityAvg,
+        "Charge",
+        <Flame className="h-3.5 w-3.5 text-orange-500 mr-1.5" />,
+      )}
+
+      {/* Volume */}
+      {renderBar(
+        volumeSegments,
+        volumeAvg,
+        "Volume",
+        <Dumbbell className="h-3.5 w-3.5 text-blue-500 mr-1.5" />,
+      )}
     </div>
   );
 }
