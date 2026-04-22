@@ -166,36 +166,23 @@ export function drawPdfFieldLegend(doc: jsPDF, x: number, y: number) {
 }
 
 /**
- * Draw a "Statistiques par zone" 3x3 grid table below cartography.
- * Returns the new Y position after the grid.
+ * Compute zone stats from a list of kicks (3x3 grid: distance × lateral).
  */
-export function drawPdfZoneStatsGrid(
-  doc: jsPDF,
-  kicks: Array<{ x: number; y: number; success: boolean }>,
-  pageW: number,
-  startY: number,
-  pageH: number
-): number {
-  // Compute zone stats from kicks
+function computeZoneStats(
+  kicks: Array<{ x: number; y: number; success: boolean }>
+): Record<string, { success: number; total: number }> {
   const zoneStats: Record<string, { success: number; total: number }> = {};
-  // Coordinates are stored as % of a 600x400 SVG
-  // Field inner area: x=20..580 (560px), y=14..386 (372px) within 600x400
   const svgW = 600, svgH = 400;
   const fLeft = 20, fRight = 580, fTop = 14, fBot = 386;
-  const fW = fRight - fLeft; // 560
-  const fH = fBot - fTop; // 372
-  // Try line positions in SVG-% coordinates
-  const rightTryLineSvgPct = (fLeft + 0.95 * fW) / svgW * 100; // ~92%
-  const leftTryLineSvgPct = (fLeft + 0.05 * fW) / svgW * 100; // ~8%
+  const fW = fRight - fLeft;
+  const fH = fBot - fTop;
+  const rightTryLineSvgPct = (fLeft + 0.95 * fW) / svgW * 100;
+  const leftTryLineSvgPct = (fLeft + 0.05 * fW) / svgW * 100;
   const fieldSvgSpan = rightTryLineSvgPct - leftTryLineSvgPct;
-  const fieldCenterXSvgPct = (rightTryLineSvgPct + leftTryLineSvgPct) / 2; // ~50%
-  const fieldCenterYSvgPct = (fTop + fH / 2) / svgH * 100; // ~50%
-  const fieldHeightSvgPct = fH / svgH * 100; // ~93%
+  const fieldCenterYSvgPct = (fTop + fH / 2) / svgH * 100;
+  const fieldHeightSvgPct = fH / svgH * 100;
 
   kicks.forEach(kick => {
-    // Determine which try line (posts) the kick is aimed at:
-    // If kick is on the right half, posts are on the right (distance from right try line)
-    // If kick is on the left half, posts are on the left (distance from left try line)
     const distFromRight = Math.abs(rightTryLineSvgPct - kick.x);
     const distFromLeft = Math.abs(kick.x - leftTryLineSvgPct);
     const distPct = Math.min(distFromRight, distFromLeft);
@@ -211,79 +198,138 @@ export function drawPdfZoneStatsGrid(
     zoneStats[key].total++;
     if (kick.success) zoneStats[key].success++;
   });
+  return zoneStats;
+}
 
-  if (Object.keys(zoneStats).length === 0) return startY;
-
+/**
+ * Render a single 3x3 zone grid at (startX, startY) with given width.
+ * Returns the Y position right after the grid (including row labels).
+ */
+function renderZoneGrid(
+  doc: jsPDF,
+  zoneStats: Record<string, { success: number; total: number }>,
+  startX: number,
+  startY: number,
+  totalWidth: number,
+  title?: string
+): number {
   let y = startY;
-  if (y > pageH - 55) { doc.addPage(); y = 15; }
-
-  // Title
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(30, 41, 59);
-  doc.text("Statistiques par zone", pageW / 2, y, { align: "center" });
-  y += 5;
-
   const rows = ["proche", "moyen", "loin"];
   const cols = ["gauche", "centre", "droite"];
-  const colLabels = ["Gauche", "Centre", "Droite"];
+  const colLabels = ["G", "C", "D"];
   const rowLabels = ["0-22m", "22-40m", "40m+"];
-  const cellW = 40;
-  const cellH = 11;
-  const gridW = cellW * 3;
-  const startX = pageW / 2 - gridW / 2;
+  const cellW = totalWidth / 3;
+  const cellH = 9;
 
-  // Column headers
-  doc.setFontSize(7);
+  if (title) {
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30, 41, 59);
+    doc.text(title, startX + totalWidth / 2, y, { align: "center" });
+    y += 4;
+  }
+
+  doc.setFontSize(6.5);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(100, 116, 139);
   colLabels.forEach((l, i) => {
     doc.text(l, startX + i * cellW + cellW / 2, y, { align: "center" });
   });
-  y += 4;
+  y += 3;
 
-  rows.forEach((row, ri) => {
+  rows.forEach(row => {
     cols.forEach((col, ci) => {
       const key = `${row}-${col}`;
       const zone = zoneStats[key];
       const cx = startX + ci * cellW;
       if (zone && zone.total > 0) {
         const zRate = Math.round((zone.success / zone.total) * 100);
-        // Color-coded background
         if (zRate >= 70) doc.setFillColor(220, 252, 231);
         else if (zRate >= 40) doc.setFillColor(254, 249, 195);
         else doc.setFillColor(254, 226, 226);
-        doc.roundedRect(cx + 1, y, cellW - 2, cellH, 1.5, 1.5, "F");
-        // Text
+        doc.roundedRect(cx + 0.5, y, cellW - 1, cellH, 1, 1, "F");
         doc.setTextColor(30, 41, 59);
-        doc.setFontSize(9);
+        doc.setFontSize(7.5);
         doc.setFont("helvetica", "bold");
-        doc.text(`${zRate}%`, cx + cellW / 2, y + 5, { align: "center" });
-        doc.setFontSize(6);
+        doc.text(`${zRate}%`, cx + cellW / 2, y + 4, { align: "center" });
+        doc.setFontSize(5.5);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(100, 116, 139);
-        doc.text(`(${zone.success}/${zone.total})`, cx + cellW / 2, y + 9, { align: "center" });
+        doc.text(`${zone.success}/${zone.total}`, cx + cellW / 2, y + 7.5, { align: "center" });
       } else {
         doc.setFillColor(248, 250, 252);
-        doc.roundedRect(cx + 1, y, cellW - 2, cellH, 1.5, 1.5, "F");
+        doc.roundedRect(cx + 0.5, y, cellW - 1, cellH, 1, 1, "F");
         doc.setTextColor(180, 190, 200);
-        doc.setFontSize(9);
-        doc.text("—", cx + cellW / 2, y + 6.5, { align: "center" });
+        doc.setFontSize(7);
+        doc.text("—", cx + cellW / 2, y + 5.5, { align: "center" });
       }
     });
-    y += cellH + 1;
+    y += cellH + 0.8;
   });
 
-  // Row labels below
-  doc.setFontSize(6);
+  doc.setFontSize(5.5);
   doc.setTextColor(100, 116, 139);
   doc.setFont("helvetica", "normal");
   rowLabels.forEach((l, i) => {
     doc.text(l, startX + i * cellW + cellW / 2, y + 2, { align: "center" });
   });
-  y += 6;
+  return y + 5;
+}
 
-  return y;
+/**
+ * Draw "Statistiques par zone" 3x3 grid table(s) below cartography.
+ * If kicks include `kickType`, renders 3 mini-grids side by side
+ * (Transformations / Pénalités / Drops). Otherwise renders a single grid.
+ * Returns the new Y position after the grid(s).
+ */
+export function drawPdfZoneStatsGrid(
+  doc: jsPDF,
+  kicks: Array<{ x: number; y: number; success: boolean; kickType?: string }>,
+  pageW: number,
+  startY: number,
+  pageH: number
+): number {
+  if (!kicks || kicks.length === 0) return startY;
+
+  let y = startY;
+  if (y > pageH - 55) { doc.addPage(); y = 15; }
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(30, 41, 59);
+  doc.text("Statistiques par zone", pageW / 2, y, { align: "center" });
+  y += 5;
+
+  const hasKickType = kicks.some(k => !!k.kickType);
+
+  if (hasKickType) {
+    const groups: { label: string; key: string }[] = [
+      { label: "Transformations", key: "conversion" },
+      { label: "Pénalités", key: "penalty" },
+      { label: "Drops", key: "drop" },
+    ];
+    const margin = 14;
+    const gap = 4;
+    const totalW = pageW - margin * 2;
+    const gridW = (totalW - gap * 2) / 3;
+
+    let maxY = y;
+    groups.forEach((g, gi) => {
+      const groupKicks = kicks.filter(k => (k.kickType || "penalty") === g.key);
+      const stats = computeZoneStats(groupKicks);
+      const startX = margin + gi * (gridW + gap);
+      const titleWithCount = `${g.label} (${groupKicks.length})`;
+      const endY = renderZoneGrid(doc, stats, startX, y, gridW, titleWithCount);
+      if (endY > maxY) maxY = endY;
+    });
+    return maxY + 2;
+  }
+
+  const zoneStats = computeZoneStats(kicks);
+  if (Object.keys(zoneStats).length === 0) return y;
+  const gridW = 120;
+  const startX = pageW / 2 - gridW / 2;
+  return renderZoneGrid(doc, zoneStats, startX, y, gridW) + 2;
 }
 
 /**
