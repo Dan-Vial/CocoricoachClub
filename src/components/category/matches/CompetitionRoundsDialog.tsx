@@ -189,8 +189,13 @@ export function CompetitionRoundsDialog({
         }
       }
       // Athletics: hide stats already captured in the header row (date/classement/temps/RP/vent)
-      // and drop the entire "general" category (date/RP/vent/SB déjà gérés en haut).
-      return resolved.filter(s => !ATHLETICS_HIDDEN_STAT_KEYS.has(s.key) && s.category !== "general");
+      // et masquer les catégories "general" et "defense" (Détails) pour ne garder que Performance + Classement.
+      return resolved.filter(
+        s =>
+          !ATHLETICS_HIDDEN_STAT_KEYS.has(s.key) &&
+          s.category !== "general" &&
+          s.category !== "defense",
+      );
     }
     return sportStats;
   };
