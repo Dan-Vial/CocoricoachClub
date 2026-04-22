@@ -72,6 +72,8 @@ interface Round {
 }
 
 interface PlayerRounds {
+  /** Unique key for this lineup entry (player + discipline + specialty). */
+  entryKey: string;
   playerId: string;
   playerName: string;
   discipline?: string;
@@ -82,6 +84,12 @@ interface PlayerRounds {
   crew_role?: string;
   seat_position?: number;
 }
+
+const buildEntryKey = (
+  playerId: string,
+  discipline?: string | null,
+  specialty?: string | null,
+) => `${playerId}|${discipline ?? ""}|${specialty ?? ""}`;
 
 // Aviron phases
 const AVIRON_PHASES = [
