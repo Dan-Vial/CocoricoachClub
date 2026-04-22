@@ -1,6 +1,5 @@
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 
 const CYCLE_TYPES = [
   { value: "PG", label: "PG - Préparation Générale" },
@@ -23,22 +22,6 @@ const DOMINANT_QUALITIES = [
   { value: "prevention", label: "Prévention / Prophylaxie" },
   { value: "mental", label: "Préparation mentale" },
   { value: "mixte", label: "Mixte / Polyvalent" },
-];
-
-const LOAD_PATTERNS = [
-  { value: "linear", label: "Linéaire (charge croissante)" },
-  { value: "undulating", label: "Ondulatoire (alternance)" },
-  { value: "block", label: "Bloc concentré" },
-  { value: "step", label: "Marches (3:1 - 3 sem charge / 1 sem décharge)" },
-  { value: "taper", label: "Affûtage / Taper (avant compétition)" },
-  { value: "maintenance", label: "Maintien" },
-];
-
-const FATIGUE_TARGETS = [
-  { value: "low", label: "Faible (fraîcheur)" },
-  { value: "moderate", label: "Modérée (équilibre)" },
-  { value: "high", label: "Élevée (surcharge)" },
-  { value: "supercompensation", label: "Surcompensation (rebond)" },
 ];
 
 function getSliderColor(value: number) {
