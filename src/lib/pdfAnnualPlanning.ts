@@ -489,10 +489,10 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         const titleY = bandBottom - innerPaddingV;
 
         // ── Title (cycle name) — right lane ──
-        // Auto-fit: cap by lane width AND by available band height. Shrinks aggressively
-        // (down to 1.8mm) to fit the full text rather than truncating with "…".
-        const titleMaxFs = Math.max(3.2, Math.min(6.8, laneW * 0.82));
-        const titleFit = fitVerticalText(cycle.name, usableH, 1.8, titleMaxFs);
+        // Cap font size by lane width (so the glyph height doesn't overflow horizontally
+        // when rotated 90°). Allow a generous max so we use the full available band height.
+        const titleMaxFs = Math.max(4, Math.min(14, laneW * 0.95));
+        const titleFit = fitVerticalText(cycle.name, usableH, 2.5, titleMaxFs);
         pdf.setFont("helvetica", "bold");
         pdf.setFontSize(titleFit.fontSize);
         pdf.setTextColor(...(lightOnDark ? ([255, 255, 255] as [number, number, number]) : ([30, 35, 50] as [number, number, number])));
@@ -501,8 +501,8 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
 
         // ── Type label (Préparation Générale, etc.) — left lane — gray italic ──
         if (hasTypeLabel) {
-          const typeMaxFs = Math.max(2.6, Math.min(5.2, laneW * 0.72));
-          const typeFit = fitVerticalText(typeFullLabel, usableH, 1.8, typeMaxFs);
+          const typeMaxFs = Math.max(3.2, Math.min(11, laneW * 0.85));
+          const typeFit = fitVerticalText(typeFullLabel, usableH, 2.2, typeMaxFs);
           pdf.setFont("helvetica", "italic");
           pdf.setFontSize(typeFit.fontSize);
           pdf.setTextColor(...(lightOnDark ? ([220, 222, 228] as [number, number, number]) : ([110, 115, 130] as [number, number, number])));
