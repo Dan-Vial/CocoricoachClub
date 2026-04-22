@@ -203,6 +203,19 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
   const pageH = pdf.internal.pageSize.getHeight();
   const margin = 8;
 
+  // Build month sequence (12 months starting at startMonth)
+  const startMonth = ((data.startMonth ?? 0) % 12 + 12) % 12;
+  const monthsSeq: { year: number; month: number }[] = Array.from({ length: 12 }, (_, i) => {
+    const totalMonth = startMonth + i;
+    return { year: data.year + Math.floor(totalMonth / 12), month: totalMonth % 12 };
+  });
+  const lastMs = monthsSeq[11];
+  const periodLabel = data.periodLabel ?? (
+    startMonth === 0
+      ? String(data.year)
+      : `${data.year} → ${lastMs.year}`
+  );
+
   // ── Header band ──
   pdf.setFillColor(28, 33, 50);
   pdf.rect(0, 0, pageW, 18, "F");
@@ -210,7 +223,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
   pdf.setTextColor(255, 255, 255);
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(13);
-  pdf.text(`Planification annuelle ${data.year}`, margin, 8);
+  pdf.text(`Planification annuelle ${periodLabel}`, margin, 8);
 
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(8);
