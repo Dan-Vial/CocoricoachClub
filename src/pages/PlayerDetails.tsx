@@ -30,6 +30,7 @@ import { PlayerTransferHistory } from "@/components/player/PlayerTransferHistory
 import { AthleteAccessSection } from "@/components/player/AthleteAccessSection";
 import { PlayerAdditionalInfoSection } from "@/components/player/PlayerAdditionalInfoSection";
 import { PlayerPersonalInfoSection } from "@/components/player/PlayerPersonalInfoSection";
+import { AthleticsDisciplinesEditor } from "@/components/player/AthleticsDisciplinesEditor";
 import { PlayerReferenceCard } from "@/components/player/PlayerReferenceCard";
 import { PlayerBowlingArsenal } from "@/components/bowling/PlayerBowlingArsenal";
 import { BowlingCumulativeStats } from "@/components/bowling/BowlingCumulativeStats";
@@ -450,6 +451,19 @@ function PlayerDetailsContent() {
             sportType={sportType}
           />
         </div>
+
+        {/* Athlétisme : éditeur multi-disciplines / spécialités */}
+        {isAthletismeCategory(sportType) && !isViewer && (
+          <div className="mb-3">
+            <AthleticsDisciplinesEditor
+              playerId={playerId!}
+              initialDisciplines={(player as any).disciplines ?? null}
+              initialSpecialties={(player as any).specialties ?? null}
+              primaryDiscipline={player.discipline ?? null}
+              primarySpecialty={player.specialty ?? null}
+            />
+          </div>
+        )}
 
         {/* Player Profile and Biometrics Section - Compact */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
