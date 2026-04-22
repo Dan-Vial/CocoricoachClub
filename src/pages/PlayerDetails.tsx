@@ -452,6 +452,19 @@ function PlayerDetailsContent() {
           />
         </div>
 
+        {/* Athlétisme : éditeur multi-disciplines / spécialités */}
+        {isAthletismeCategory(sportType) && !isViewer && (
+          <div className="mb-3">
+            <AthleticsDisciplinesEditor
+              playerId={playerId!}
+              initialDisciplines={(player as any).disciplines ?? null}
+              initialSpecialties={(player as any).specialties ?? null}
+              primaryDiscipline={player.discipline ?? null}
+              primarySpecialty={player.specialty ?? null}
+            />
+          </div>
+        )}
+
         {/* Player Profile and Biometrics Section - Compact */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
           <PlayerProfile 
