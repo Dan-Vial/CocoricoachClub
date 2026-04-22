@@ -512,8 +512,9 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
       }
     }
 
-    // Competition markers — drawn over the day-number cell (left of the cycles area)
-    // so the trophy never overlaps the vertical cycle text.
+    // Competition markers — drawn centered between the day-letter and day-number cells
+    // (i.e. on the boundary between dayInitial and dayNumber columns) so the trophy
+    // never overlaps the vertical cycle text.
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(yy, mm, d);
       const dateKey = format(date, "yyyy-MM-dd");
@@ -521,10 +522,9 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
       if (dayMatches && dayMatches.length > 0) {
         const y = gridTop + monthHeaderH + (d - 1) * dayRowH;
         const cy = y + dayRowH / 2;
-        // Place the trophy at the right edge of the day-number cell (still inside
-        // the month label band, before the cycles area starts).
         const trophySize = Math.min(2.2, dayRowH * 0.65);
-        const trophyX = xMonth + monthLabelW - trophySize / 2 - 0.2;
+        // Center horizontally on the boundary between the letter cell and the number cell.
+        const trophyX = xMonth + dayInitialW;
         drawTrophyIcon(pdf, trophyX, cy, trophySize);
       }
     }
