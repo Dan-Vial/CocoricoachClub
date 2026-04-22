@@ -6,6 +6,14 @@ import type { StatField } from "@/lib/constants/sportStats";
 import { getStatCategories } from "@/lib/constants/sportStats";
 import { groupStatsByTheme } from "@/lib/statSubGroups";
 
+// Convert seconds to "M'SS" minutes display (e.g., 71 → "1'11", 223 → "3'43")
+function formatSecondsToMinutes(totalSeconds: number): string {
+  const safe = Math.max(0, Math.round(totalSeconds));
+  const mins = Math.floor(safe / 60);
+  const secs = safe % 60;
+  return `${mins}'${secs.toString().padStart(2, "0")}`;
+}
+
 interface CumulativeStats {
   playerId: string;
   playerName: string;
