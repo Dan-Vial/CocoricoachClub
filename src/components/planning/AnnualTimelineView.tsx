@@ -4,7 +4,7 @@ import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Target, Flame, Activity } from "lucide-react";
+import { Plus, Target, Flame, Activity, Trophy } from "lucide-react";
 
 interface PeriodizationCategory {
   id: string;
@@ -201,6 +201,7 @@ export function AnnualTimelineView({
         {/* CATEGORY ROWS */}
         {categories.map((cat) => {
           const catCycles = cycles.filter(c => c.periodization_category_id === cat.id);
+          const isCompetitionRow = /comp[ée]tition/i.test(cat.name);
           // Sort by duration desc so wider blocks render first (behind)
           const sortedCycles = [...catCycles].sort((a, b) => {
             const da = differenceInDays(new Date(a.end_date), new Date(a.start_date));
