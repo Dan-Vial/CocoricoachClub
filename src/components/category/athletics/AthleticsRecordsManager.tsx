@@ -244,6 +244,17 @@ export function AthleticsRecordsManager({ categoryId, playerId, singlePlayer = f
 
   const availableSpecialties = discipline ? ATHLETISME_SPECIALTIES[discipline] || [] : [];
 
+  // ── Auto-filter: restrict the discipline dropdown to those the selected athlete actually practices.
+  const selectedAthletePairs = getAthletePairs(playerMap.get(selectedPlayerId));
+  const athleteDisciplineValues = Array.from(
+    new Set(selectedAthletePairs.map((p) => p.discipline)),
+  );
+  // If athlete has 0 declared disciplines (legacy/empty), fall back to the full list so we don't block them.
+  const filteredDisciplines =
+    athleteDisciplineValues.length > 0
+      ? ATHLETISME_DISCIPLINES.filter((d) => athleteDisciplineValues.includes(d.value))
+      : ATHLETISME_DISCIPLINES;
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -274,7 +285,7 @@ export function AthleticsRecordsManager({ categoryId, playerId, singlePlayer = f
                 {!singlePlayer && (
                   <div>
                     <Label className="text-xs">Athlète *</Label>
-                    <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId} disabled={!!editing}>
+                    <Select value={selectedPlayerId} onValueChange={handlePlayerChange} disabled={!!editing}>
                       <SelectTrigger>
                         <SelectValue placeholder="Choisir..." />
                       </SelectTrigger>
@@ -296,13 +307,18 @@ export function AthleticsRecordsManager({ categoryId, playerId, singlePlayer = f
                         <SelectValue placeholder="Choisir..." />
                       </SelectTrigger>
                       <SelectContent className="z-[200]">
-                        {ATHLETISME_DISCIPLINES.map((d) => (
+                        {filteredDisciplines.map((d) => (
                           <SelectItem key={d.value} value={d.value}>
                             {d.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {selectedPlayerId && athleteDisciplineValues.length > 0 && (
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        Disciplines pratiquées par cet athlète uniquement
+                      </p>
+                    )}
                   </div>
                   {availableSpecialties.length > 0 && (
                     <div>
