@@ -1483,7 +1483,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
           let x = 14;
           group.items.forEach((s, i) => {
             if (i > 0) doc.line(x, y, x, y + 7);
-            doc.text(s.shortLabel.substring(0, 12), x + 1, y + 5);
+            const fullL = s.label || s.shortLabel;
+            doc.text(fullL.length > 16 ? fullL.substring(0, 15) + "…" : fullL, x + 1, y + 5);
             x += colW;
           });
           y += 7;
