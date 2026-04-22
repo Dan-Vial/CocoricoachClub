@@ -1,14 +1,5 @@
 import jsPDF from "jspdf";
-import {
-  startOfYear,
-  endOfYear,
-  eachMonthOfInterval,
-  startOfMonth,
-  endOfMonth,
-  differenceInDays,
-  format,
-  startOfDay,
-} from "date-fns";
+import { format, getDaysInMonth, startOfDay } from "date-fns";
 import { fr } from "date-fns/locale";
 
 interface PeriodizationCategory {
@@ -52,394 +43,284 @@ export interface AnnualPlanningPdfData {
 
 // ─── Helpers ───
 const hexToRgb = (hex: string): [number, number, number] => {
-  const cleaned = hex.replace("#", "");
+  const cleaned = (hex || "#888888").replace("#", "");
   const full = cleaned.length === 3 ? cleaned.split("").map((c) => c + c).join("") : cleaned;
   const num = parseInt(full, 16);
+  if (isNaN(num)) return [136, 136, 136];
   return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
 };
 
-const lightenRgb = (rgb: [number, number, number], factor: number): [number, number, number] => {
-  return [
-    Math.round(rgb[0] + (255 - rgb[0]) * factor),
-    Math.round(rgb[1] + (255 - rgb[1]) * factor),
-    Math.round(rgb[2] + (255 - rgb[2]) * factor),
-  ];
+const lightenRgb = (rgb: [number, number, number], factor: number): [number, number, number] => [
+  Math.round(rgb[0] + (255 - rgb[0]) * factor),
+  Math.round(rgb[1] + (255 - rgb[1]) * factor),
+  Math.round(rgb[2] + (255 - rgb[2]) * factor),
+];
+
+const luminance = (rgb: [number, number, number]) =>
+  (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+
+// French day initial (L M M J V S D)
+const dayInitial = (date: Date): string => {
+  const map = ["D", "L", "M", "M", "J", "V", "S"];
+  return map[date.getDay()];
 };
 
-// Stack overlapping cycles into rows within one category band
-function computeCycleLanes(cycles: PeriodizationCycle[]): Map<string, number> {
-  const sorted = [...cycles].sort(
-    (a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime(),
-  );
-  const lanes: { end: Date }[] = [];
-  const result = new Map<string, number>();
-  for (const c of sorted) {
-    const cs = new Date(c.start_date);
-    const ce = new Date(c.end_date);
-    let placed = false;
-    for (let i = 0; i < lanes.length; i++) {
-      if (lanes[i].end < cs) {
-        lanes[i] = { end: ce };
-        result.set(c.id, i);
-        placed = true;
-        break;
-      }
-    }
-    if (!placed) {
-      lanes.push({ end: ce });
-      result.set(c.id, lanes.length - 1);
-    }
-  }
-  return result;
-}
+const isWeekend = (date: Date): boolean => date.getDay() === 0 || date.getDay() === 6;
 
-// Compute daily load (intensity * volume / 25) capped at 1
-function computeDailyLoad(
-  cycles: PeriodizationCycle[],
-  rangeStart: Date,
-  rangeEnd: Date,
-): number[] {
-  const days = differenceInDays(rangeEnd, rangeStart) + 1;
-  const loads = new Array(days).fill(0);
-  for (const c of cycles) {
-    const cs = startOfDay(new Date(c.start_date));
-    const ce = startOfDay(new Date(c.end_date));
-    const intensity = c.intensity || 0;
-    const volume = c.volume || 0;
-    if (intensity === 0 && volume === 0) continue;
-    const score = ((intensity + volume) / 10); // 0..1
-    for (let d = 0; d < days; d++) {
-      const day = new Date(rangeStart);
-      day.setDate(day.getDate() + d);
-      if (day >= cs && day <= ce) {
-        loads[d] = Math.min(1, loads[d] + score * 0.5);
-      }
-    }
-  }
-  return loads;
-}
-
-function loadColor(load: number): [number, number, number] {
-  // Green → Yellow → Orange → Red
-  if (load <= 0) return [240, 240, 240];
-  if (load <= 0.25) return [134, 197, 94];
-  if (load <= 0.5) return [234, 179, 8];
-  if (load <= 0.75) return [249, 115, 22];
-  return [220, 38, 38];
-}
-
-// ─── Page rendering ───
-function renderHalfYearPage(
-  pdf: jsPDF,
-  data: AnnualPlanningPdfData,
-  half: 0 | 1, // 0 = Jan-Jun, 1 = Jul-Dec
-  pageNum: number,
-  totalPages: number,
-) {
+// ─── Page rendering: full year calendar (months in columns, days 1-31 in rows) ───
+function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
-  const margin = 12;
+  const margin = 8;
 
-  // Header band
+  // ── Header band ──
   pdf.setFillColor(28, 33, 50);
-  pdf.rect(0, 0, pageW, 22, "F");
+  pdf.rect(0, 0, pageW, 18, "F");
 
   pdf.setTextColor(255, 255, 255);
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(14);
-  pdf.text(`Planification annuelle ${data.year}`, margin, 10);
+  pdf.setFontSize(13);
+  pdf.text(`Planification annuelle ${data.year}`, margin, 8);
 
   pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(8.5);
+  pdf.setFontSize(8);
   const subtitle = [data.clubName, data.categoryName].filter(Boolean).join(" • ");
-  if (subtitle) pdf.text(subtitle, margin, 16);
+  if (subtitle) pdf.text(subtitle, margin, 14);
 
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(8.5);
-  const halfLabel = half === 0 ? "Semestre 1 — Janvier à Juin" : "Semestre 2 — Juillet à Décembre";
-  pdf.text(halfLabel, pageW - margin, 10, { align: "right" });
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(7.5);
-  pdf.text(`Page ${pageNum} / ${totalPages}`, pageW - margin, 16, { align: "right" });
+  pdf.text(
+    `Généré le ${format(new Date(), "dd MMMM yyyy", { locale: fr })}`,
+    pageW - margin,
+    8,
+    { align: "right" },
+  );
 
-  // Timeline geometry
-  const labelWidth = 42;
-  const timelineX = margin + labelWidth;
-  const timelineW = pageW - margin - timelineX;
-  const timelineY = 30;
+  // ── Grid geometry ──
+  const gridTop = 22;
+  const footerH = 28;
+  const gridBottom = pageH - footerH;
+  const monthsCount = 12;
 
-  // Range
-  const rangeStartMonth = half === 0 ? 0 : 6;
-  const rangeEndMonth = half === 0 ? 5 : 11;
-  const rangeStart = startOfMonth(new Date(data.year, rangeStartMonth, 1));
-  const rangeEnd = endOfMonth(new Date(data.year, rangeEndMonth, 1));
-  const totalDays = differenceInDays(rangeEnd, rangeStart) + 1;
-  const dayW = timelineW / totalDays;
+  // Each month column = "Day initial" sub-col + "Day number" sub-col + content cell
+  // Simpler: 1 column per month, with day initial + day number on left side of each cell
+  const totalCols = monthsCount;
+  const colW = (pageW - margin * 2) / totalCols;
 
-  const months = eachMonthOfInterval({ start: rangeStart, end: rangeEnd });
+  // Header row height
+  const headerRowH = 7;
+  // 31 day rows
+  const rowH = (gridBottom - gridTop - headerRowH) / 31;
 
-  // Month headers
-  pdf.setDrawColor(220, 220, 225);
-  pdf.setLineWidth(0.2);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(9);
-  pdf.setTextColor(60, 60, 70);
+  // ── Month headers ──
+  const monthLabels = [
+    "JANV.", "FÉVR.", "MARS", "AVRIL", "MAI", "JUIN",
+    "JUIL.", "AOÛT", "SEPT.", "OCT.", "NOV.", "DÉC.",
+  ];
 
-  months.forEach((m) => {
-    const ms = startOfMonth(m);
-    const me = endOfMonth(m);
-    const offsetStart = differenceInDays(ms, rangeStart);
-    const monthW = (differenceInDays(me, ms) + 1) * dayW;
-    const x = timelineX + offsetStart * dayW;
-
-    // Alternating month background tint
-    const idx = months.indexOf(m);
-    if (idx % 2 === 0) {
-      pdf.setFillColor(248, 249, 252);
-    } else {
-      pdf.setFillColor(255, 255, 255);
-    }
-    pdf.rect(x, timelineY, monthW, pageH - timelineY - 30, "F");
-
-    // Month label
-    pdf.setTextColor(45, 50, 70);
-    pdf.text(format(m, "MMMM", { locale: fr }).toUpperCase(), x + monthW / 2, timelineY - 2, {
+  for (let m = 0; m < 12; m++) {
+    const x = margin + m * colW;
+    pdf.setFillColor(28, 33, 50);
+    pdf.rect(x, gridTop, colW, headerRowH, "F");
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(8);
+    pdf.text(`${monthLabels[m]} ${data.year}`, x + colW / 2, gridTop + headerRowH / 2 + 1.4, {
       align: "center",
     });
+  }
 
-    // Vertical separator
-    pdf.setDrawColor(210, 213, 220);
-    pdf.line(x, timelineY, x, pageH - 30);
+  // ── Build day cells ──
+  // For each month and day, find the dominant cycle (highest priority: most recent or with content)
+  // and matches. Render colored background + label centered (vertical text or short label).
 
-    // Week ticks (every 7 days, lighter)
-    pdf.setDrawColor(235, 237, 242);
-    const monthDays = differenceInDays(me, ms) + 1;
-    for (let d = 7; d < monthDays; d += 7) {
-      const tx = x + d * dayW;
-      pdf.line(tx, timelineY, tx, pageH - 30);
-    }
+  // Pre-compute matches per day
+  const matchesByDate = new Map<string, MatchInfo[]>();
+  (data.matches || []).forEach((m) => {
+    if (!m.match_date) return;
+    if (m.event_type === "training") return;
+    const key = m.match_date.split("T")[0];
+    if (!matchesByDate.has(key)) matchesByDate.set(key, []);
+    matchesByDate.get(key)!.push(m);
   });
 
-  // Draw final right border
-  pdf.setDrawColor(210, 213, 220);
-  pdf.line(timelineX + timelineW, timelineY, timelineX + timelineW, pageH - 30);
-
-  // ─── Categories rows ───
+  // Sort categories so we draw consistently
   const orderedCats = [...data.categories].sort((a, b) => a.sort_order - b.sort_order);
+  const catById = new Map(orderedCats.map((c) => [c.id, c]));
 
-  // Compute available height per row (reserve 28mm for charge band + footer)
-  const chargeBandH = 14;
-  const footerReserve = 22;
-  const availableH = pageH - timelineY - chargeBandH - footerReserve - 4;
-  // Each row height adapts to lane count
-  const cyclesByCat = new Map<string, PeriodizationCycle[]>();
-  const lanesByCat = new Map<string, Map<string, number>>();
-  const laneCountByCat = new Map<string, number>();
+  // For each day, determine the cycle blocks (we may have several stacked categories)
+  // Strategy: for each day, list active cycles ordered by sort_order; we then show
+  // up to 1 cycle's color (the most "specific" one) and we draw small color bars on the side.
 
-  orderedCats.forEach((cat) => {
-    const catCycles = data.cycles.filter(
-      (c) =>
-        c.periodization_category_id === cat.id &&
-        new Date(c.end_date) >= rangeStart &&
-        new Date(c.start_date) <= rangeEnd,
-    );
-    cyclesByCat.set(cat.id, catCycles);
-    const lanes = computeCycleLanes(catCycles);
-    lanesByCat.set(cat.id, lanes);
-    const max = catCycles.length > 0 ? Math.max(...Array.from(lanes.values())) + 1 : 1;
-    laneCountByCat.set(cat.id, max);
-  });
+  const today = startOfDay(new Date());
 
-  const totalLanes = orderedCats.reduce((s, c) => s + (laneCountByCat.get(c.id) || 1), 0);
-  const lanePx = Math.min(11, Math.max(7, availableH / Math.max(totalLanes, 1) - 1));
-  const rowPadding = 2;
+  for (let m = 0; m < 12; m++) {
+    const x = margin + m * colW;
+    const daysInMonth = getDaysInMonth(new Date(data.year, m, 1));
 
-  let cursorY = timelineY + 6;
+    for (let d = 1; d <= 31; d++) {
+      const y = gridTop + headerRowH + (d - 1) * rowH;
 
-  for (const cat of orderedCats) {
-    const lanes = lanesByCat.get(cat.id)!;
-    const laneCount = laneCountByCat.get(cat.id) || 1;
-    const rowH = laneCount * lanePx + rowPadding;
-    const catRgb = hexToRgb(cat.color);
-
-    // Row background (very faint)
-    const lightCat = lightenRgb(catRgb, 0.93);
-    pdf.setFillColor(...lightCat);
-    pdf.rect(margin, cursorY, labelWidth - 2, rowH, "F");
-
-    // Color dot + label
-    pdf.setFillColor(...catRgb);
-    pdf.circle(margin + 2.5, cursorY + rowH / 2, 1.4, "F");
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(7.5);
-    pdf.setTextColor(40, 45, 60);
-    const labelMaxW = labelWidth - 8;
-    const labelLines = pdf.splitTextToSize(cat.name, labelMaxW);
-    const labelStartY = cursorY + rowH / 2 - ((labelLines.length - 1) * 2.6) / 2 + 1;
-    labelLines.forEach((line: string, i: number) => {
-      pdf.text(line, margin + 5.5, labelStartY + i * 2.6);
-    });
-
-    // Horizontal divider
-    pdf.setDrawColor(225, 228, 235);
-    pdf.line(margin, cursorY + rowH, pageW - margin, cursorY + rowH);
-
-    // Render cycles
-    const catCycles = cyclesByCat.get(cat.id)!;
-    catCycles.forEach((cycle) => {
-      const cs = new Date(cycle.start_date);
-      const ce = new Date(cycle.end_date);
-      const startD = Math.max(differenceInDays(cs, rangeStart), 0);
-      const endD = Math.min(differenceInDays(ce, rangeStart), totalDays - 1);
-      if (endD < 0 || startD > totalDays - 1) return;
-
-      const x = timelineX + startD * dayW;
-      const w = Math.max(2, (endD - startD + 1) * dayW);
-      const lane = lanes.get(cycle.id) || 0;
-      const y = cursorY + 1 + lane * lanePx;
-      const h = lanePx - 1.2;
-
-      const rgb = hexToRgb(cycle.color || cat.color);
-      // Soft block fill
-      pdf.setFillColor(...rgb);
-      pdf.roundedRect(x, y, w, h, 1.2, 1.2, "F");
-
-      // Cycle label
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(Math.min(7.2, Math.max(5.5, h - 3)));
-      const innerPad = 1.4;
-      const textMaxW = w - innerPad * 2;
-      if (textMaxW > 6) {
-        const txt = pdf.splitTextToSize(cycle.name, textMaxW)[0] || "";
-        pdf.text(txt, x + innerPad, y + h / 2 + 1.2);
+      // Empty cell for days that don't exist in this month
+      if (d > daysInMonth) {
+        pdf.setFillColor(245, 246, 248);
+        pdf.rect(x, y, colW, rowH, "F");
+        pdf.setDrawColor(220, 222, 230);
+        pdf.setLineWidth(0.15);
+        pdf.rect(x, y, colW, rowH, "S");
+        continue;
       }
 
-      // Intensity dots (right side)
-      const intensity = cycle.intensity || 0;
-      if (intensity > 0 && w > 18) {
-        const dotR = 0.55;
-        const dotSpacing = 1.6;
-        const dotsW = 5 * dotSpacing;
-        const startX = x + w - dotsW - 1;
-        const dotY = y + h - 1.5;
-        for (let i = 0; i < 5; i++) {
-          if (i < intensity) {
-            pdf.setFillColor(255, 255, 255);
-          } else {
-            pdf.setFillColor(255, 255, 255);
-            pdf.setDrawColor(255, 255, 255);
-          }
-          pdf.circle(startX + i * dotSpacing, dotY, dotR, i < intensity ? "F" : "S");
+      const date = new Date(data.year, m, d);
+      const dateKey = format(date, "yyyy-MM-dd");
+      const weekend = isWeekend(date);
+      const isToday = date.getTime() === today.getTime();
+
+      // Find active cycles for this day
+      const activeCycles = data.cycles.filter((c) => {
+        const cs = startOfDay(new Date(c.start_date));
+        const ce = startOfDay(new Date(c.end_date));
+        return date >= cs && date <= ce;
+      });
+
+      // Determine background color: blend of active cycle colors, or default
+      let bgRgb: [number, number, number];
+      if (activeCycles.length > 0) {
+        // Average colors weighted equally
+        const sum = activeCycles.reduce(
+          (acc, c) => {
+            const rgb = hexToRgb(c.color || catById.get(c.periodization_category_id)?.color || "#888888");
+            return [acc[0] + rgb[0], acc[1] + rgb[1], acc[2] + rgb[2]] as [number, number, number];
+          },
+          [0, 0, 0] as [number, number, number],
+        );
+        bgRgb = [
+          Math.round(sum[0] / activeCycles.length),
+          Math.round(sum[1] / activeCycles.length),
+          Math.round(sum[2] / activeCycles.length),
+        ];
+      } else {
+        bgRgb = weekend ? [232, 234, 240] : [255, 255, 255];
+      }
+
+      // Fill cell background
+      pdf.setFillColor(...bgRgb);
+      pdf.rect(x, y, colW, rowH, "F");
+
+      // Cell border
+      pdf.setDrawColor(200, 203, 212);
+      pdf.setLineWidth(0.15);
+      pdf.rect(x, y, colW, rowH, "S");
+
+      // Today highlight border
+      if (isToday) {
+        pdf.setDrawColor(220, 38, 38);
+        pdf.setLineWidth(0.6);
+        pdf.rect(x + 0.3, y + 0.3, colW - 0.6, rowH - 0.6, "S");
+        pdf.setLineWidth(0.15);
+      }
+
+      // Determine text color based on background luminance
+      const lum = luminance(bgRgb);
+      const textRgb: [number, number, number] = lum > 0.6 ? [40, 45, 60] : [255, 255, 255];
+
+      // Day initial
+      const initial = dayInitial(date);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(Math.min(6.5, rowH * 0.55));
+      pdf.setTextColor(...textRgb);
+      pdf.text(initial, x + 1.4, y + rowH / 2 + 1.1);
+
+      // Day number
+      pdf.setFont("helvetica", "normal");
+      pdf.text(String(d), x + 4.6, y + rowH / 2 + 1.1);
+
+      // Cycle label (right side, truncated)
+      if (activeCycles.length > 0) {
+        // Pick the cycle with the most "informative" name (longest non-empty)
+        const labelCycle = activeCycles.reduce((best, c) =>
+          (c.name?.length || 0) > (best.name?.length || 0) ? c : best,
+          activeCycles[0],
+        );
+        const labelMaxW = colW - 9;
+        if (labelMaxW > 6) {
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(Math.min(5.5, rowH * 0.5));
+          const truncated = pdf.splitTextToSize(labelCycle.name || "", labelMaxW)[0] || "";
+          pdf.text(truncated, x + colW - 1.4, y + rowH / 2 + 1, { align: "right" });
         }
       }
-    });
 
-    cursorY += rowH + 1.5;
+      // Competition marker
+      const dayMatches = matchesByDate.get(dateKey);
+      if (dayMatches && dayMatches.length > 0) {
+        const mx = x + colW - 2;
+        const my = y + 1.6;
+        pdf.setFillColor(220, 38, 38);
+        pdf.setDrawColor(120, 20, 20);
+        pdf.setLineWidth(0.2);
+        pdf.circle(mx, my, 0.9, "FD");
+      }
+    }
   }
 
-  // ─── Competitions markers (above charge band) ───
-  const compsBandY = pageH - footerReserve - chargeBandH - 6;
+  // ── Footer / Legend ──
+  const legendY = gridBottom + 4;
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(7);
-  pdf.setTextColor(120, 80, 0);
-  pdf.text("COMPÉTITIONS", margin, compsBandY - 1);
+  pdf.setFontSize(8);
+  pdf.setTextColor(40, 45, 60);
+  pdf.text("LÉGENDE — THÉMATIQUES", margin, legendY);
 
-  const filteredMatches = (data.matches || []).filter((m) => {
-    if (!m.match_date) return false;
-    if (m.event_type === "training") return false;
-    const d = new Date(m.match_date);
-    return d >= rangeStart && d <= rangeEnd;
-  });
-
-  filteredMatches.forEach((m) => {
-    const d = new Date(m.match_date);
-    const offsetD = differenceInDays(d, rangeStart);
-    const cx = timelineX + offsetD * dayW + dayW / 2;
-    const cy = compsBandY + 1.5;
-    // Diamond marker
-    pdf.setFillColor(217, 119, 6);
-    pdf.setDrawColor(146, 64, 14);
-    pdf.setLineWidth(0.3);
-    const r = 1.6;
-    pdf.triangle(cx, cy - r, cx - r, cy, cx + r, cy, "FD");
-    pdf.triangle(cx, cy + r, cx - r, cy, cx + r, cy, "FD");
-  });
-
-  // ─── Charge globale band ───
-  const chargeY = pageH - footerReserve - chargeBandH;
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(7.5);
-  pdf.setTextColor(60, 60, 70);
-  pdf.text("CHARGE GLOBALE", margin, chargeY - 1);
-
-  // Background
-  pdf.setFillColor(245, 246, 250);
-  pdf.rect(timelineX, chargeY, timelineW, chargeBandH - 4, "F");
-
-  // Daily load
-  const loads = computeDailyLoad(data.cycles, rangeStart, rangeEnd);
-  const segH = chargeBandH - 4;
-  for (let d = 0; d < totalDays; d++) {
-    const x = timelineX + d * dayW;
-    const c = loadColor(loads[d]);
-    pdf.setFillColor(...c);
-    pdf.rect(x, chargeY, dayW + 0.05, segH, "F");
-  }
-
-  // Charge legend
-  pdf.setFontSize(6.2);
+  // Categories swatches
+  let lx = margin;
+  let ly = legendY + 4;
   pdf.setFont("helvetica", "normal");
-  pdf.setTextColor(110, 115, 130);
-  const legY = chargeY + segH + 3;
-  const palette: [string, [number, number, number]][] = [
-    ["Repos", [200, 205, 215]],
-    ["Légère", [134, 197, 94]],
-    ["Modérée", [234, 179, 8]],
-    ["Soutenue", [249, 115, 22]],
-    ["Élevée", [220, 38, 38]],
-  ];
-  let lx = timelineX;
-  palette.forEach(([label, rgb]) => {
+  pdf.setFontSize(7);
+  orderedCats.forEach((cat) => {
+    const rgb = hexToRgb(cat.color);
+    const labelW = pdf.getTextWidth(cat.name) + 8;
+    if (lx + labelW > pageW - margin) {
+      lx = margin;
+      ly += 5;
+    }
     pdf.setFillColor(...rgb);
-    pdf.rect(lx, legY - 2, 3, 2, "F");
-    pdf.setTextColor(110, 115, 130);
-    pdf.text(label, lx + 4, legY - 0.5);
-    lx += pdf.getTextWidth(label) + 12;
+    pdf.rect(lx, ly - 2.8, 4, 3.5, "F");
+    pdf.setDrawColor(180, 183, 192);
+    pdf.rect(lx, ly - 2.8, 4, 3.5, "S");
+    pdf.setTextColor(60, 65, 80);
+    pdf.text(cat.name, lx + 5, ly);
+    lx += labelW + 4;
   });
 
-  // ─── Footer ───
-  pdf.setDrawColor(220, 222, 230);
-  pdf.line(margin, pageH - 12, pageW - margin, pageH - 12);
+  // Marker legend (right side)
+  const rightLegendX = pageW - margin - 60;
+  pdf.setFillColor(220, 38, 38);
+  pdf.setDrawColor(120, 20, 20);
+  pdf.circle(rightLegendX, legendY - 1, 0.9, "FD");
+  pdf.setTextColor(60, 65, 80);
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(7);
-  pdf.setTextColor(130, 135, 150);
-  pdf.text(
-    `Généré le ${format(new Date(), "dd MMMM yyyy 'à' HH:mm", { locale: fr })}`,
-    margin,
-    pageH - 7,
-  );
-  pdf.text("CocoriCoach Club", pageW - margin, pageH - 7, { align: "right" });
+  pdf.text("Compétition", rightLegendX + 2, legendY);
 
-  // Today marker if in range
-  const today = startOfDay(new Date());
-  if (today >= rangeStart && today <= rangeEnd) {
-    const tx = timelineX + differenceInDays(today, rangeStart) * dayW;
-    pdf.setDrawColor(220, 38, 38);
-    pdf.setLineWidth(0.6);
-    pdf.line(tx, timelineY, tx, chargeY + segH);
-    pdf.setFillColor(220, 38, 38);
-    pdf.triangle(tx - 1.6, timelineY - 1.6, tx + 1.6, timelineY - 1.6, tx, timelineY + 0.4, "F");
-    pdf.setLineWidth(0.2);
-  }
+  pdf.setDrawColor(220, 38, 38);
+  pdf.setLineWidth(0.6);
+  pdf.rect(rightLegendX - 1.5, legendY + 2, 3, 3, "S");
+  pdf.setLineWidth(0.15);
+  pdf.text("Aujourd'hui", rightLegendX + 2, legendY + 4.5);
+
+  // Footer line
+  pdf.setDrawColor(220, 222, 230);
+  pdf.line(margin, pageH - 6, pageW - margin, pageH - 6);
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(6.5);
+  pdf.setTextColor(130, 135, 150);
+  pdf.text("CocoriCoach Club", pageW - margin, pageH - 2.5, { align: "right" });
 }
 
 export function exportAnnualPlanningToPdf(data: AnnualPlanningPdfData) {
   const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
-  renderHalfYearPage(pdf, data, 0, 1, 2);
-  pdf.addPage();
-  renderHalfYearPage(pdf, data, 1, 2, 2);
+  renderCalendarPage(pdf, data);
 
   const fname = `planification-annuelle-${data.year}-${(data.categoryName || "categorie")
     .toLowerCase()
