@@ -188,9 +188,24 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
                       </span>
                     </div>
                     {pastMatches.length > 0 ? (
-                      <div className="space-y-3">
-                        {[...pastMatches].reverse().map((match) => (
-                          <MatchCard key={match.id} match={match} categoryId={categoryId} />
+                      <div className="space-y-6">
+                        {pastMatchesByMonth.map((group) => (
+                          <div key={group.key}>
+                            <div className="flex items-center gap-3 mb-3">
+                              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground capitalize">
+                                {group.label}
+                              </h4>
+                              <div className="flex-1 h-px bg-border" />
+                              <span className="text-[10px] font-semibold text-muted-foreground">
+                                {group.matches.length}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                              {group.matches.map((match) => (
+                                <MatchCard key={match.id} match={match} categoryId={categoryId} />
+                              ))}
+                            </div>
+                          </div>
                         ))}
                       </div>
                     ) : (
