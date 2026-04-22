@@ -91,6 +91,19 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
     setIsDialogOpen(true);
   };
 
+  const openDuplicate = (m: Minima) => {
+    setEditingMinima(null); // create mode → new row
+    setDiscipline(m.discipline);
+    setSpecialty(m.specialty || NONE_SPECIALTY);
+    setLabel(m.label);
+    setLevel(m.level || "national");
+    setTargetValue(String(m.target_value));
+    setUnit(m.unit);
+    setLowerIsBetter(m.lower_is_better);
+    setNotes(m.notes || "");
+    setIsDialogOpen(true);
+  };
+
   const handleDisciplineChange = (value: string) => {
     setDiscipline(value);
     setSpecialty(NONE_SPECIALTY);
