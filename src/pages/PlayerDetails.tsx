@@ -37,6 +37,7 @@ import { PlayerSurfEquipment } from "@/components/surf/PlayerSurfEquipment";
 import { PlayerSkiEquipment } from "@/components/ski/PlayerSkiEquipment";
 import { PlayerPadelEquipment } from "@/components/padel/PlayerPadelEquipment";
 import { PlayerMedalsSection } from "@/components/player/PlayerMedalsSection";
+import { AthleticsRecordsManager } from "@/components/category/athletics/AthleticsRecordsManager";
 import { ViewerModeProvider, useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { AthleteSpaceDocuments } from "@/components/athlete-space/AthleteSpaceDocuments";
 import { Badge } from "@/components/ui/badge";
