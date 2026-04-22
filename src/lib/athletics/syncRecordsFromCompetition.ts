@@ -19,6 +19,8 @@ interface RoundLike {
   stats?: Record<string, number> | null;
   /** stat_data JSON brut (si récupéré depuis la BDD) */
   stat_data?: Record<string, any> | null;
+  /** Date spécifique de l'épreuve (pour les compétitions multi-jours). */
+  round_date?: string | null;
 }
 
 interface PlayerInfo {
@@ -142,7 +144,10 @@ export async function syncAthleticsRecordsFromRounds(opts: SyncOptions): Promise
   });
 
   // Calcule la meilleure perf du match pour chaque (player, discipline, specialty)
-  const bestPerfByKey = new Map<string, { value: number; lowerIsBetter: boolean; unit: string }>();
+  const bestPerfByKey = new Map<
+    string,
+    { value: number; lowerIsBetter: boolean; unit: string; perfDate: string }
+  >();
 
   rounds.forEach((round) => {
     const player = playersById.get(round.player_id);
@@ -150,6 +155,9 @@ export async function syncAthleticsRecordsFromRounds(opts: SyncOptions): Promise
 
     const pairs = listAthletePairs(player);
     if (pairs.length === 0) return;
+
+    // Date effective de la performance : date saisie pour la manche, sinon date du match.
+    const perfDate = round.round_date && round.round_date.length > 0 ? round.round_date : matchDate;
 
     pairs.forEach(({ discipline, specialty }) => {
       const refRecord = recordsByKey.get(recordKey(round.player_id, discipline, specialty, seasonYear));
@@ -163,10 +171,10 @@ export async function syncAthleticsRecordsFromRounds(opts: SyncOptions): Promise
       const key = `${round.player_id}|${discipline}|${specialty || ""}`;
       const current = bestPerfByKey.get(key);
       if (!current) {
-        bestPerfByKey.set(key, { value, lowerIsBetter, unit });
+        bestPerfByKey.set(key, { value, lowerIsBetter, unit, perfDate });
       } else {
         const better = lowerIsBetter ? value < current.value : value > current.value;
-        if (better) bestPerfByKey.set(key, { value, lowerIsBetter, unit });
+        if (better) bestPerfByKey.set(key, { value, lowerIsBetter, unit, perfDate });
       }
     });
   });
@@ -218,12 +226,12 @@ export async function syncAthleticsRecordsFromRounds(opts: SyncOptions): Promise
       const update: Record<string, any> = {};
       if (beatsSb) {
         update.season_best = perf.value;
-        update.season_best_date = matchDate;
+        update.season_best_date = perf.perfDate;
         update.season_best_location = matchLocation || null;
       }
       if (beatsPb || beatsSeasonPb) {
         update.personal_best = perf.value;
-        update.personal_best_date = matchDate;
+        update.personal_best_date = perf.perfDate;
         update.personal_best_location = matchLocation || null;
       }
       if (Object.keys(update).length === 0) continue;
@@ -244,7 +252,7 @@ export async function syncAthleticsRecordsFromRounds(opts: SyncOptions): Promise
         unit: perf.unit,
         lower_is_better: perf.lowerIsBetter,
         season_best: perf.value,
-        season_best_date: matchDate,
+        season_best_date: perf.perfDate,
         season_best_location: matchLocation || null,
       };
       // Propagation du PB : on prend la meilleure valeur entre l'historique et la nouvelle perf.
@@ -254,7 +262,7 @@ export async function syncAthleticsRecordsFromRounds(opts: SyncOptions): Promise
           : Math.max(historicalPb.value, perf.value)
         : perf.value;
       insertPayload.personal_best = newPb;
-      insertPayload.personal_best_date = matchDate;
+      insertPayload.personal_best_date = perf.perfDate;
       insertPayload.personal_best_location = matchLocation || null;
 
       const { error } = await supabase

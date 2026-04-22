@@ -155,28 +155,42 @@ export function CompetitionRoundsDialog({
   const isAviron = sportType.toLowerCase().includes("aviron");
   const isAthletics = isAthletismeCategory(sportType);
 
+  // Stat keys exclus pour athlétisme dans la grille (déjà saisis en haut : classement, temps, RP, vent…)
+  const ATHLETICS_HIDDEN_STAT_KEYS = new Set([
+    "finalRanking", // remplacé par le champ Classement en haut
+    "personalBest", // remplacé par le bouton 🏆 RP en haut
+    "seasonBest",
+    "windSpeed",    // remplacé par le champ Vent (m/s) en haut
+    "time",         // remplacé par le champ Temps en haut (synchronise final_time_seconds)
+  ]);
+
   // Get discipline-specific stats for a player (athletics: each athlete may have different stats)
   const getPlayerStats = (player: PlayerRounds): StatField[] => {
     if (isAthletics) {
       // Try specialty first (e.g. "100mH", "200m", "poids"), then discipline (e.g. "athletisme_haies")
+      let resolved: StatField[] = ATHLETISME_GENERAL_STATS;
       const specStats = getAthletismeStatsForDiscipline(player.specialty);
       if (player.specialty && specStats !== ATHLETISME_GENERAL_STATS) {
-        return specStats;
-      }
-      // Fallback to discipline field
-      const discStats = getAthletismeStatsForDiscipline(player.discipline);
-      if (player.discipline && discStats !== ATHLETISME_GENERAL_STATS) {
-        return discStats;
-      }
-      // Last resort: try discipline without prefix (athletisme_haies -> haies)
-      if (player.discipline) {
-        const stripped = player.discipline.replace(/^athletisme_/, '');
-        const strippedStats = getAthletismeStatsForDiscipline(stripped);
-        if (strippedStats !== ATHLETISME_GENERAL_STATS) {
-          return strippedStats;
+        resolved = specStats;
+      } else {
+        const discStats = getAthletismeStatsForDiscipline(player.discipline);
+        if (player.discipline && discStats !== ATHLETISME_GENERAL_STATS) {
+          resolved = discStats;
+        } else if (player.discipline) {
+          const stripped = player.discipline.replace(/^athletisme_/, '');
+          const strippedStats = getAthletismeStatsForDiscipline(stripped);
+          if (strippedStats !== ATHLETISME_GENERAL_STATS) {
+            resolved = strippedStats;
+          } else {
+            resolved = specStats;
+          }
+        } else {
+          resolved = specStats;
         }
       }
-      return specStats; // Falls back to general
+      // Athletics: hide stats already captured in the header row (date/classement/temps/RP/vent)
+      // and drop the entire "general" category (date/RP/vent/SB déjà gérés en haut).
+      return resolved.filter(s => !ATHLETICS_HIDDEN_STAT_KEYS.has(s.key) && s.category !== "general");
     }
     return sportStats;
   };
@@ -188,12 +202,14 @@ export function CompetitionRoundsDialog({
     if (isAthletics) {
       const uniqueCats = [...new Set(pStats.map(s => s.category))];
       const catLabels: Record<string, string> = {
-        general: "Général",
         scoring: "Performance",
         attack: "Classement",
         defense: "Détails",
       };
-      return uniqueCats.map(key => ({ key, label: catLabels[key] || key }));
+      // "general" déjà filtrée dans getPlayerStats
+      return uniqueCats
+        .filter(key => key !== "general")
+        .map(key => ({ key, label: catLabels[key] || key }));
     }
     return allStatCategories.filter(cat => pStats.some(s => s.category === cat.key));
   };
@@ -623,6 +639,7 @@ export function CompetitionRoundsDialog({
               player_id: p.playerId,
               final_time_seconds: r.final_time_seconds ?? null,
               stats: r.stats ?? null,
+              round_date: r.roundDate ?? null,
             })),
           );
           // Pour le multi-épreuves : on s'appuie strictement sur la discipline/spécialité
@@ -1218,7 +1235,17 @@ export function CompetitionRoundsDialog({
 
                           {/* Athletics-specific round info */}
                           {isAthletics && (
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                              <div>
+                                <Label className="text-xs">Date de l'épreuve</Label>
+                                <Input
+                                  type="date"
+                                  value={round.roundDate || matchData?.match_date?.split("T")[0] || ""}
+                                  onChange={(e) => updateRound(selectedPlayer.entryKey, round.round_number, { roundDate: e.target.value })}
+                                  className="h-8"
+                                  disabled={round.isLocked}
+                                />
+                              </div>
                               <div>
                                 <Label className="text-xs">Classement</Label>
                                 <Input
@@ -1228,6 +1255,26 @@ export function CompetitionRoundsDialog({
                                   value={round.ranking || ""}
                                   onChange={(e) => updateRound(selectedPlayer.entryKey, round.round_number, { ranking: parseInt(e.target.value) || undefined })}
                                   placeholder="1"
+                                  className="h-8"
+                                  disabled={round.isLocked}
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs">Temps / Perf</Label>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  onWheel={blurOnWheel}
+                                  value={round.final_time_seconds ?? ""}
+                                  onChange={(e) => {
+                                    const v = parseFloat(e.target.value);
+                                    updateRound(
+                                      selectedPlayer.entryKey,
+                                      round.round_number,
+                                      { final_time_seconds: Number.isFinite(v) ? v : undefined },
+                                    );
+                                  }}
+                                  placeholder="ex: 11.42"
                                   className="h-8"
                                   disabled={round.isLocked}
                                 />
