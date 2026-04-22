@@ -2039,17 +2039,22 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                       const val = player.sportData[stat.key] || 0;
                       const prog = playerProgressions[player.playerId]?.[stat.key] || 0;
                       return (
-                        <div
-                          key={stat.key}
-                          title={stat.label}
-                          className={`${large ? "p-2" : "p-1"} bg-muted/50 rounded text-center space-y-0 border border-border/50`}
-                        >
-                          <p className={`${large ? "text-base" : "text-xs"} font-bold leading-tight`}>{stat.computedFrom ? `${val}%` : val}</p>
-                          <p className={`${large ? "text-[10px]" : "text-[9px]"} text-muted-foreground leading-tight`}>{stat.shortLabel}</p>
-                          {matchesDataForCharts.length >= 2 && (
-                            <ProgressionIndicator value={prog} />
-                          )}
-                        </div>
+                        <Tooltip key={stat.key}>
+                          <TooltipTrigger asChild>
+                            <div
+                              className={`${large ? "p-2" : "p-1"} bg-muted/50 rounded text-center space-y-0 border border-border/50`}
+                            >
+                              <p className={`${large ? "text-base" : "text-xs"} font-bold leading-tight`}>{stat.computedFrom ? `${val}%` : val}</p>
+                              <p className={`${large ? "text-[10px]" : "text-[9px]"} text-muted-foreground leading-tight`}>{stat.shortLabel}</p>
+                              {matchesDataForCharts.length >= 2 && (
+                                <ProgressionIndicator value={prog} />
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <p className="font-semibold">{stat.label}</p>
+                          </TooltipContent>
+                        </Tooltip>
                       );
                     };
 
