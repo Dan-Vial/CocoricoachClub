@@ -234,18 +234,18 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
                   </div>
                   <div className="p-1.5 rounded-md text-center space-y-0 border bg-violet-500/10 border-violet-500/30">
                     <p className="text-base font-bold text-violet-600 dark:text-violet-400 leading-tight">
-                      {playTimeSummary.longestSequence != null ? playTimeSummary.longestSequence : "—"}
+                      {playTimeSummary.longestSequence != null ? formatSecondsToMinutes(playTimeSummary.longestSequence) : "—"}
                     </p>
-                    <p className="text-[9px] text-muted-foreground leading-tight">Séquence la + longue</p>
+                    <p className="text-[9px] text-muted-foreground leading-tight">Séquence la + longue (min)</p>
                     <p className="text-[9px] text-muted-foreground leading-tight">
                       {playTimeSummary.filledLong > 0 ? "Record équipe" : "Non renseigné"}
                     </p>
                   </div>
                   <div className="p-1.5 rounded-md text-center space-y-0 border bg-amber-500/10 border-amber-500/30">
                     <p className="text-base font-bold text-amber-600 dark:text-amber-400 leading-tight">
-                      {playTimeSummary.averageSequence != null ? playTimeSummary.averageSequence : "—"}
+                      {playTimeSummary.averageSequence != null ? formatSecondsToMinutes(playTimeSummary.averageSequence) : "—"}
                     </p>
-                    <p className="text-[9px] text-muted-foreground leading-tight">Séquence moyenne</p>
+                    <p className="text-[9px] text-muted-foreground leading-tight">Séquence moyenne (min)</p>
                     <p className="text-[9px] text-muted-foreground leading-tight">
                       {playTimeSummary.filledAvg > 0 ? `Moy / ${playTimeSummary.filledAvg} match${playTimeSummary.filledAvg > 1 ? "s" : ""}` : "Non renseigné"}
                     </p>
