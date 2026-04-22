@@ -28,6 +28,9 @@ interface MatchScoreData {
   is_home: boolean;
   score_home: number | null;
   score_away: number | null;
+  effective_play_time?: number | null;
+  longest_play_sequence?: number | null;
+  average_play_sequence?: number | null;
 }
 
 interface TeamCumulativeStatsProps {
