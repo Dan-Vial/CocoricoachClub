@@ -134,6 +134,38 @@ function drawVerticalText(
   pdf.text(safe, x, y, { angle: 90 });
 }
 
+// Draws a small gold trophy/cup icon centered on (cx, cy)
+function drawTrophyIcon(pdf: jsPDF, cx: number, cy: number, size: number) {
+  const gold: [number, number, number] = [212, 160, 23];
+  const goldDark: [number, number, number] = [140, 100, 10];
+  const s = size;
+
+  pdf.setDrawColor(goldDark[0], goldDark[1], goldDark[2]);
+  pdf.setLineWidth(0.18);
+  pdf.setFillColor(gold[0], gold[1], gold[2]);
+
+  // Cup bowl
+  const bowlW = s * 0.85;
+  const bowlH = s * 0.55;
+  const bowlTop = cy - s * 0.45;
+  pdf.ellipse(cx, bowlTop + bowlH * 0.45, bowlW / 2, bowlH * 0.55, "FD");
+
+  // Side handles
+  const handleR = s * 0.18;
+  pdf.circle(cx - bowlW / 2 - handleR * 0.35, bowlTop + bowlH * 0.4, handleR, "FD");
+  pdf.circle(cx + bowlW / 2 + handleR * 0.35, bowlTop + bowlH * 0.4, handleR, "FD");
+
+  // Stem
+  const stemW = s * 0.18;
+  const stemH = s * 0.25;
+  pdf.rect(cx - stemW / 2, bowlTop + bowlH * 0.85, stemW, stemH, "FD");
+
+  // Base
+  const baseW = s * 0.7;
+  const baseH = s * 0.12;
+  pdf.rect(cx - baseW / 2, bowlTop + bowlH * 0.85 + stemH, baseW, baseH, "FD");
+}
+
 function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
