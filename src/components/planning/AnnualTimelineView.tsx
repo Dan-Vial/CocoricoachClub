@@ -229,7 +229,7 @@ export function AnnualTimelineView({
                   className="w-3 h-3 rounded-md shrink-0 shadow-sm"
                   style={{ backgroundColor: cat.color }}
                 />
-                <span className="text-xs font-bold truncate">{cat.name}</span>
+                <span className="text-xs font-bold leading-tight break-words">{cat.name}</span>
                 {!isViewer && (
                   <button
                     className="opacity-0 group-hover/row:opacity-100 transition-opacity ml-auto p-0.5 rounded hover:bg-muted"
