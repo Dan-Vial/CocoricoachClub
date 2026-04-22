@@ -522,17 +522,29 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         const trophySize = Math.min(2.4, dayRowH * 0.7);
         drawTrophyIcon(pdf, trophyX, cy, trophySize);
 
-        // Match/competition name next to the trophy — black text, no background
+        // Match/competition name next to the trophy — auto-shrink + truncate to fit width.
         const firstMatch = dayMatches[0];
         const label = firstMatch.opponent || firstMatch.competition || "Compétition";
         const extra = dayMatches.length > 1 ? ` (+${dayMatches.length - 1})` : "";
         const fullLabel = `${label}${extra}`;
         const textX = trophyX + trophySize + 0.8;
-        const availableW = (xCyclesStart + cyclesAreaW) - textX - 0.5;
+        const availableW = Math.max(2, (xCyclesStart + cyclesAreaW) - textX - 0.5);
         pdf.setFont("helvetica", "bold");
-        const labelFs = Math.max(4.5, Math.min(6.5, dayRowH * 0.55));
+        // Start from the ideal size and shrink down to keep the label inside the cycles area.
+        let labelFs = Math.max(4.5, Math.min(6.5, dayRowH * 0.55));
         pdf.setFontSize(labelFs);
-        const truncated = pdf.splitTextToSize(fullLabel, Math.max(8, availableW))[0] || fullLabel;
+        let displayLabel = fullLabel;
+        while (pdf.getTextWidth(displayLabel) > availableW && labelFs > 3.2) {
+          labelFs -= 0.2;
+          pdf.setFontSize(labelFs);
+        }
+        // If still too wide at min size, hard-truncate with an ellipsis.
+        if (pdf.getTextWidth(displayLabel) > availableW) {
+          while (displayLabel.length > 1 && pdf.getTextWidth(displayLabel + "…") > availableW) {
+            displayLabel = displayLabel.slice(0, -1);
+          }
+          displayLabel = displayLabel + "…";
+        }
         // Determine text color based on cycle background luminance under this row
         const cycleHere = monthCycles.find((c) => {
           const cs = startOfDay(new Date(c.start_date));
@@ -542,7 +554,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         const bgRgb: [number, number, number] = cycleHere ? hexToRgb(cycleHere.color) : [255, 255, 255];
         const useWhite = luminance(bgRgb) <= 0.55;
         pdf.setTextColor(useWhite ? 255 : 0, useWhite ? 255 : 0, useWhite ? 255 : 0);
-        pdf.text(truncated, textX, cy + labelFs * 0.18);
+        pdf.text(displayLabel, textX, cy + labelFs * 0.18);
       }
     }
   }
