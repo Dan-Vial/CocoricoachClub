@@ -861,7 +861,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                 doc.setFontSize(6);
                 doc.setFont("helvetica", "normal");
                 doc.setTextColor(71, 85, 105);
-                doc.text(s.shortLabel.substring(0, 16), tx + tileW / 2, ty + 10, { align: "center" });
+                doc.text((s.label || s.shortLabel).substring(0, 22), tx + tileW / 2, ty + 10, { align: "center" });
               });
               y += blockH + 2;
             });
