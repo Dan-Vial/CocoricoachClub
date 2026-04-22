@@ -399,13 +399,12 @@ export function AthleticsMinimasMatrix({ categoryId }: Props) {
                           );
                           const pb = playerRecord?.personal_best ?? null;
                           const sb = playerRecord?.season_best ?? null;
-                          // Use the best between actual competition perf and stored season best
+                          // Use the best between actual competition perf, stored season best, and personal best
                           const lowerIsBetter = group.minimas[0]?.lower_is_better ?? true;
-                          let displayBest: number | null = best ?? sb ?? pb ?? null;
-                          if (best != null && sb != null) {
-                            displayBest = lowerIsBetter
-                              ? Math.min(best, sb)
-                              : Math.max(best, sb);
+                          const candidates = [best, sb, pb].filter((v): v is number => v != null);
+                          let displayBest: number | null = null;
+                          if (candidates.length > 0) {
+                            displayBest = lowerIsBetter ? Math.min(...candidates) : Math.max(...candidates);
                           }
 
                           return (
