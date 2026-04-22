@@ -129,6 +129,8 @@ export function AddMultipleCompetitionsDialog({
   onOpenChange,
   categoryId,
   sportType = "XV",
+  prefilledStartDate,
+  prefilledEndDate,
 }: AddMultipleCompetitionsDialogProps) {
   const competitions = getCompetitionsBySport(sportType);
   const isIndividual = isIndividualSport(sportType);
@@ -147,9 +149,16 @@ export function AddMultipleCompetitionsDialog({
 
   useEffect(() => {
     if (open) {
-      setDrafts([newDraft()]);
+      const initial = newDraft();
+      if (prefilledStartDate) {
+        initial.matchDate = format(prefilledStartDate, "yyyy-MM-dd");
+      }
+      if (prefilledEndDate && prefilledStartDate && prefilledEndDate.getTime() !== prefilledStartDate.getTime()) {
+        initial.endDate = format(prefilledEndDate, "yyyy-MM-dd");
+      }
+      setDrafts([initial]);
     }
-  }, [open]);
+  }, [open, prefilledStartDate, prefilledEndDate]);
 
   const updateDraft = (uid: string, patch: Partial<CompetitionDraft>) => {
     setDrafts((prev) => prev.map((d) => (d.uid === uid ? { ...d, ...patch } : d)));
