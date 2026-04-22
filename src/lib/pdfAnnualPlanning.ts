@@ -157,9 +157,10 @@ function fitVerticalText(
   const prevSize = pdf.getFontSize();
   const prevFont = pdf.getFont();
   let fs = maxFs;
+  const floor = Math.max(0.6, minFs);
 
   pdf.setFont("helvetica", fontStyle);
-  while (fs >= 0.6) {
+  while (fs >= floor) {
     pdf.setFontSize(fs);
     const measuredHeight = pdf.getTextWidth(text);
     if (measuredHeight <= availableHeight) {
@@ -170,9 +171,11 @@ function fitVerticalText(
     fs -= 0.1;
   }
 
+  // Even at the floor it doesn't fit — keep readable size, accept slight overflow rather
+  // than rendering an unreadable label.
   pdf.setFont(prevFont.fontName || "helvetica", (prevFont.fontStyle as "normal" | "bold" | "italic") || "normal");
   pdf.setFontSize(prevSize);
-  return { fontSize: 0.6, text };
+  return { fontSize: floor, text };
 }
 
 // Draws a refined gold trophy/cup icon centered on (cx, cy)
@@ -513,14 +516,15 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
           ? xCol + innerPadding + laneW + laneGap + laneW / 2
           : xCol + innerPadding + laneW / 2;
         // ── Title (cycle name) — right lane ──
-        // Keep extra lateral safety because rotated text uses the font size as visual width.
-        const titleMaxFs = Math.max(3.2, Math.min(12, laneW * 0.76));
-        const titleFit = fitVerticalText(pdf, cycle.name, Math.max(1, usableH - 1.6), 0.6, titleMaxFs, "bold");
+        // Cap by lane width but with a high floor to keep labels readable, even if it
+        // means slightly using the gap area between lanes.
+        const titleMaxFs = Math.max(5.5, Math.min(12, laneW * 1.0));
+        const titleFit = fitVerticalText(pdf, cycle.name, Math.max(1, usableH - 1.6), 5.0, titleMaxFs, "bold");
 
         // Type label sizing (computed before drawing so we can align baselines)
-        const typeMaxFs = Math.max(2.8, Math.min(9.5, laneW * 0.7));
+        const typeMaxFs = Math.max(4.5, Math.min(9.5, laneW * 0.9));
         const typeFit = hasTypeLabel
-          ? fitVerticalText(pdf, typeFullLabel, Math.max(1, usableH - 1.6), 0.6, typeMaxFs, "italic")
+          ? fitVerticalText(pdf, typeFullLabel, Math.max(1, usableH - 1.6), 4.0, typeMaxFs, "italic")
           : { fontSize: 0, text: "" };
 
         // Anchor text at the bottom of the band; vertical text reads upward toward bandTop.
