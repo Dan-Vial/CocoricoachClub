@@ -1724,11 +1724,6 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
         </div>}
       </div>
 
-      {/* Charts */}
-      {!isSinglePlayerMode && stats.length > 0 && (
-        <CumulativeStatsCharts stats={stats} matchesData={matchesDataForCharts} sportStats={sportStats} selectedMatchIds={activeMatchIds} sportType={sportType} />
-      )}
-
       {/* STACKED LAYOUT: Team (top, full width) + Individual (below) — or just individual in single player mode */}
       <div className={isSinglePlayerMode ? "" : "space-y-6"}>
         {/* TOP: Team Stats — full width, all categories stacked */}
@@ -1890,6 +1885,11 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
       </div>
 
       {!isSinglePlayerMode && <>
+      {/* Charts (Comparaison / Évolution / Progression) — placed just above the detailed table */}
+      {stats.length > 0 && (
+        <CumulativeStatsCharts stats={stats} matchesData={matchesDataForCharts} sportStats={sportStats} selectedMatchIds={activeMatchIds} sportType={sportType} />
+      )}
+
       {/* Full detailed table below */}
       <Card className="bg-gradient-card">
         <CardHeader>
