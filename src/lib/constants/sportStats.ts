@@ -219,6 +219,9 @@ export const VOLLEYBALL_STATS: StatField[] = [
   // Individual Stats - General
   { key: "setsPlayed", label: "Sets joués", shortLabel: "Sets", category: "general", type: "number" },
   { key: "playingTime", label: "Temps de jeu (min)", shortLabel: "Temps jeu", category: "general", type: "number" },
+  { key: "effectivePlayingTime", label: "Temps de jeu effectif (min)", shortLabel: "TJE", category: "general", type: "number" },
+  { key: "longestSequence", label: "Séquence la plus longue (min)", shortLabel: "Séq. max", category: "general", type: "number" },
+  { key: "averageSequence", label: "Séquence moyenne (min)", shortLabel: "Séq. moy.", category: "general", type: "number" },
   { key: "starts", label: "Titularisations", shortLabel: "Titu.", category: "general", type: "number" },
   { key: "jumpCount", label: "Nombre de sauts", shortLabel: "Sauts", category: "general", type: "number" },
   { key: "attackJumps", label: "Sauts d'attaque", shortLabel: "S. attaque", category: "general", type: "number" },
