@@ -137,6 +137,7 @@ export function EditCycleDialog({ open, onOpenChange, cycle, categoryId, categor
             onVolumeChange={setVolume}
             dominantQuality={dominantQuality}
             onDominantQualityChange={setDominantQuality}
+            periodizationLineName={selectedCategory?.name}
           />
 
           <div className="grid grid-cols-2 gap-3">
