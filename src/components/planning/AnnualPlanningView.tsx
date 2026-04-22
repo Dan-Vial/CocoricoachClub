@@ -161,7 +161,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   }, [categories, categoryId, categoryData, isViewer, queryClient]);
 
   const { data: cycles = [] } = useQuery({
-    queryKey: ["periodization_cycles", categoryId, selectedYear.getFullYear()],
+    queryKey: ["periodization_cycles", categoryId, selectedYear.getFullYear(), startMonth],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("periodization_cycles")
@@ -176,7 +176,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   });
 
   const { data: sessions = [] } = useQuery({
-    queryKey: ["training_sessions_annual", categoryId, selectedYear.getFullYear()],
+    queryKey: ["training_sessions_annual", categoryId, selectedYear.getFullYear(), startMonth],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("training_sessions")
@@ -190,7 +190,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   });
 
   const { data: matches = [] } = useQuery({
-    queryKey: ["matches_annual", categoryId, selectedYear.getFullYear()],
+    queryKey: ["matches_annual", categoryId, selectedYear.getFullYear(), startMonth],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("matches")
