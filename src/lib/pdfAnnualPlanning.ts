@@ -318,10 +318,11 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
   }
 
   // ── Each month ──
-  for (let m = 0; m < 12; m++) {
-    const xMonth = gridLeft + m * monthWidth;
-    const daysInMonth = getDaysInMonth(new Date(data.year, m, 1));
-    const monthCycles = monthCyclesArr[m];
+  for (let i = 0; i < 12; i++) {
+    const { year: yy, month: mm } = monthsSeq[i];
+    const xMonth = gridLeft + i * monthWidth;
+    const daysInMonth = getDaysInMonth(new Date(yy, mm, 1));
+    const monthCycles = monthCyclesArr[i];
     const subCols = Math.max(1, monthCycles.length);
     const subColW = cyclesAreaW / subCols;
     const xCyclesStart = xMonth + monthLabelW;
