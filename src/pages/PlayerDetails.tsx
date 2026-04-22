@@ -473,6 +473,18 @@ function PlayerDetailsContent() {
           <PlayerMedalsSection playerId={playerId!} />
         </div>
 
+        {/* Records personnels (athlétisme uniquement) */}
+        {isAthletics && (
+          <div className="mb-3">
+            <AthleticsRecordsManager
+              categoryId={player.category_id}
+              playerId={playerId!}
+              singlePlayer
+              canEdit={!isViewer}
+            />
+          </div>
+        )}
+
         <Tabs defaultValue="charge" className="space-y-6">
           <ScrollArea className="w-full whitespace-nowrap pb-2">
             <ColoredNavTabsList className="flex w-max gap-1.5 p-2">
