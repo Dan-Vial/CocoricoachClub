@@ -37,6 +37,7 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMinima, setEditingMinima] = useState<Minima | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Minima | null>(null);
   const [discipline, setDiscipline] = useState("");
   const [specialty, setSpecialty] = useState<string>(NONE_SPECIALTY);
   const [label, setLabel] = useState("Minima fédéral");
