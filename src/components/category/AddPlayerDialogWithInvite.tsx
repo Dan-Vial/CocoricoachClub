@@ -48,6 +48,11 @@ export function AddPlayerDialogWithInvite({
   const [birthDate, setBirthDate] = useState("");
   const [discipline, setDiscipline] = useState("");
   const [specialty, setSpecialty] = useState("");
+  // Athlétisme : un athlète peut pratiquer plusieurs disciplines/spécialités
+  // (ex. sprint 100m + sprint 200m + saut en longueur). La 1ʳᵉ paire est la principale.
+  const [disciplinePairs, setDisciplinePairs] = useState<Array<{ discipline: string; specialty: string }>>([]);
+  const [draftDiscipline, setDraftDiscipline] = useState("");
+  const [draftSpecialty, setDraftSpecialty] = useState("");
   const [position, setPosition] = useState("");
   const [sendInvitation, setSendInvitation] = useState(true);
   const [validationError, setValidationError] = useState("");
