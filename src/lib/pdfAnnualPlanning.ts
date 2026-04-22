@@ -544,10 +544,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
   });
 
   const rightLegendX = pageW - margin - 55;
-  pdf.setFillColor(212, 160, 23);
-  pdf.setDrawColor(140, 100, 10);
-  pdf.setLineWidth(0.2);
-  pdf.circle(rightLegendX, legendY - 1, 1, "FD");
+  drawTrophyIcon(pdf, rightLegendX, legendY - 1, 2.4);
   pdf.setTextColor(60, 65, 80);
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(7);
