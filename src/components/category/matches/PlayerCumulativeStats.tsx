@@ -1807,23 +1807,84 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
 
                   {statCategories.map(cat => {
                     const categoryStats = sportStats.filter(s => s.category === cat.key);
-                    return (
-                      <TabsContent key={cat.key} value={cat.key}>
-                        <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-1">
-                          {categoryStats.map(stat => {
-                            const val = player.sportData[stat.key] || 0;
-                            const prog = playerProgressions[player.playerId]?.[stat.key] || 0;
-                            return (
-                              <div key={stat.key} className="p-1 bg-muted/50 rounded text-center space-y-0 border border-border/50">
-                                <p className="text-xs font-bold leading-tight">{stat.computedFrom ? `${val}%` : val}</p>
-                                <p className="text-[9px] text-muted-foreground leading-tight">{stat.shortLabel}</p>
-                                {matchesDataForCharts.length >= 2 && (
-                                  <ProgressionIndicator value={prog} />
-                                )}
-                              </div>
-                            );
-                          })}
+
+                    // Sub-group definitions per category — same logic as TeamCumulativeStats
+                    const subGroupDefs: Record<string, { key: string; label: string; match: (k: string) => boolean }[]> = {
+                      general: [
+                        { key: "scrums", label: "Mêlées", match: (k) => /^scrum/i.test(k) },
+                        { key: "lineouts", label: "Touches", match: (k) => /^lineout/i.test(k) },
+                      ],
+                      scoring: [
+                        { key: "tries", label: "Essais", match: (k) => /^tries$|^tryassists$/i.test(k) },
+                        { key: "conversions", label: "Transformations", match: (k) => /^conversion/i.test(k) },
+                        { key: "penalties", label: "Pénalités", match: (k) => /^penalt(y|ies)(scored|attempts)?$/i.test(k) || /^penaltyattempts$|^penaltiesscored$/i.test(k) },
+                        { key: "drops", label: "Drops", match: (k) => /^drop/i.test(k) },
+                      ],
+                    };
+
+                    const defs = subGroupDefs[cat.key] || [];
+                    let groups: { key: string; label: string | null; items: typeof categoryStats }[];
+                    if (defs.length === 0) {
+                      groups = [{ key: "_all", label: null, items: categoryStats }];
+                    } else {
+                      const buckets = defs.map(d => ({ key: d.key, label: d.label as string | null, items: [] as typeof categoryStats }));
+                      const others: typeof categoryStats = [];
+                      categoryStats.forEach(s => {
+                        const def = defs.find(d => d.match(s.key));
+                        if (def) buckets.find(b => b.key === def.key)!.items.push(s);
+                        else others.push(s);
+                      });
+                      groups = buckets.filter(b => b.items.length > 0);
+                      if (others.length > 0) {
+                        groups.push({ key: "_others", label: groups.length > 0 ? "Autres" : null, items: others });
+                      }
+                    }
+
+                    const renderTile = (stat: typeof categoryStats[number], opts?: { large?: boolean }) => {
+                      const large = opts?.large;
+                      const val = player.sportData[stat.key] || 0;
+                      const prog = playerProgressions[player.playerId]?.[stat.key] || 0;
+                      return (
+                        <div key={stat.key} className={`${large ? "p-2" : "p-1"} bg-muted/50 rounded text-center space-y-0 border border-border/50`}>
+                          <p className={`${large ? "text-base" : "text-xs"} font-bold leading-tight`}>{stat.computedFrom ? `${val}%` : val}</p>
+                          <p className={`${large ? "text-[10px]" : "text-[9px]"} text-muted-foreground leading-tight`}>{stat.shortLabel}</p>
+                          {matchesDataForCharts.length >= 2 && (
+                            <ProgressionIndicator value={prog} />
+                          )}
                         </div>
+                      );
+                    };
+
+                    const labeledGroups = groups.filter(g => g.label);
+                    const unlabeledGroups = groups.filter(g => !g.label);
+
+                    return (
+                      <TabsContent key={cat.key} value={cat.key} className="space-y-2">
+                        {labeledGroups.length > 0 && (
+                          <div
+                            className="grid gap-2"
+                            style={{ gridTemplateColumns: `repeat(${labeledGroups.length}, minmax(0, 1fr))` }}
+                          >
+                            {labeledGroups.map(group => (
+                              <div
+                                key={group.key}
+                                className="rounded-md border border-border/50 bg-muted/20 p-1.5 space-y-1"
+                              >
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-0.5">
+                                  {group.label}
+                                </p>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                                  {group.items.map(s => renderTile(s, { large: true }))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {unlabeledGroups.map(group => (
+                          <div key={group.key} className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-1">
+                            {group.items.map(s => renderTile(s))}
+                          </div>
+                        ))}
                       </TabsContent>
                     );
                   })}
