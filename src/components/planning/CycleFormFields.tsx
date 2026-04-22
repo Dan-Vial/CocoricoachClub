@@ -8,9 +8,7 @@ const CYCLE_TYPES = [
   { value: "recuperation", label: "Récupération" },
 ];
 
-const DOMINANT_QUALITIES = [
-  { value: "technique", label: "Technique" },
-  { value: "tactique", label: "Tactique" },
+const PHYSICAL_QUALITIES = [
   { value: "force", label: "Force" },
   { value: "puissance", label: "Puissance" },
   { value: "vitesse", label: "Vitesse / Explosivité" },
@@ -20,9 +18,36 @@ const DOMINANT_QUALITIES = [
   { value: "hypertrophie", label: "Hypertrophie" },
   { value: "mobilite", label: "Mobilité / Souplesse" },
   { value: "prevention", label: "Prévention / Prophylaxie" },
-  { value: "mental", label: "Préparation mentale" },
   { value: "mixte", label: "Mixte / Polyvalent" },
 ];
+
+const SPORT_QUALITIES = [
+  { value: "technique", label: "Technique" },
+  { value: "tactique", label: "Tactique" },
+];
+
+const MENTAL_QUALITIES = [
+  { value: "visualisation", label: "Visualisation" },
+  { value: "routines", label: "Routines" },
+  { value: "respiration", label: "Respiration" },
+  { value: "gestion_emotions", label: "Gestion des émotions" },
+  { value: "switch", label: "Switch" },
+  { value: "concentration", label: "Concentration" },
+];
+
+const ALL_QUALITIES = [
+  ...SPORT_QUALITIES,
+  ...PHYSICAL_QUALITIES,
+  ...MENTAL_QUALITIES,
+];
+
+function getQualitiesForLine(lineName?: string) {
+  if (!lineName) return ALL_QUALITIES;
+  const n = lineName.toLowerCase();
+  if (n.includes("mental")) return MENTAL_QUALITIES;
+  if (n.includes("physique")) return PHYSICAL_QUALITIES;
+  return SPORT_QUALITIES;
+}
 
 function getSliderColor(value: number) {
   if (value <= 2) return "#22c55e";
