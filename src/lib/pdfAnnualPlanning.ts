@@ -139,6 +139,113 @@ function drawVerticalText(
   pdf.text(safe, x, y, { angle: 90 });
 }
 
+const CYCLE_TYPE_LABELS: Record<string, string> = {
+  PG: "Préparation Générale",
+  PS: "Préparation Spécifique",
+  PC: "Préparation Compétition",
+  recuperation: "Récupération",
+  transition: "Transition",
+  general_prep: "Préparation Générale",
+  specific_prep: "Préparation Spécifique",
+  competition: "Préparation Compétition",
+  recovery: "Récupération",
+};
+
+const ABBREVIATION_MAP: Record<string, string> = {
+  "Préparation Générale": "Prépa G.",
+  "Préparation Spécifique": "Prépa Spé.",
+  "Préparation Compétition": "Prépa Comp.",
+  "Développement des qualités Physiques": "Dév. Phys.",
+  "Développement des qualités physiques": "Dév. Phys.",
+  "Travail de gestion des émotions": "Gestion émotions",
+  "Travail de Switch": "Switch",
+  "Récupération": "Récup.",
+  "Compétition": "Compét.",
+  "Spécifique": "Spéc.",
+  "Générale": "Gén.",
+  "Finale": "Finale",
+  "Stage ED": "Stage",
+  "Stage EI": "Stage",
+};
+
+function abbreviateCycleLabel(text: string): string {
+  if (!text) return "";
+  if (ABBREVIATION_MAP[text]) return ABBREVIATION_MAP[text];
+
+  return text
+    .replace(/Préparation/gi, "Prépa")
+    .replace(/Développement/gi, "Dév.")
+    .replace(/qualités physiques/gi, "qualités phys.")
+    .replace(/Compétition/gi, "Compét.")
+    .replace(/Spécifique/gi, "Spé.")
+    .replace(/Générale/gi, "Gén.")
+    .replace(/Récupération/gi, "Récup.")
+    .replace(/Travail de/gi, "Travail")
+    .replace(/gestion des/gi, "gest.")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function ellipsizeToWidth(pdf: jsPDF, text: string, maxWidth: number): string {
+  if (!text) return "";
+  if (pdf.getTextWidth(text) <= maxWidth) return text;
+  const ellipsis = "...";
+  let result = text.trim();
+  while (result.length > 0 && pdf.getTextWidth(result + ellipsis) > maxWidth) {
+    result = result.slice(0, -1).trimEnd();
+  }
+  return result ? `${result}${ellipsis}` : "";
+}
+
+function splitIntoMaxLines(pdf: jsPDF, text: string, maxWidth: number, maxLines: number): string[] {
+  if (!text) return [];
+  const lines = (pdf.splitTextToSize(text, maxWidth) as string[]).filter(Boolean);
+  if (lines.length <= maxLines) return lines;
+  const kept = lines.slice(0, maxLines);
+  kept[maxLines - 1] = ellipsizeToWidth(pdf, kept[maxLines - 1], maxWidth);
+  return kept.filter(Boolean);
+}
+
+function measureTextBlockHeight(fontSize: number, lineCount: number, lineHeightFactor = 1.05): number {
+  return lineCount <= 0 ? 0 : fontSize * lineHeightFactor * lineCount;
+}
+
+function fitHorizontalTextBlock(
+  pdf: jsPDF,
+  candidates: string[],
+  boxWidth: number,
+  boxHeight: number,
+  minFs: number,
+  maxFs: number,
+  maxLines: number,
+  fontStyle: "normal" | "bold" | "italic" = "normal",
+): { fontSize: number; lines: string[]; text: string } {
+  const prevSize = pdf.getFontSize();
+  const prevFont = pdf.getFont();
+
+  pdf.setFont("helvetica", fontStyle);
+
+  for (const candidate of candidates.filter(Boolean)) {
+    let fs = maxFs;
+    while (fs >= minFs) {
+      pdf.setFontSize(fs);
+      const lines = splitIntoMaxLines(pdf, candidate, boxWidth, maxLines);
+      const maxMeasuredWidth = lines.length > 0 ? Math.max(...lines.map((line) => pdf.getTextWidth(line))) : 0;
+      const blockHeight = measureTextBlockHeight(fs, lines.length);
+      if (lines.length > 0 && maxMeasuredWidth <= boxWidth && blockHeight <= boxHeight) {
+        pdf.setFont(prevFont.fontName || "helvetica", (prevFont.fontStyle as "normal" | "bold" | "italic") || "normal");
+        pdf.setFontSize(prevSize);
+        return { fontSize: fs, lines, text: candidate };
+      }
+      fs -= 0.2;
+    }
+  }
+
+  pdf.setFont(prevFont.fontName || "helvetica", (prevFont.fontStyle as "normal" | "bold" | "italic") || "normal");
+  pdf.setFontSize(prevSize);
+  return { fontSize: 0, lines: [], text: "" };
+}
+
 /**
  * Auto-fit a font size so that `text` rendered vertically fits within `availableHeight` (mm)
  * AND the chosen font size stays below `maxLateralFs` (visual width of rotated text ≈ font size in mm).
@@ -159,7 +266,6 @@ function fitVerticalText(
   const prevSize = pdf.getFontSize();
   const prevFont = pdf.getFont();
   const floor = Math.max(0.6, minFs);
-  // Hard cap by both the explicit maxFs and the lateral budget (avoid horizontal overflow).
   let fs = Math.min(maxFs, maxLateralFs);
 
   pdf.setFont("helvetica", fontStyle);
@@ -174,7 +280,6 @@ function fitVerticalText(
     fs -= 0.1;
   }
 
-  // Doesn't fit at the readable floor — caller should not draw anything.
   pdf.setFont(prevFont.fontName || "helvetica", (prevFont.fontStyle as "normal" | "bold" | "italic") || "normal");
   pdf.setFontSize(prevSize);
   return { fontSize: 0, text: "" };
@@ -486,93 +591,164 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         const lum = luminance(colColor);
         const lightOnDark = lum <= 0.55;
 
-        // Map cycle types to full labels (no abbreviation)
-        const typeMap: Record<string, string> = {
-          PG: "Préparation Générale",
-          PS: "Préparation Spécifique",
-          PC: "Préparation Compétition",
-          recuperation: "Récupération",
-          transition: "Transition",
-          // Legacy/alternative keys
-          general_prep: "Préparation Générale",
-          specific_prep: "Préparation Spécifique",
-          competition: "Préparation Compétition",
-          recovery: "Récupération",
-        };
         const typeFullLabel = cycle.cycle_type
-          ? (typeMap[cycle.cycle_type] || cycle.cycle_type)
+          ? (CYCLE_TYPE_LABELS[cycle.cycle_type] || cycle.cycle_type)
           : "";
 
-        // ── Reserve 2 independent text lanes inside the colored band to avoid overlaps ──
-        const innerPaddingV = Math.min(1.4, bandHeight * 0.05); // top/bottom safety inside band
-        const innerPadding = Math.min(0.8, subColW * 0.08);
+        const cycleShortLabel = abbreviateCycleLabel(cycle.name);
+        const typeShortLabel = abbreviateCycleLabel(typeFullLabel);
+
+        const innerPaddingV = Math.min(1.6, Math.max(0.8, bandHeight * 0.06));
+        const innerPadding = Math.min(1.1, Math.max(0.6, subColW * 0.08));
         const laneGap = Math.min(0.8, subColW * 0.08);
-        const usableW = Math.max(2.4, subColW - innerPadding * 2);
+        const usableW = Math.max(1, subColW - innerPadding * 2);
         const usableH = Math.max(1, bandHeight - innerPaddingV * 2);
         const hasTypeLabel = Boolean(typeFullLabel);
-        const laneW = hasTypeLabel
-          ? Math.max(1.1, (usableW - laneGap) / 2)
-          : usableW;
-        const leftLaneCenter = xCol + innerPadding + laneW / 2;
-        const rightLaneCenter = hasTypeLabel
-          ? xCol + innerPadding + laneW + laneGap + laneW / 2
-          : xCol + innerPadding + laneW / 2;
-        // Lateral budget: rotated text width ≈ font size in mm. Keep a small safety margin
-        // so the glyph never crosses into the adjacent lane / colored band edge.
-        const lateralBudget = Math.max(0, laneW - 0.4);
+        const isTinyBlock = usableW < 4.6 || usableH < 10;
+        const canUseHorizontal = usableW >= 7.5 && usableH >= 6;
 
-        // Vertical budget: reserve a descender pad up-front so we never overflow downward.
-        // We pre-allocate based on the maximum font size we're willing to consider.
-        const titleMaxFs = Math.min(12, lateralBudget);
-        const typeMaxFs = Math.min(9.5, lateralBudget);
-        const reservedDescender = Math.max(titleMaxFs, typeMaxFs) * 0.3 + 0.5;
-        const verticalBudget = Math.max(0, usableH - reservedDescender);
+        const textColor = lightOnDark
+          ? ([255, 255, 255] as [number, number, number])
+          : ([30, 35, 50] as [number, number, number]);
+        const secondaryTextColor = lightOnDark
+          ? ([228, 231, 239] as [number, number, number])
+          : ([90, 98, 116] as [number, number, number]);
 
-        // Title (cycle name) — right lane. Skip entirely if it can't fit at a readable size.
-        const titleFit = fitVerticalText(
-          pdf,
-          cycle.name,
-          verticalBudget,
-          3.5,
-          titleMaxFs,
-          "bold",
-          lateralBudget,
-        );
+        if (isTinyBlock) {
+          const compactLabel = fitHorizontalTextBlock(
+            pdf,
+            [cycleShortLabel, typeShortLabel, cycle.name, typeFullLabel],
+            Math.max(0.5, usableW),
+            Math.max(0.5, usableH),
+            3.2,
+            6.6,
+            2,
+            "bold",
+          );
 
-        // Type label — left lane.
-        const typeFit = hasTypeLabel
-          ? fitVerticalText(
-              pdf,
-              typeFullLabel,
-              verticalBudget,
-              3.0,
-              typeMaxFs,
-              "italic",
-              lateralBudget,
-            )
-          : { fontSize: 0, text: "" };
+          if (compactLabel.text && compactLabel.fontSize > 0) {
+            pdf.setFont("helvetica", "bold");
+            pdf.setFontSize(compactLabel.fontSize);
+            pdf.setTextColor(...textColor);
+            const lineHeight = compactLabel.fontSize * 1.05;
+            const blockHeight = measureTextBlockHeight(compactLabel.fontSize, compactLabel.lines.length);
+            let yText = bandTop + (bandHeight - blockHeight) / 2 + compactLabel.fontSize * 0.8;
+            compactLabel.lines.forEach((line) => {
+              pdf.text(line, xCol + subColW / 2, yText, { align: "center" });
+              yText += lineHeight;
+            });
+          }
+        } else if (canUseHorizontal) {
+          const titleBoxW = usableW;
+          const titleBoxH = hasTypeLabel ? usableH * 0.62 : usableH;
+          const typeBoxH = hasTypeLabel ? usableH * 0.28 : 0;
 
-        // Anchor text at the bottom of the band; vertical text reads upward toward bandTop.
-        const maxFs = Math.max(titleFit.fontSize, typeFit.fontSize);
-        const descenderPad = maxFs * 0.3 + 0.5;
-        const titleY = bandBottom - innerPaddingV - descenderPad;
+          const titleLayout = fitHorizontalTextBlock(
+            pdf,
+            [cycle.name, cycleShortLabel, ellipsizeToWidth(pdf, cycle.name, titleBoxW * 1.35)],
+            titleBoxW,
+            titleBoxH,
+            4.2,
+            8.8,
+            3,
+            "bold",
+          );
 
-        // Only draw the title if it actually fits — otherwise leave the band clean.
-        if (titleFit.text && titleFit.fontSize > 0) {
-          pdf.setFont("helvetica", "bold");
-          pdf.setFontSize(titleFit.fontSize);
-          pdf.setTextColor(...(lightOnDark ? ([255, 255, 255] as [number, number, number]) : ([30, 35, 50] as [number, number, number])));
-          const titleX = rightLaneCenter + titleFit.fontSize * 0.06;
-          pdf.text(titleFit.text, titleX, titleY, { angle: 90 });
-        }
+          const typeLayout = hasTypeLabel
+            ? fitHorizontalTextBlock(
+                pdf,
+                [typeFullLabel, typeShortLabel],
+                titleBoxW,
+                typeBoxH,
+                3.2,
+                5.6,
+                2,
+                "italic",
+              )
+            : { fontSize: 0, lines: [], text: "" };
 
-        // Type label — only if it fits.
-        if (hasTypeLabel && typeFit.text && typeFit.fontSize > 0) {
-          pdf.setFont("helvetica", "italic");
-          pdf.setFontSize(typeFit.fontSize);
-          pdf.setTextColor(...(lightOnDark ? ([220, 222, 228] as [number, number, number]) : ([110, 115, 130] as [number, number, number])));
-          const typeX = leftLaneCenter + typeFit.fontSize * 0.04;
-          pdf.text(typeFit.text, typeX, titleY, { angle: 90 });
+          const topBlockHeight = measureTextBlockHeight(titleLayout.fontSize, titleLayout.lines.length);
+          const bottomBlockHeight = measureTextBlockHeight(typeLayout.fontSize, typeLayout.lines.length);
+          const combinedHeight = topBlockHeight + (typeLayout.lines.length > 0 ? 0.9 : 0) + bottomBlockHeight;
+          let yCursor = bandTop + (bandHeight - combinedHeight) / 2 + titleLayout.fontSize * 0.8;
+
+          if (titleLayout.text && titleLayout.fontSize > 0) {
+            pdf.setFont("helvetica", "bold");
+            pdf.setFontSize(titleLayout.fontSize);
+            pdf.setTextColor(...textColor);
+            const lineHeight = titleLayout.fontSize * 1.05;
+            titleLayout.lines.forEach((line) => {
+              pdf.text(line, xCol + subColW / 2, yCursor, { align: "center" });
+              yCursor += lineHeight;
+            });
+          }
+
+          if (typeLayout.text && typeLayout.fontSize > 0) {
+            yCursor += 0.9;
+            pdf.setFont("helvetica", "italic");
+            pdf.setFontSize(typeLayout.fontSize);
+            pdf.setTextColor(...secondaryTextColor);
+            const lineHeight = typeLayout.fontSize * 1.02;
+            typeLayout.lines.forEach((line) => {
+              pdf.text(line, xCol + subColW / 2, yCursor, { align: "center" });
+              yCursor += lineHeight;
+            });
+          }
+        } else {
+          const laneW = hasTypeLabel
+            ? Math.max(1.1, (usableW - laneGap) / 2)
+            : usableW;
+          const leftLaneCenter = xCol + innerPadding + laneW / 2;
+          const rightLaneCenter = hasTypeLabel
+            ? xCol + innerPadding + laneW + laneGap + laneW / 2
+            : xCol + innerPadding + laneW / 2;
+          const lateralBudget = Math.max(0, laneW - 0.45);
+          const titleMaxFs = Math.min(11, lateralBudget);
+          const typeMaxFs = Math.min(8.5, lateralBudget);
+          const reservedDescender = Math.max(titleMaxFs, typeMaxFs) * 0.28 + 0.45;
+          const verticalBudget = Math.max(0, usableH - reservedDescender);
+
+          const titleFit = fitVerticalText(
+            pdf,
+            cycleShortLabel || cycle.name,
+            verticalBudget,
+            3.8,
+            titleMaxFs,
+            "bold",
+            lateralBudget,
+          );
+
+          const typeFit = hasTypeLabel
+            ? fitVerticalText(
+                pdf,
+                typeShortLabel || typeFullLabel,
+                verticalBudget,
+                3.2,
+                typeMaxFs,
+                "italic",
+                lateralBudget,
+              )
+            : { fontSize: 0, text: "" };
+
+          const maxFs = Math.max(titleFit.fontSize, typeFit.fontSize);
+          const descenderPad = maxFs * 0.28 + 0.45;
+          const titleY = bandBottom - innerPaddingV - descenderPad;
+
+          if (titleFit.text && titleFit.fontSize > 0) {
+            pdf.setFont("helvetica", "bold");
+            pdf.setFontSize(titleFit.fontSize);
+            pdf.setTextColor(...textColor);
+            const titleX = rightLaneCenter + titleFit.fontSize * 0.05;
+            pdf.text(titleFit.text, titleX, titleY, { angle: 90 });
+          }
+
+          if (hasTypeLabel && typeFit.text && typeFit.fontSize > 0) {
+            pdf.setFont("helvetica", "italic");
+            pdf.setFontSize(typeFit.fontSize);
+            pdf.setTextColor(...secondaryTextColor);
+            const typeX = leftLaneCenter + typeFit.fontSize * 0.04;
+            pdf.text(typeFit.text, typeX, titleY, { angle: 90 });
+          }
         }
       }
     }
