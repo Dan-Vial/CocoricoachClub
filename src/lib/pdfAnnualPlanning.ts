@@ -423,25 +423,37 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
           ? (typeMap[cycle.cycle_type] || cycle.cycle_type)
           : "";
 
-        // ── Title (cycle name) — bold, pushed to the RIGHT of the column, starts from bottom ──
-        const titleFs = Math.max(5, Math.min(7.5, subColW * 0.85));
+        // ── Reserve 2 independent text lanes inside the colored band to avoid overlaps ──
+        const innerPadding = Math.min(0.8, subColW * 0.08);
+        const laneGap = Math.min(0.8, subColW * 0.08);
+        const usableW = Math.max(2.4, subColW - innerPadding * 2);
+        const hasTypeLabel = Boolean(typeFullLabel);
+        const laneW = hasTypeLabel
+          ? Math.max(1.1, (usableW - laneGap) / 2)
+          : usableW;
+        const leftLaneCenter = xCol + innerPadding + laneW / 2;
+        const rightLaneCenter = hasTypeLabel
+          ? xCol + innerPadding + laneW + laneGap + laneW / 2
+          : xCol + innerPadding + laneW / 2;
+        const titleY = bandBottom - 2;
+
+        // ── Title (cycle name) — right lane only ──
+        const titleFs = Math.max(3.2, Math.min(6.8, laneW * 0.82));
         pdf.setFont("helvetica", "bold");
         pdf.setFontSize(titleFs);
         pdf.setTextColor(...(lightOnDark ? ([255, 255, 255] as [number, number, number]) : ([30, 35, 50] as [number, number, number])));
         const titleMaxChars = Math.floor((bandHeight - 4) / (titleFs * 0.42));
-        const titleX = xCol + subColW - titleFs * 0.35 - 0.4;
-        const titleY = bandBottom - 2;
+        const titleX = rightLaneCenter + titleFs * 0.16;
         drawVerticalText(pdf, cycle.name, titleX, titleY, titleMaxChars);
 
-        // ── Type label (Préparation Générale, etc.) — non-bold, black, LEFT side, starts from bottom like the title ──
-        if (typeFullLabel) {
-          const typeFs = Math.max(4.5, Math.min(6, subColW * 0.55));
+        // ── Type label (Préparation Générale, etc.) — left lane only ──
+        if (hasTypeLabel) {
+          const typeFs = Math.max(2.9, Math.min(5.2, laneW * 0.72));
           pdf.setFont("helvetica", "normal");
           pdf.setFontSize(typeFs);
           pdf.setTextColor(0, 0, 0);
           const typeMaxChars = Math.floor((bandHeight - 4) / (typeFs * 0.42));
-          // Place on the LEFT edge of the column, well separated from the right-aligned title
-          const typeX = xCol + typeFs * 0.9 + 0.4;
+          const typeX = leftLaneCenter + typeFs * 0.12;
           drawVerticalText(pdf, typeFullLabel, typeX, titleY, typeMaxChars);
         }
       }
