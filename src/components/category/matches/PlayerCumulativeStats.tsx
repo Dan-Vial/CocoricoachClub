@@ -1885,6 +1885,71 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
       </div>
 
       {!isSinglePlayerMode && <>
+      {/* Per-kicker stats + cartography (rugby only, when 2+ kickers) */}
+      {isRugby && (() => {
+        const kickerIds = Object.keys(kickingByPlayerFinal).filter(pid => kickingByPlayerFinal[pid].total > 0);
+        if (kickerIds.length < 2) return null;
+        return (
+          <Card className="bg-gradient-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Crosshair className="h-5 w-5 text-primary" />
+                Buteurs — statistiques & cartographie
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {kickerIds.map(pid => {
+                const k = kickingByPlayerFinal[pid];
+                const playerInfo = stats.find(s => s.playerId === pid);
+                const name = playerInfo?.playerName || "Buteur";
+                const rate = k.total > 0 ? Math.round((k.success / k.total) * 100) : 0;
+                const penRate = k.penalty.total > 0 ? Math.round((k.penalty.success / k.penalty.total) * 100) : 0;
+                const convRate = k.conversion.total > 0 ? Math.round((k.conversion.success / k.conversion.total) * 100) : 0;
+                const dropRate = k.drop.total > 0 ? Math.round((k.drop.success / k.drop.total) * 100) : 0;
+                return (
+                  <div key={pid} className="space-y-3 pb-4 border-b last:border-b-0 last:pb-0">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-primary" />
+                      <span className="font-semibold">{name}</span>
+                      <span className="text-xs text-muted-foreground">— {k.success}/{k.total} ({rate}%)</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div className="p-3 bg-primary/10 rounded-lg text-center">
+                        <p className="text-2xl font-bold text-primary">{rate}%</p>
+                        <p className="text-xs text-muted-foreground">Global</p>
+                        <p className="text-xs text-muted-foreground">{k.success}/{k.total}</p>
+                      </div>
+                      <div className="p-3 bg-muted/50 rounded-lg text-center">
+                        <p className="text-2xl font-bold">{penRate}%</p>
+                        <p className="text-xs text-muted-foreground">Pénalités</p>
+                        <p className="text-xs text-muted-foreground">{k.penalty.success}/{k.penalty.total}</p>
+                      </div>
+                      <div className="p-3 bg-muted/50 rounded-lg text-center">
+                        <p className="text-2xl font-bold">{convRate}%</p>
+                        <p className="text-xs text-muted-foreground">Transformations</p>
+                        <p className="text-xs text-muted-foreground">{k.conversion.success}/{k.conversion.total}</p>
+                      </div>
+                      <div className="p-3 bg-muted/50 rounded-lg text-center">
+                        <p className="text-2xl font-bold">{dropRate}%</p>
+                        <p className="text-xs text-muted-foreground">Drops</p>
+                        <p className="text-xs text-muted-foreground">{k.drop.success}/{k.drop.total}</p>
+                      </div>
+                    </div>
+                    {k.allKicks.length > 0 && (
+                      <CumulativeKickingMap
+                        kicks={k.allKicks}
+                        playerName={name}
+                        hasKickingStats={true}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       {/* Charts (Comparaison / Évolution / Progression) — placed just above the detailed table */}
       {stats.length > 0 && (
         <CumulativeStatsCharts stats={stats} matchesData={matchesDataForCharts} sportStats={sportStats} selectedMatchIds={activeMatchIds} sportType={sportType} />
