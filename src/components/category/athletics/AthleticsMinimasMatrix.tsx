@@ -398,14 +398,25 @@ export function AthleticsMinimasMatrix({ categoryId }: Props) {
                               (r.specialty || "") === (group.specialty || player.specialty || "")
                           );
                           const pb = playerRecord?.personal_best ?? null;
+                          const pbDate = playerRecord?.personal_best_date ?? null;
                           const sb = playerRecord?.season_best ?? null;
-                          // Use the best between actual competition perf, stored season best, and personal best
                           const lowerIsBetter = group.minimas[0]?.lower_is_better ?? true;
-                          const candidates = [best, sb, pb].filter((v): v is number => v != null);
-                          let displayBest: number | null = null;
-                          if (candidates.length > 0) {
-                            displayBest = lowerIsBetter ? Math.min(...candidates) : Math.max(...candidates);
+
+                          // SB effectif = meilleur entre la perf compétition de la saison et le SB stocké
+                          let effectiveSb: number | null = best ?? sb ?? null;
+                          if (best != null && sb != null) {
+                            effectiveSb = lowerIsBetter ? Math.min(best, sb) : Math.max(best, sb);
                           }
+
+                          // Détermine si le PB est dans la même saison que les minimas
+                          // (saison courante = season_year du record, qui par défaut = année courante)
+                          const seasonYear = playerRecord?.season_year ?? new Date().getFullYear();
+                          const pbYear = pbDate ? new Date(pbDate).getFullYear() : null;
+                          const pbInCurrentSeason = pb != null && pbYear === seasonYear;
+
+                          // Règle métier : si le PB est dans la même saison que les minimas → on prend le PB
+                          // Sinon → on prend le SB (record de la saison)
+                          const displayBest: number | null = pbInCurrentSeason ? pb : effectiveSb;
 
                           return (
                             <TableRow key={player.id}>
