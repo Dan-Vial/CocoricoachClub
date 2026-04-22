@@ -34,6 +34,10 @@ interface MatchInfo {
 
 export interface AnnualPlanningPdfData {
   year: number;
+  /** Month 0-11 the period starts at. Defaults to 0 (January). */
+  startMonth?: number;
+  /** Optional human label for the period (e.g. "Avril 2026 → Mars 2027"). */
+  periodLabel?: string;
   categoryName: string;
   clubName?: string;
   categories: PeriodizationCategory[];
