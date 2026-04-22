@@ -318,7 +318,7 @@ export function MatchLineupDialog({
               <Users className="h-5 w-5" />
               {isDoublesMatch 
                 ? `Paire${isPadel ? " de Padel" : " de Double"}`
-                : isIndividual ? "Participants" : `Composition - ${fieldConfig.label}`}
+                : isAthletics ? "Inscriptions par épreuve" : isIndividual ? "Participants" : `Composition - ${fieldConfig.label}`}
             </div>
             {hasFieldLayout && !isIndividual && !isDoublesMatch && !isAthletics && (
               <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "list" | "field")}>
