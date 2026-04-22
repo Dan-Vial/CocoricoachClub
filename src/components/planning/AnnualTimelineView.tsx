@@ -461,48 +461,69 @@ export function AnnualTimelineView({
           </div>
         )}
 
-        {/* LOAD BAR (global intensity visualization) */}
-        {categories.length > 0 && (
-          <div className="flex mt-1">
-            <div style={{ width: labelWidth, minWidth: labelWidth }} className="shrink-0 flex items-center px-3">
-              <Flame className="h-3.5 w-3.5 text-orange-500 mr-1.5" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Charge</span>
-            </div>
-            <div className="flex-1 relative h-6">
-              {months.map((month, i) => {
-                const ms = startOfMonth(month);
-                const me = endOfMonth(month);
-                const monthDays = differenceInDays(me, ms) + 1;
-                const widthPct = (monthDays / totalDays) * 100;
+        {/* LOAD BAR (global intensity visualization)
+            Pour chaque jour de l'année, on calcule la moyenne des intensités
+            de tous les cycles actifs ce jour-là, puis on associe la couleur
+            correspondante (référentiel 0→10 : vert clair → rouge foncé). */}
+        {categories.length > 0 && (() => {
+          // Calcule l'intensité moyenne de chaque jour de l'année
+          const dailyAvg: number[] = [];
+          for (let d = 0; d < totalDays; d++) {
+            const day = new Date(yearStart);
+            day.setDate(yearStart.getDate() + d);
+            const active = cycles.filter(c => {
+              const cs = new Date(c.start_date);
+              const ce = new Date(c.end_date);
+              return day >= cs && day <= ce;
+            });
+            const sum = active.reduce((s, c) => s + (c.intensity || 0), 0);
+            dailyAvg.push(active.length > 0 ? sum / active.length : 0);
+          }
 
-                // Average intensity of cycles active in this month
-                const activeCycles = cycles.filter(c => {
-                  const cs = new Date(c.start_date);
-                  const ce = new Date(c.end_date);
-                  return ce >= ms && cs <= me;
-                });
-                const avgIntensity = activeCycles.length > 0
-                  ? activeCycles.reduce((sum, c) => sum + (c.intensity || 0), 0) / activeCycles.length
-                  : 0;
+          // Moyenne globale (pour la légende / tooltip)
+          const overallAvg = dailyAvg.reduce((a, b) => a + b, 0) / Math.max(1, dailyAvg.filter(v => v > 0).length || 1);
 
-                return (
+          // Regroupe les jours consécutifs ayant la même couleur (pour limiter le nombre de div)
+          const segments: { start: number; length: number; color: string }[] = [];
+          let cursor = 0;
+          while (cursor < dailyAvg.length) {
+            const color = getLoadColor(dailyAvg[cursor]);
+            let len = 1;
+            while (cursor + len < dailyAvg.length && getLoadColor(dailyAvg[cursor + len]) === color) {
+              len++;
+            }
+            segments.push({ start: cursor, length: len, color });
+            cursor += len;
+          }
+
+          return (
+            <div className="flex mt-1">
+              <div style={{ width: labelWidth, minWidth: labelWidth }} className="shrink-0 flex items-center px-3">
+                <Flame className="h-3.5 w-3.5 text-orange-500 mr-1.5" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  Charge
+                </span>
+                <span className="ml-2 text-[10px] text-muted-foreground">
+                  ⌀ {overallAvg.toFixed(1)}/10
+                </span>
+              </div>
+              <div className="flex-1 relative h-6 rounded-md overflow-hidden border border-border/30">
+                {segments.map((seg, i) => (
                   <div
                     key={i}
-                    className="absolute top-0 h-full border-l border-border/10 first:border-l-0"
+                    className="absolute top-0 h-full"
                     style={{
-                      left: `${months.slice(0, i).reduce((acc, m) => {
-                        const md = differenceInDays(endOfMonth(m), startOfMonth(m)) + 1;
-                        return acc + (md / totalDays) * 100;
-                      }, 0)}%`,
-                      width: `${widthPct}%`,
-                      backgroundColor: avgIntensity > 0 ? `${getIntensityColor(Math.round(avgIntensity))}${Math.round(avgIntensity * 15 + 10).toString(16).padStart(2, '0')}` : "transparent",
+                      left: `${(seg.start / totalDays) * 100}%`,
+                      width: `${(seg.length / totalDays) * 100}%`,
+                      backgroundColor: seg.color,
                     }}
+                    title={`Jours ${seg.start + 1}–${seg.start + seg.length}`}
                   />
-                );
-              })}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );
