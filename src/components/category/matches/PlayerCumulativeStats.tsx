@@ -1353,52 +1353,74 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
       });
       y += 6;
 
-      // Stats by category
+      // Stats by category, organised in colored sub-blocks (mirrors UI)
       statCategories.forEach(cat => {
         const categoryStats = sportStats.filter(s => s.category === cat.key);
         if (categoryStats.length === 0) return;
 
-        if (y > pageH - 40) { doc.addPage(); y = 15; }
+        const groups = groupStatsByTheme(cat.key, categoryStats);
 
+        if (y > pageH - 40) { doc.addPage(); y = 15; }
         doc.setTextColor(30, 41, 59);
         doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
         doc.text(cat.label, 14, y);
         y += 5;
 
-        const tableW = pageW - 28;
-        const colW = tableW / categoryStats.length;
+        groups.forEach((group, gi) => {
+          const palette = pdfGroupColor(gi);
+          if (y > pageH - 25) { doc.addPage(); y = 15; }
 
-        // Header row
-        doc.setFillColor(241, 245, 249);
-        doc.rect(14, y, tableW, 7, "F");
-        doc.setDrawColor(200, 210, 220);
-        doc.setLineWidth(0.3);
-        doc.rect(14, y, tableW, 7, "S");
-        doc.setFontSize(7);
-        doc.setFont("helvetica", "bold");
-        let x = 14;
-        categoryStats.forEach((s, i) => {
-          if (i > 0) doc.line(x, y, x, y + 7);
-          doc.text(s.shortLabel.substring(0, 12), x + 1, y + 5);
-          x += colW;
-        });
-        y += 7;
+          // Sub-group title band (only if labeled)
+          if (group.label) {
+            doc.setFillColor(...palette.head);
+            doc.setDrawColor(...palette.border);
+            doc.setLineWidth(0.4);
+            doc.roundedRect(14, y, pageW - 28, 5.5, 1.2, 1.2, "FD");
+            doc.setFontSize(6.5);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(...palette.accent);
+            doc.text(String(group.label).toUpperCase(), 17, y + 4);
+            y += 6.5;
+          }
 
-        // Values row
-        doc.setFillColor(255, 255, 255);
-        doc.rect(14, y, tableW, 7, "F");
-        doc.rect(14, y, tableW, 7, "S");
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(30, 41, 59);
-        x = 14;
-        categoryStats.forEach((s, i) => {
-          if (i > 0) doc.line(x, y, x, y + 7);
-          const val = player.sportData[s.key] || 0;
-          doc.text(s.computedFrom ? `${val}%` : String(val), x + 1, y + 5);
-          x += colW;
+          const tableW = pageW - 28;
+          const colW = tableW / group.items.length;
+
+          // Header row tinted with sub-group body color
+          doc.setFillColor(...palette.body);
+          doc.rect(14, y, tableW, 7, "F");
+          doc.setDrawColor(...palette.border);
+          doc.setLineWidth(0.3);
+          doc.rect(14, y, tableW, 7, "S");
+          doc.setFontSize(7);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(...palette.accent);
+          let x = 14;
+          group.items.forEach((s, i) => {
+            if (i > 0) doc.line(x, y, x, y + 7);
+            doc.text(s.shortLabel.substring(0, 12), x + 1, y + 5);
+            x += colW;
+          });
+          y += 7;
+
+          // Values row
+          doc.setFillColor(255, 255, 255);
+          doc.rect(14, y, tableW, 7, "F");
+          doc.setDrawColor(...palette.border);
+          doc.rect(14, y, tableW, 7, "S");
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(30, 41, 59);
+          x = 14;
+          group.items.forEach((s, i) => {
+            if (i > 0) doc.line(x, y, x, y + 7);
+            const val = player.sportData[s.key] || 0;
+            doc.text(s.computedFrom ? `${val}%` : String(val), x + 1, y + 5);
+            x += colW;
+          });
+          y += 9;
         });
-        y += 10;
+        y += 3;
       });
 
       // ===== Évolution & progression par stat (multi-compétitions) =====
