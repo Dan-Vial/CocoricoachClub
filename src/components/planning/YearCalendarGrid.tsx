@@ -16,6 +16,10 @@ interface PeriodizationCycle {
 
 interface YearCalendarGridProps {
   year: number;
+  /** Optional custom period start (defaults to Jan 1 of `year`). 12 months are rendered from this date. */
+  periodStart?: Date;
+  /** Optional custom period end. Used to derive the number of months when provided. */
+  periodEnd?: Date;
   cycles: PeriodizationCycle[];
   sessions: { id: string; session_date: string }[];
   matches: { id: string; match_date: string; opponent: string; is_finalized?: boolean | null; competition?: string | null }[];
@@ -25,14 +29,15 @@ interface YearCalendarGridProps {
 
 const WEEKDAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
 
-export function YearCalendarGrid({ year, cycles, sessions, matches, onDateRangeSelect, activeCategoryColor }: YearCalendarGridProps) {
+export function YearCalendarGrid({ year, periodStart, periodEnd, cycles, sessions, matches, onDateRangeSelect, activeCategoryColor }: YearCalendarGridProps) {
   const [dragStart, setDragStart] = useState<string | null>(null);
   const [dragEnd, setDragEnd] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   const months = useMemo(() => {
-    return Array.from({ length: 12 }, (_, i) => new Date(year, i, 1));
-  }, [year]);
+    const start = periodStart ?? new Date(year, 0, 1);
+    return Array.from({ length: 12 }, (_, i) => new Date(start.getFullYear(), start.getMonth() + i, 1));
+  }, [year, periodStart]);
 
   const sessionDates = useMemo(() => {
     const set = new Set<string>();
