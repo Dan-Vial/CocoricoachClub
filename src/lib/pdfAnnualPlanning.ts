@@ -631,87 +631,68 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
           : ([90, 98, 116] as [number, number, number]);
 
         // ALWAYS render cycle text VERTICALLY — never horizontal.
-        // Two lanes (left = type, right = title) when both labels exist.
+        // Single combined lane: "Thème — Titre" on the same rotated line so the
+        // band always shows both pieces of information without stacking them
+        // visually one above the other.
         {
-          const laneW = hasTypeLabel
-            ? Math.max(1.1, (usableW - laneGap) / 2)
-            : usableW;
+          const laneW = usableW;
           const laneInset = Math.max(0.45, Math.min(1.2, laneW * 0.14));
-          const leftLaneRight = xCol + innerPadding + laneW - laneInset;
-          const rightLaneRight = hasTypeLabel
-            ? xCol + innerPadding + laneW + laneGap + laneW - laneInset
-            : xCol + innerPadding + laneW - laneInset;
+          const laneRight = xCol + innerPadding + laneW - laneInset;
           const denseMonthScale = subCols >= 8 ? 0.66 : subCols === 7 ? 0.74 : subCols === 6 ? 0.82 : 1;
           const lateralBudget = Math.max(0.8, laneW - laneInset * 2);
-          const titleMaxFs = Math.min(8.1 * denseMonthScale, Math.max(2.1, lateralBudget * 0.84));
-          const typeMaxFs = Math.min(6.7 * denseMonthScale, Math.max(1.8, lateralBudget * 0.8));
+          const combinedMaxFs = Math.min(8.1 * denseMonthScale, Math.max(2.1, lateralBudget * 0.84));
           // Reserve generous top + bottom padding so rotated text never touches the band edges.
-          const reservedDescender = Math.max(titleMaxFs, typeMaxFs) * 0.6 + 1.4;
+          const reservedDescender = combinedMaxFs * 0.6 + 1.4;
           const verticalBudget = Math.max(0, usableH - reservedDescender);
 
-          // Try full names first; fallback to short labels only if vertical fitting fails.
-          let titleFit = fitVerticalText(
+          const sep = " — ";
+          const buildCombined = (type: string, title: string) => {
+            if (type && title) return `${type}${sep}${title}`;
+            return title || type;
+          };
+
+          // Try full labels first; progressively fall back to abbreviations.
+          let combinedFit = fitVerticalText(
             pdf,
-            cycle.name,
+            buildCombined(typeFullLabel, cycle.name),
             verticalBudget,
             3.2,
-            titleMaxFs,
+            combinedMaxFs,
             "bold",
             lateralBudget,
           );
-          if (!titleFit.text && cycleShortLabel) {
-            titleFit = fitVerticalText(
+          if (!combinedFit.text) {
+            combinedFit = fitVerticalText(
               pdf,
-              cycleShortLabel,
+              buildCombined(typeShortLabel || typeFullLabel, cycleShortLabel || cycle.name),
               verticalBudget,
               2.8,
-              titleMaxFs,
+              combinedMaxFs,
+              "bold",
+              lateralBudget,
+            );
+          }
+          if (!combinedFit.text) {
+            // Last resort: just the title.
+            combinedFit = fitVerticalText(
+              pdf,
+              cycleShortLabel || cycle.name,
+              verticalBudget,
+              2.4,
+              combinedMaxFs,
               "bold",
               lateralBudget,
             );
           }
 
-          let typeFit = hasTypeLabel
-            ? fitVerticalText(
-                pdf,
-                typeFullLabel,
-                verticalBudget,
-                2.8,
-                typeMaxFs,
-                "italic",
-                lateralBudget,
-              )
-            : { fontSize: 0, text: "" };
-          if (hasTypeLabel && !typeFit.text && typeShortLabel) {
-            typeFit = fitVerticalText(
-              pdf,
-              typeShortLabel,
-              verticalBudget,
-              2.4,
-              typeMaxFs,
-              "italic",
-              lateralBudget,
-            );
-          }
-
-          const maxFs = Math.max(titleFit.fontSize, typeFit.fontSize);
-          const descenderPad = maxFs * 0.45 + 0.9;
+          const descenderPad = combinedFit.fontSize * 0.45 + 0.9;
           const titleY = bandBottom - innerPaddingV - descenderPad;
 
-          if (titleFit.text && titleFit.fontSize > 0) {
+          if (combinedFit.text && combinedFit.fontSize > 0) {
             pdf.setFont("helvetica", "bold");
-            pdf.setFontSize(titleFit.fontSize);
+            pdf.setFontSize(combinedFit.fontSize);
             pdf.setTextColor(...textColor);
-            const titleX = rightLaneRight;
-            pdf.text(titleFit.text, titleX, titleY, { angle: 90 });
-          }
-
-          if (hasTypeLabel && typeFit.text && typeFit.fontSize > 0) {
-            pdf.setFont("helvetica", "italic");
-            pdf.setFontSize(typeFit.fontSize);
-            pdf.setTextColor(...secondaryTextColor);
-            const typeX = leftLaneRight;
-            pdf.text(typeFit.text, typeX, titleY, { angle: 90 });
+            pdf.text(combinedFit.text, laneRight, titleY, { angle: 90 });
           }
         }
       }
