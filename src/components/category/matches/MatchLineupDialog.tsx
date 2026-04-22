@@ -50,6 +50,7 @@ export function MatchLineupDialog({
   matchFormat,
 }: MatchLineupDialogProps) {
   const [lineupData, setLineupData] = useState<LineupPlayer[]>([]);
+  const [athleticsEntries, setAthleticsEntries] = useState<AthleticsLineupEntry[]>([]);
   const [viewMode, setViewMode] = useState<"list" | "field">("field");
   const queryClient = useQueryClient();
 
@@ -69,6 +70,7 @@ export function MatchLineupDialog({
   const sportType = category?.rugby_type || "XV";
   const fieldConfig = getSportFieldConfig(sportType);
   const isIndividual = isIndividualSport(sportType);
+  const isAthletics = isAthletismeCategory(sportType);
   const isPadel = sportType.toLowerCase().includes("padel");
   const isTennis = sportType.toLowerCase().includes("tennis");
   const isDoublesMatch = isPadel || (isTennis && (matchFormat === "double" || matchFormat === "double_mixte"));
