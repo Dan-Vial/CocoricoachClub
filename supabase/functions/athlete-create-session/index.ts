@@ -204,8 +204,16 @@ serve(async (req) => {
 
     return respond({ success: true, session_id: session.id });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Erreur inconnue";
-    console.error("[athlete-create-session] Error:", message);
-    return respond({ success: false, error: message });
+    const err = error as { message?: string; details?: string; hint?: string; code?: string; stack?: string };
+    const message = err?.message || "Erreur inconnue";
+    console.error("[athlete-create-session] Error:", JSON.stringify({
+      message,
+      details: err?.details,
+      hint: err?.hint,
+      code: err?.code,
+      stack: err?.stack,
+    }));
+    const fullMessage = [message, err?.details, err?.hint].filter(Boolean).join(" | ");
+    return respond({ success: false, error: fullMessage });
   }
 });
