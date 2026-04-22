@@ -56,11 +56,13 @@ interface Round {
   phase: string;
   lane?: number;
   wind_conditions?: string;
+  wind_direction?: string;
   current_conditions?: string;
   temperature_celsius?: number;
   final_time_seconds?: number;
   ranking?: number;
   gap_to_first?: string;
+  is_personal_record?: boolean;
   bowlingCategory?: string;
   isLocked?: boolean;
   bowlingFrames?: FrameData[];
