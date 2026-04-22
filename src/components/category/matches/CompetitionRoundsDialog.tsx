@@ -845,10 +845,13 @@ export function CompetitionRoundsDialog({
             <SelectContent className="z-[200]">
               {playerRoundsData.map((player) => (
                 <SelectItem 
-                  key={player.playerId} 
-                  value={player.playerId}
-                  textValue={player.playerName}
+                  key={player.entryKey} 
+                  value={player.entryKey}
+                  textValue={`${player.playerName}${player.specialty ? ` ${player.specialty}` : player.discipline ? ` ${player.discipline}` : ""}`}
                 >
+                  <span className="font-medium">{player.playerName}</span>
+                  <span className="ml-2 inline-flex items-center gap-2">
+                  {/* keep flex container for badges */}
                   <div className="flex items-center gap-2">
                     <span>{player.playerName}</span>
                     {isAthletics && player.discipline && (
