@@ -85,12 +85,6 @@ interface CycleFormFieldsProps {
   onVolumeChange: (value: number) => void;
   dominantQuality?: string;
   onDominantQualityChange?: (value: string) => void;
-  loadPattern?: string;
-  onLoadPatternChange?: (value: string) => void;
-  fatigueTarget?: string;
-  onFatigueTargetChange?: (value: string) => void;
-  sessionsPerWeek?: number | null;
-  onSessionsPerWeekChange?: (value: number | null) => void;
 }
 
 export function CycleFormFields({
@@ -102,12 +96,6 @@ export function CycleFormFields({
   onVolumeChange,
   dominantQuality = "",
   onDominantQualityChange,
-  loadPattern = "",
-  onLoadPatternChange,
-  fatigueTarget = "",
-  onFatigueTargetChange,
-  sessionsPerWeek = null,
-  onSessionsPerWeekChange,
 }: CycleFormFieldsProps) {
   return (
     <>
