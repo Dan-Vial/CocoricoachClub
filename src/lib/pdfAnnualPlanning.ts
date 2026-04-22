@@ -153,16 +153,13 @@ function fitVerticalText(
   if (!text) return { fontSize: minFs, text: "" };
   const CHAR_RATIO = 0.55; // approximate char width / font size for helvetica
   let fs = maxFs;
-  while (fs > minFs) {
+  while (fs > 0.6) {
     const charsThatFit = Math.floor(availableHeight / (fs * CHAR_RATIO));
-    if (charsThatFit >= text.length) return { fontSize: fs, text };
-    fs -= 0.2;
+    if (charsThatFit >= text.length) return { fontSize: Math.max(fs, 0.8), text };
+    fs -= 0.15;
   }
-  // At minFs: truncate if needed
-  const charsAtMin = Math.max(1, Math.floor(availableHeight / (minFs * CHAR_RATIO)));
-  const finalText =
-    text.length > charsAtMin ? text.slice(0, Math.max(1, charsAtMin - 1)) + "…" : text;
-  return { fontSize: minFs, text: finalText };
+  // Never truncate — return full text at the smallest readable size.
+  return { fontSize: Math.max(0.8, minFs * 0.5), text };
 }
 
 // Draws a refined gold trophy/cup icon centered on (cx, cy)
