@@ -1104,8 +1104,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
           });
           y += mapH + 5;
 
-          // Zone stats grid
-          const kicks = allKicks.map(k => ({ x: k.x, y: k.y, success: k.success }));
+          // Zone stats grid (split by kickType: Transformations / Pénalités / Drops)
+          const kicks = allKicks.map(k => ({ x: k.x, y: k.y, success: k.success, kickType: k.kickType }));
           y = drawPdfZoneStatsGrid(doc, kicks, pageW, y, pageH);
         }
 
@@ -1830,11 +1830,12 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
 
           y += mapH + 6;
 
-          // Zone stats grid below cartography
+          // Zone stats grid below cartography (split by kickType)
           const zoneKicks = k.allKicks.map((kick: any) => ({
             x: kick.x as number,
             y: kick.y as number,
             success: !!kick.success,
+            kickType: kick.kickType as string | undefined,
           }));
           y = drawPdfZoneStatsGrid(doc, zoneKicks, pageW, y, pageH);
         }

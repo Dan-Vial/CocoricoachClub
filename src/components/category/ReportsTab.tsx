@@ -1117,11 +1117,12 @@ export function ReportsTab({ categoryId }: ReportsTabProps) {
         
         yPos += 8;
 
-        // Zone stats grid below cartography
+        // Zone stats grid below cartography (split by kickType)
         const zoneKicks = kickingAttempts.map((a: any) => ({
           x: a.zone_x,
           y: a.zone_y,
           success: !!a.success,
+          kickType: a.kick_type as string | undefined,
         }));
         yPos = drawPdfZoneStatsGrid(pdf, zoneKicks, contentWidth + margin * 2, yPos, pdf.internal.pageSize.getHeight() - 20);
 
