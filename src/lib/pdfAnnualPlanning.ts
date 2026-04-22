@@ -429,7 +429,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         const trophySize = Math.min(2.4, dayRowH * 0.7);
         drawTrophyIcon(pdf, trophyX, cy, trophySize);
 
-        // Match/competition name next to the trophy
+        // Match/competition name next to the trophy — black text, no background
         const firstMatch = dayMatches[0];
         const label = firstMatch.opponent || firstMatch.competition || "Compétition";
         const extra = dayMatches.length > 1 ? ` (+${dayMatches.length - 1})` : "";
@@ -439,12 +439,16 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         pdf.setFont("helvetica", "bold");
         const labelFs = Math.max(4.5, Math.min(6.5, dayRowH * 0.55));
         pdf.setFontSize(labelFs);
-        // White text outline by drawing a small white rect under text for contrast
         const truncated = pdf.splitTextToSize(fullLabel, Math.max(8, availableW))[0] || fullLabel;
-        const textW = pdf.getTextWidth(truncated);
-        pdf.setFillColor(255, 255, 255);
-        pdf.rect(textX - 0.4, cy - labelFs * 0.4, Math.min(textW + 0.8, availableW + 0.4), labelFs * 0.7, "F");
-        pdf.setTextColor(60, 45, 10);
+        // Determine text color based on cycle background luminance under this row
+        const cycleHere = monthCycles.find((c) => {
+          const cs = startOfDay(new Date(c.start_date));
+          const ce = startOfDay(new Date(c.end_date));
+          return date >= cs && date <= ce;
+        });
+        const bgRgb: [number, number, number] = cycleHere ? hexToRgb(cycleHere.color) : [255, 255, 255];
+        const useWhite = luminance(bgRgb) <= 0.55;
+        pdf.setTextColor(useWhite ? 255 : 0, useWhite ? 255 : 0, useWhite ? 255 : 0);
         pdf.text(truncated, textX, cy + labelFs * 0.18);
       }
     }
