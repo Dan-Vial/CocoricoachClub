@@ -74,6 +74,10 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
         cycle_type: cycleType || null,
         intensity: intensity || null,
         volume: volume || null,
+        dominant_quality: dominantQuality || null,
+        load_pattern: loadPattern || null,
+        fatigue_target: fatigueTarget || null,
+        sessions_per_week: sessionsPerWeek,
       });
       if (error) throw error;
     },
