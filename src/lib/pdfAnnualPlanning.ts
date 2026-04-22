@@ -401,46 +401,53 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
         const bandTop = gridTop + monthHeaderH + (firstDay - 1) * dayRowH;
         const bandBottom = gridTop + monthHeaderH + lastDay * dayRowH;
         const bandHeight = bandBottom - bandTop;
+        const bandCenterY = (bandTop + bandBottom) / 2;
 
         const lum = luminance(colColor);
         const lightOnDark = lum <= 0.55;
 
-        // Map cycle types to short codes
-        const typeMap: Record<string, string> = {
-          general_prep: "PG",
-          specific_prep: "PS",
-          competition: "PC",
-          recovery: "RÉCUP",
-          transition: "TRANS",
+        // Map cycle types to short codes + full label
+        const typeMap: Record<string, { short: string; full: string }> = {
+          general_prep: { short: "PG", full: "Préparation Générale" },
+          specific_prep: { short: "PS", full: "Préparation Spécifique" },
+          competition: { short: "PC", full: "Compétition" },
+          recovery: { short: "RÉCUP", full: "Récupération" },
+          transition: { short: "TRANS", full: "Transition" },
         };
-        const typeLabel = cycle.cycle_type
-          ? (typeMap[cycle.cycle_type] || cycle.cycle_type.toUpperCase())
-          : "";
+        const typeInfo = cycle.cycle_type ? typeMap[cycle.cycle_type] : undefined;
+        const typeFullLabel = typeInfo
+          ? `${typeInfo.short} : ${typeInfo.full}`
+          : (cycle.cycle_type ? cycle.cycle_type.toUpperCase() : "");
 
-        // ── Title (cycle name) — centered in the colored band ──
+        // ── Title (cycle name) — pushed to the RIGHT of the column ──
         const titleFs = Math.max(5, Math.min(7.5, subColW * 0.85));
         pdf.setFont("helvetica", "bold");
         pdf.setFontSize(titleFs);
         pdf.setTextColor(...(lightOnDark ? ([255, 255, 255] as [number, number, number]) : ([30, 35, 50] as [number, number, number])));
         const titleMaxChars = Math.floor((bandHeight - 4) / (titleFs * 0.42));
-        const titleX = xCol + subColW / 2 + titleFs * 0.35;
+        // Push title toward the right edge of the column
+        const titleX = xCol + subColW - titleFs * 0.35 - 0.4;
         const titleY = bandBottom - 2;
         drawVerticalText(pdf, cycle.name, titleX, titleY, titleMaxChars);
 
-        // ── Type label (PG / PS / PC / RÉCUP) — on its own line, left side of column, accent color ──
-        if (typeLabel) {
-          const typeFs = Math.max(4.5, Math.min(6, subColW * 0.7));
+        // ── Type label (PG : Préparation Générale) — black, centered in the band, on the LEFT side ──
+        if (typeFullLabel) {
+          const typeFs = Math.max(4.5, Math.min(6, subColW * 0.62));
           pdf.setFont("helvetica", "bold");
           pdf.setFontSize(typeFs);
-          // Accent color: gold on dark backgrounds, deep blue on light backgrounds
-          if (lightOnDark) {
-            pdf.setTextColor(255, 213, 79); // gold accent
-          } else {
-            pdf.setTextColor(30, 90, 180); // deep blue accent
-          }
-          const typeMaxChars = Math.floor((bandHeight - 4) / (typeFs * 0.42));
-          const typeX = xCol + typeFs * 0.9 + 0.6; // left side of column
-          drawVerticalText(pdf, typeLabel, typeX, titleY, typeMaxChars);
+          pdf.setTextColor(0, 0, 0);
+          const typeMaxChars = Math.floor((bandHeight - 6) / (typeFs * 0.42));
+          // Position on the LEFT side of the column
+          const typeX = xCol + typeFs * 0.9 + 0.4;
+          // Center the text vertically in the band:
+          // For rotated text drawn at (x, y) with angle 90, the baseline starts at y and grows upward.
+          // To center, we anchor the baseline at bandCenterY + (textWidth / 2).
+          const safeText = typeFullLabel.length > typeMaxChars
+            ? typeFullLabel.slice(0, typeMaxChars - 1) + "…"
+            : typeFullLabel;
+          const textWidth = pdf.getTextWidth(safeText);
+          const typeY = Math.min(bandBottom - 1, bandCenterY + textWidth / 2);
+          pdf.text(safeText, typeX, typeY, { angle: 90 });
         }
       }
     }
