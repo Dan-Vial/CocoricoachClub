@@ -182,7 +182,11 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
       else toneClass = "bg-amber-500/10 border-amber-500/30";
     }
     return (
-      <div key={stat.key} className={`${large ? "p-2.5" : "p-1.5"} rounded-md text-center space-y-0 border ${toneClass}`}>
+      <div
+        key={stat.key}
+        title={stat.label}
+        className={`${large ? "p-2.5" : "p-1.5"} rounded-md text-center space-y-0 border ${toneClass} cursor-help`}
+      >
         <p className={`${large ? "text-xl" : "text-base"} font-bold leading-tight`}>
           {stat.computedFrom ? `${val}%` : val}
         </p>
