@@ -601,27 +601,18 @@ export function CompetitionRoundsDialog({
               stats: r.stats ?? null,
             })),
           );
+          // Pour le multi-épreuves : on s'appuie strictement sur la discipline/spécialité
+          // saisie au niveau de l'inscription (lineup) et plus sur les arrays globaux du joueur.
+          // Si rien n'est renseigné côté lineup, on retombe sur la discipline principale.
           const playersForSync = playerRoundsData.map((p) => ({
             id: p.playerId,
             discipline: p.discipline ?? null,
             specialty: p.specialty ?? null,
+            // Forcer un seul couple : on n'élargit pas aux autres disciplines de l'athlète
+            disciplines: p.discipline ? [p.discipline] : null,
+            specialties: p.discipline ? [p.specialty || null] : null,
           }));
-          // Enrichit avec disciplines/specialties (multi-épreuves) si dispo
-          const { data: extraPlayers } = await supabase
-            .from("players")
-            .select("id, disciplines, specialties")
-            .in(
-              "id",
-              playersForSync.map((p) => p.id),
-            );
-          const enriched = playersForSync.map((p) => {
-            const extra = extraPlayers?.find((e) => e.id === p.id);
-            return {
-              ...p,
-              disciplines: (extra as any)?.disciplines ?? null,
-              specialties: (extra as any)?.specialties ?? null,
-            };
-          });
+          const enriched = playersForSync;
 
           await syncAthleticsRecordsFromRounds({
             categoryId,
