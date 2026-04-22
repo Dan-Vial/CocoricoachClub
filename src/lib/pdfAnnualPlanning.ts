@@ -639,10 +639,11 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
           const rightLaneCenter = hasTypeLabel
             ? xCol + innerPadding + laneW + laneGap + laneW / 2
             : xCol + innerPadding + laneW / 2;
-          const lateralBudget = Math.max(0, laneW - 0.55);
-          const titleMaxFs = Math.min(9.5, Math.max(2.8, lateralBudget));
-          const typeMaxFs = Math.min(7.5, Math.max(2.4, lateralBudget));
-          const reservedDescender = Math.max(titleMaxFs, typeMaxFs) * 0.4 + 0.7;
+          const lateralBudget = Math.max(0, laneW - 0.7);
+          const titleMaxFs = Math.min(8.5, Math.max(2.6, lateralBudget));
+          const typeMaxFs = Math.min(7, Math.max(2.2, lateralBudget));
+          // Reserve generous top + bottom padding so rotated text never touches the band edges.
+          const reservedDescender = Math.max(titleMaxFs, typeMaxFs) * 0.6 + 1.4;
           const verticalBudget = Math.max(0, usableH - reservedDescender);
 
           // Try full names first; fallback to short labels only if vertical fitting fails.
