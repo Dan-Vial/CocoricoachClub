@@ -586,12 +586,64 @@ export function CompetitionRoundsDialog({
           await supabase.from("awcr_tracking").insert(rpeEntries);
         }
       }
+
+      // Athlétisme : propagation automatique des PB / SB dans athletics_records
+      if (isAthletics && matchData && playerRoundsData.length > 0) {
+        const matchDateStr = matchData.match_date?.split("T")[0] || new Date().toISOString().split("T")[0];
+        try {
+          const flatRounds = playerRoundsData.flatMap((p) =>
+            p.rounds.map((r) => ({
+              player_id: p.playerId,
+              final_time_seconds: r.final_time_seconds ?? null,
+              stats: r.stats ?? null,
+            })),
+          );
+          const playersForSync = playerRoundsData.map((p) => ({
+            id: p.playerId,
+            discipline: p.discipline ?? null,
+            specialty: p.specialty ?? null,
+          }));
+          // Enrichit avec disciplines/specialties (multi-épreuves) si dispo
+          const { data: extraPlayers } = await supabase
+            .from("players")
+            .select("id, disciplines, specialties")
+            .in(
+              "id",
+              playersForSync.map((p) => p.id),
+            );
+          const enriched = playersForSync.map((p) => {
+            const extra = extraPlayers?.find((e) => e.id === p.id);
+            return {
+              ...p,
+              disciplines: (extra as any)?.disciplines ?? null,
+              specialties: (extra as any)?.specialties ?? null,
+            };
+          });
+
+          await syncAthleticsRecordsFromRounds({
+            categoryId,
+            matchDate: matchDateStr,
+            matchLocation:
+              (matchData as any)?.location || (matchData as any)?.competition || null,
+            rounds: flatRounds,
+            players: enriched,
+          });
+        } catch (err) {
+          // Non bloquant : on log mais on ne casse pas la sauvegarde des manches
+          console.error("[athletics] sync records failed:", err);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["competition_rounds", matchId] });
       queryClient.invalidateQueries({ queryKey: ["competition_match_lineup", matchId] });
       queryClient.invalidateQueries({ queryKey: ["match_lineup", matchId] });
       queryClient.invalidateQueries({ queryKey: ["awcr_tracking"] });
+      // Refresh des records & matrice minimas pour propagation immédiate
+      queryClient.invalidateQueries({ queryKey: ["athletics_records"] });
+      queryClient.invalidateQueries({ queryKey: ["athletics_records_matrix", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["athletics_records_dialog", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["athletics_minimas_matrix", categoryId] });
       toast.success("Données et charge match enregistrées");
       onOpenChange(false);
     },
