@@ -530,6 +530,7 @@ export type Database = {
           discipline: string
           id: string
           label: string
+          level: string
           lower_is_better: boolean
           notes: string | null
           specialty: string | null
@@ -544,6 +545,7 @@ export type Database = {
           discipline: string
           id?: string
           label?: string
+          level?: string
           lower_is_better?: boolean
           notes?: string | null
           specialty?: string | null
@@ -558,6 +560,7 @@ export type Database = {
           discipline?: string
           id?: string
           label?: string
+          level?: string
           lower_is_better?: boolean
           notes?: string | null
           specialty?: string | null
