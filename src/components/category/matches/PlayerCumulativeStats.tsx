@@ -1809,14 +1809,14 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                     const categoryStats = sportStats.filter(s => s.category === cat.key);
                     return (
                       <TabsContent key={cat.key} value={cat.key}>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-6 gap-1.5">
                           {categoryStats.map(stat => {
                             const val = player.sportData[stat.key] || 0;
                             const prog = playerProgressions[player.playerId]?.[stat.key] || 0;
                             return (
-                              <div key={stat.key} className="p-3 bg-muted/50 rounded-lg text-center space-y-1">
-                                <p className="text-2xl font-bold">{stat.computedFrom ? `${val}%` : val}</p>
-                                <p className="text-xs text-muted-foreground">{stat.shortLabel}</p>
+                              <div key={stat.key} className="p-1.5 bg-muted/50 rounded-md text-center space-y-0 border border-border/50">
+                                <p className="text-base font-bold leading-tight">{stat.computedFrom ? `${val}%` : val}</p>
+                                <p className="text-[10px] text-muted-foreground leading-tight">{stat.shortLabel}</p>
                                 {matchesDataForCharts.length >= 2 && (
                                   <ProgressionIndicator value={prog} />
                                 )}
@@ -1844,26 +1844,26 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                          <div className="p-3 bg-primary/10 rounded-lg text-center">
-                            <p className="text-2xl font-bold text-primary">{rate}%</p>
-                            <p className="text-xs text-muted-foreground">Global</p>
-                            <p className="text-xs text-muted-foreground">{k.success}/{k.total}</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                          <div className="p-1.5 bg-primary/10 rounded-md text-center border border-primary/30">
+                            <p className="text-base font-bold text-primary leading-tight">{rate}%</p>
+                            <p className="text-[10px] text-muted-foreground leading-tight">Global</p>
+                            <p className="text-[10px] text-muted-foreground leading-tight">{k.success}/{k.total}</p>
                           </div>
-                          <div className="p-3 bg-muted/50 rounded-lg text-center">
-                            <p className="text-2xl font-bold">{penRate}%</p>
-                            <p className="text-xs text-muted-foreground">Pénalités</p>
-                            <p className="text-xs text-muted-foreground">{k.penalty.success}/{k.penalty.total}</p>
+                          <div className="p-1.5 bg-muted/50 rounded-md text-center border border-border/50">
+                            <p className="text-base font-bold leading-tight">{penRate}%</p>
+                            <p className="text-[10px] text-muted-foreground leading-tight">Pénalités</p>
+                            <p className="text-[10px] text-muted-foreground leading-tight">{k.penalty.success}/{k.penalty.total}</p>
                           </div>
-                          <div className="p-3 bg-muted/50 rounded-lg text-center">
-                            <p className="text-2xl font-bold">{convRate}%</p>
-                            <p className="text-xs text-muted-foreground">Transformations</p>
-                            <p className="text-xs text-muted-foreground">{k.conversion.success}/{k.conversion.total}</p>
+                          <div className="p-1.5 bg-muted/50 rounded-md text-center border border-border/50">
+                            <p className="text-base font-bold leading-tight">{convRate}%</p>
+                            <p className="text-[10px] text-muted-foreground leading-tight">Transformations</p>
+                            <p className="text-[10px] text-muted-foreground leading-tight">{k.conversion.success}/{k.conversion.total}</p>
                           </div>
-                          <div className="p-3 bg-muted/50 rounded-lg text-center">
-                            <p className="text-2xl font-bold">{dropRate}%</p>
-                            <p className="text-xs text-muted-foreground">Drops</p>
-                            <p className="text-xs text-muted-foreground">{k.drop.success}/{k.drop.total}</p>
+                          <div className="p-1.5 bg-muted/50 rounded-md text-center border border-border/50">
+                            <p className="text-base font-bold leading-tight">{dropRate}%</p>
+                            <p className="text-[10px] text-muted-foreground leading-tight">Drops</p>
+                            <p className="text-[10px] text-muted-foreground leading-tight">{k.drop.success}/{k.drop.total}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -1913,26 +1913,26 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                       <span className="font-semibold">{name}</span>
                       <span className="text-xs text-muted-foreground">— {k.success}/{k.total} ({rate}%)</span>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <div className="p-3 bg-primary/10 rounded-lg text-center">
-                        <p className="text-2xl font-bold text-primary">{rate}%</p>
-                        <p className="text-xs text-muted-foreground">Global</p>
-                        <p className="text-xs text-muted-foreground">{k.success}/{k.total}</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                      <div className="p-1.5 bg-primary/10 rounded-md text-center border border-primary/30">
+                        <p className="text-base font-bold text-primary leading-tight">{rate}%</p>
+                        <p className="text-[10px] text-muted-foreground leading-tight">Global</p>
+                        <p className="text-[10px] text-muted-foreground leading-tight">{k.success}/{k.total}</p>
                       </div>
-                      <div className="p-3 bg-muted/50 rounded-lg text-center">
-                        <p className="text-2xl font-bold">{penRate}%</p>
-                        <p className="text-xs text-muted-foreground">Pénalités</p>
-                        <p className="text-xs text-muted-foreground">{k.penalty.success}/{k.penalty.total}</p>
+                      <div className="p-1.5 bg-muted/50 rounded-md text-center border border-border/50">
+                        <p className="text-base font-bold leading-tight">{penRate}%</p>
+                        <p className="text-[10px] text-muted-foreground leading-tight">Pénalités</p>
+                        <p className="text-[10px] text-muted-foreground leading-tight">{k.penalty.success}/{k.penalty.total}</p>
                       </div>
-                      <div className="p-3 bg-muted/50 rounded-lg text-center">
-                        <p className="text-2xl font-bold">{convRate}%</p>
-                        <p className="text-xs text-muted-foreground">Transformations</p>
-                        <p className="text-xs text-muted-foreground">{k.conversion.success}/{k.conversion.total}</p>
+                      <div className="p-1.5 bg-muted/50 rounded-md text-center border border-border/50">
+                        <p className="text-base font-bold leading-tight">{convRate}%</p>
+                        <p className="text-[10px] text-muted-foreground leading-tight">Transformations</p>
+                        <p className="text-[10px] text-muted-foreground leading-tight">{k.conversion.success}/{k.conversion.total}</p>
                       </div>
-                      <div className="p-3 bg-muted/50 rounded-lg text-center">
-                        <p className="text-2xl font-bold">{dropRate}%</p>
-                        <p className="text-xs text-muted-foreground">Drops</p>
-                        <p className="text-xs text-muted-foreground">{k.drop.success}/{k.drop.total}</p>
+                      <div className="p-1.5 bg-muted/50 rounded-md text-center border border-border/50">
+                        <p className="text-base font-bold leading-tight">{dropRate}%</p>
+                        <p className="text-[10px] text-muted-foreground leading-tight">Drops</p>
+                        <p className="text-[10px] text-muted-foreground leading-tight">{k.drop.success}/{k.drop.total}</p>
                       </div>
                     </div>
                     {k.allKicks.length > 0 && (
