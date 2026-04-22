@@ -522,6 +522,144 @@ export type Database = {
           },
         ]
       }
+      athletics_minimas: {
+        Row: {
+          category_id: string
+          created_at: string
+          created_by: string | null
+          discipline: string
+          id: string
+          label: string
+          lower_is_better: boolean
+          notes: string | null
+          specialty: string | null
+          target_value: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          discipline: string
+          id?: string
+          label?: string
+          lower_is_better?: boolean
+          notes?: string | null
+          specialty?: string | null
+          target_value: number
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          discipline?: string
+          id?: string
+          label?: string
+          lower_is_better?: boolean
+          notes?: string | null
+          specialty?: string | null
+          target_value?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athletics_minimas_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      athletics_records: {
+        Row: {
+          category_id: string
+          created_at: string
+          created_by: string | null
+          discipline: string
+          id: string
+          lower_is_better: boolean
+          notes: string | null
+          personal_best: number | null
+          personal_best_date: string | null
+          personal_best_location: string | null
+          player_id: string
+          season_best: number | null
+          season_best_date: string | null
+          season_best_location: string | null
+          season_year: number
+          specialty: string | null
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          discipline: string
+          id?: string
+          lower_is_better?: boolean
+          notes?: string | null
+          personal_best?: number | null
+          personal_best_date?: string | null
+          personal_best_location?: string | null
+          player_id: string
+          season_best?: number | null
+          season_best_date?: string | null
+          season_best_location?: string | null
+          season_year?: number
+          specialty?: string | null
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          discipline?: string
+          id?: string
+          lower_is_better?: boolean
+          notes?: string | null
+          personal_best?: number | null
+          personal_best_date?: string | null
+          personal_best_location?: string | null
+          player_id?: string
+          season_best?: number | null
+          season_best_date?: string | null
+          season_best_location?: string | null
+          season_year?: number
+          specialty?: string | null
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athletics_records_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athletics_records_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athletics_records_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
