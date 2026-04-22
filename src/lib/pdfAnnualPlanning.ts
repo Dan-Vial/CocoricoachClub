@@ -141,26 +141,38 @@ function drawVerticalText(
 
 /**
  * Auto-fit a font size so that `text` rendered vertically fits within `availableHeight` (mm).
- * Returns the chosen font size and the (possibly truncated) text.
- * - Starts from `maxFs`, shrinks down to `minFs`.
- * - If even at `minFs` the text doesn't fit, it is truncated with an ellipsis.
+ * Uses jsPDF's real text measurement instead of a rough character ratio so exported labels
+ * never get cut off.
  */
 function fitVerticalText(
+  pdf: jsPDF,
   text: string,
   availableHeight: number,
   minFs: number,
   maxFs: number,
+  fontStyle: "normal" | "bold" | "italic" = "normal",
 ): { fontSize: number; text: string } {
   if (!text) return { fontSize: minFs, text: "" };
-  const CHAR_RATIO = 0.55; // approximate char width / font size for helvetica
+
+  const prevSize = pdf.getFontSize();
+  const prevFont = pdf.getFont();
   let fs = maxFs;
-  while (fs > 0.6) {
-    const charsThatFit = Math.floor(availableHeight / (fs * CHAR_RATIO));
-    if (charsThatFit >= text.length) return { fontSize: Math.max(fs, 0.8), text };
-    fs -= 0.15;
+
+  pdf.setFont("helvetica", fontStyle);
+  while (fs >= 0.6) {
+    pdf.setFontSize(fs);
+    const measuredHeight = pdf.getTextWidth(text);
+    if (measuredHeight <= availableHeight) {
+      pdf.setFont(prevFont.fontName || "helvetica", (prevFont.fontStyle as "normal" | "bold" | "italic") || "normal");
+      pdf.setFontSize(prevSize);
+      return { fontSize: fs, text };
+    }
+    fs -= 0.1;
   }
-  // Never truncate — return full text at the smallest readable size.
-  return { fontSize: Math.max(0.8, minFs * 0.5), text };
+
+  pdf.setFont(prevFont.fontName || "helvetica", (prevFont.fontStyle as "normal" | "bold" | "italic") || "normal");
+  pdf.setFontSize(prevSize);
+  return { fontSize: 0.6, text };
 }
 
 // Draws a refined gold trophy/cup icon centered on (cx, cy)
@@ -501,28 +513,26 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
           ? xCol + innerPadding + laneW + laneGap + laneW / 2
           : xCol + innerPadding + laneW / 2;
         // ── Title (cycle name) — right lane ──
-        // Cap font size by lane width (so the glyph height doesn't overflow horizontally
-        // when rotated 90°). Allow a generous max so we use the full available band height.
-        const titleMaxFs = Math.max(4, Math.min(14, laneW * 0.95));
-        // Reserve room for the descender so the last glyph stays inside the band.
-        const titleFit = fitVerticalText(cycle.name, Math.max(1, usableH - 1.2), 2.5, titleMaxFs);
+        // Keep extra lateral safety because rotated text uses the font size as visual width.
+        const titleMaxFs = Math.max(3.2, Math.min(12, laneW * 0.76));
+        const titleFit = fitVerticalText(pdf, cycle.name, Math.max(1, usableH - 1.6), 0.6, titleMaxFs, "bold");
 
         // Type label sizing (computed before drawing so we can align baselines)
-        const typeMaxFs = Math.max(3.2, Math.min(11, laneW * 0.85));
+        const typeMaxFs = Math.max(2.8, Math.min(9.5, laneW * 0.7));
         const typeFit = hasTypeLabel
-          ? fitVerticalText(typeFullLabel, Math.max(1, usableH - 1.2), 2.2, typeMaxFs)
+          ? fitVerticalText(pdf, typeFullLabel, Math.max(1, usableH - 1.6), 0.6, typeMaxFs, "italic")
           : { fontSize: 0, text: "" };
 
         // Anchor text at the bottom of the band; vertical text reads upward toward bandTop.
-        // Add a descender pad (~22% of largest font size) so glyphs like g/p/j don't get clipped.
+        // Use a larger descender and side safety pad to forbid any clipping in the export.
         const maxFs = Math.max(titleFit.fontSize, typeFit.fontSize);
-        const descenderPad = maxFs * 0.22 + 0.3;
+        const descenderPad = maxFs * 0.3 + 0.5;
         const titleY = bandBottom - innerPaddingV - descenderPad;
 
         pdf.setFont("helvetica", "bold");
         pdf.setFontSize(titleFit.fontSize);
         pdf.setTextColor(...(lightOnDark ? ([255, 255, 255] as [number, number, number]) : ([30, 35, 50] as [number, number, number])));
-        const titleX = rightLaneCenter + titleFit.fontSize * 0.16;
+        const titleX = rightLaneCenter + titleFit.fontSize * 0.06;
         pdf.text(titleFit.text, titleX, titleY, { angle: 90 });
 
         // ── Type label (Préparation Générale, etc.) — left lane — gray italic ──
@@ -530,7 +540,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
           pdf.setFont("helvetica", "italic");
           pdf.setFontSize(typeFit.fontSize);
           pdf.setTextColor(...(lightOnDark ? ([220, 222, 228] as [number, number, number]) : ([110, 115, 130] as [number, number, number])));
-          const typeX = leftLaneCenter + typeFit.fontSize * 0.12;
+          const typeX = leftLaneCenter + typeFit.fontSize * 0.04;
           pdf.text(typeFit.text, typeX, titleY, { angle: 90 });
         }
       }
