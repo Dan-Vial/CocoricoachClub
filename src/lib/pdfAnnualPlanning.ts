@@ -267,7 +267,8 @@ function fitVerticalText(
   const prevSize = pdf.getFontSize();
   const prevFont = pdf.getFont();
   const floor = Math.max(0.6, minFs);
-  let fs = Math.min(maxFs, maxLateralFs);
+  const safeLateralFs = Number.isFinite(maxLateralFs) ? maxLateralFs * 0.82 : maxLateralFs;
+  let fs = Math.min(maxFs, safeLateralFs);
 
   pdf.setFont("helvetica", fontStyle);
   while (fs >= floor) {
@@ -635,14 +636,15 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
           const laneW = hasTypeLabel
             ? Math.max(1.1, (usableW - laneGap) / 2)
             : usableW;
-          const leftLaneCenter = xCol + innerPadding + laneW / 2;
-          const rightLaneCenter = hasTypeLabel
-            ? xCol + innerPadding + laneW + laneGap + laneW / 2
-            : xCol + innerPadding + laneW / 2;
+          const laneInset = Math.max(0.45, Math.min(1.2, laneW * 0.14));
+          const leftLaneRight = xCol + innerPadding + laneW - laneInset;
+          const rightLaneRight = hasTypeLabel
+            ? xCol + innerPadding + laneW + laneGap + laneW - laneInset
+            : xCol + innerPadding + laneW - laneInset;
           const denseMonthScale = subCols >= 8 ? 0.66 : subCols === 7 ? 0.74 : subCols === 6 ? 0.82 : 1;
-          const lateralBudget = Math.max(0, laneW - 0.7);
-          const titleMaxFs = Math.min(8.5 * denseMonthScale, Math.max(2.2, lateralBudget * denseMonthScale));
-          const typeMaxFs = Math.min(7 * denseMonthScale, Math.max(1.9, lateralBudget * denseMonthScale));
+          const lateralBudget = Math.max(0.8, laneW - laneInset * 2);
+          const titleMaxFs = Math.min(8.1 * denseMonthScale, Math.max(2.1, lateralBudget * 0.84));
+          const typeMaxFs = Math.min(6.7 * denseMonthScale, Math.max(1.8, lateralBudget * 0.8));
           // Reserve generous top + bottom padding so rotated text never touches the band edges.
           const reservedDescender = Math.max(titleMaxFs, typeMaxFs) * 0.6 + 1.4;
           const verticalBudget = Math.max(0, usableH - reservedDescender);
@@ -700,7 +702,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
             pdf.setFont("helvetica", "bold");
             pdf.setFontSize(titleFit.fontSize);
             pdf.setTextColor(...textColor);
-            const titleX = rightLaneCenter + titleFit.fontSize * 0.05;
+            const titleX = rightLaneRight;
             pdf.text(titleFit.text, titleX, titleY, { angle: 90 });
           }
 
@@ -708,7 +710,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
             pdf.setFont("helvetica", "italic");
             pdf.setFontSize(typeFit.fontSize);
             pdf.setTextColor(...secondaryTextColor);
-            const typeX = leftLaneCenter + typeFit.fontSize * 0.04;
+            const typeX = leftLaneRight;
             pdf.text(typeFit.text, typeX, titleY, { angle: 90 });
           }
         }
