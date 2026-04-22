@@ -52,6 +52,22 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
     (m) => startOfDay(new Date(m.match_date)).getTime() < today.getTime()
   );
 
+  // Group past matches by month (most recent first)
+  const pastMatchesByMonth = (() => {
+    const sorted = [...pastMatches].sort(
+      (a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime()
+    );
+    const groups = new Map<string, { label: string; matches: typeof sorted }>();
+    sorted.forEach((m) => {
+      const d = new Date(m.match_date);
+      const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, "0")}`;
+      const label = format(d, "MMMM yyyy", { locale: fr });
+      if (!groups.has(key)) groups.set(key, { label, matches: [] });
+      groups.get(key)!.matches.push(m);
+    });
+    return Array.from(groups.entries()).map(([key, value]) => ({ key, ...value }));
+  })();
+
   if (isLoading) {
     return <p className="text-muted-foreground">Chargement...</p>;
   }
