@@ -29,6 +29,7 @@ import { useStatPreferences } from "@/hooks/use-stat-preferences";
 import { BowlingOilPatternSection } from "./BowlingOilPatternSection";
 import { BowlingScoreSheet, FrameData, BowlingStats } from "@/components/athlete-portal/BowlingScoreSheet";
 import { isAthletismeCategory } from "@/lib/constants/sportTypes";
+import { syncAthleticsRecordsFromRounds } from "@/lib/athletics/syncRecordsFromCompetition";
 import { BowlingBlockManager, type BowlingBlock, type Round as BowlingRound, BOWLING_COMPETITION_CATEGORIES, BOWLING_PHASES } from "@/components/bowling/BowlingBlockManager";
 import { BowlingCompetitionSummary } from "@/components/bowling/BowlingCompetitionSummary";
 
@@ -289,11 +290,15 @@ export function CompetitionRoundsDialog({
     toast.success(`Partie ${roundNumber} enregistrée et verrouillée`);
   };
 
-  // Get match data for date
+  // Get match data for date / location (location is reused to stamp records "lieu")
   const { data: matchData } = useQuery({
     queryKey: ["match", matchId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("matches").select("match_date").eq("id", matchId).single();
+      const { data, error } = await supabase
+        .from("matches")
+        .select("match_date, location, opponent, competition")
+        .eq("id", matchId)
+        .single();
       if (error) throw error;
       return data;
     },
