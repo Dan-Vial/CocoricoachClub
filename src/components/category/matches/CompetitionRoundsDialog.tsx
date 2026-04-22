@@ -56,11 +56,13 @@ interface Round {
   phase: string;
   lane?: number;
   wind_conditions?: string;
+  wind_direction?: string;
   current_conditions?: string;
   temperature_celsius?: number;
   final_time_seconds?: number;
   ranking?: number;
   gap_to_first?: string;
+  is_personal_record?: boolean;
   bowlingCategory?: string;
   isLocked?: boolean;
   bowlingFrames?: FrameData[];
@@ -311,10 +313,16 @@ export function CompetitionRoundsDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("match_lineups")
-        .select("id, player_id, boat_type, crew_role, seat_position, discipline, specialty, players(id, name, first_name, discipline, specialty)")
+        .select("id, player_id, boat_type, crew_role, seat_position, discipline, specialty, start_order, players(id, name, first_name, discipline, specialty)")
         .eq("match_id", matchId);
       if (error) throw error;
-      return data;
+      // Sort by athlete name then by start_order so events appear in starting order
+      return (data || []).sort((a: any, b: any) => {
+        const nameA = [a.players?.first_name, a.players?.name].filter(Boolean).join(" ");
+        const nameB = [b.players?.first_name, b.players?.name].filter(Boolean).join(" ");
+        if (nameA !== nameB) return nameA.localeCompare(nameB);
+        return (a.start_order ?? 999) - (b.start_order ?? 999);
+      });
     },
     enabled: open && !!matchId,
   });
@@ -386,11 +394,13 @@ export function CompetitionRoundsDialog({
               phase: r.phase || "",
               lane: r.lane || undefined,
               wind_conditions: r.wind_conditions || undefined,
+              wind_direction: (r as any).wind_direction || undefined,
               current_conditions: r.current_conditions || undefined,
               temperature_celsius: r.temperature_celsius || undefined,
               final_time_seconds: r.final_time_seconds || undefined,
               ranking: r.ranking || undefined,
               gap_to_first: r.gap_to_first || undefined,
+              is_personal_record: !!(r as any).is_personal_record,
               isLocked: !!r.id,
               bowlingFrames: bowlingFrames,
               bowlingCategory: bowlingCategory,
@@ -440,11 +450,13 @@ export function CompetitionRoundsDialog({
               phase: r.phase || "",
               lane: r.lane || undefined,
               wind_conditions: r.wind_conditions || undefined,
+              wind_direction: (r as any).wind_direction || undefined,
               current_conditions: r.current_conditions || undefined,
               temperature_celsius: r.temperature_celsius || undefined,
               final_time_seconds: r.final_time_seconds || undefined,
               ranking: r.ranking || undefined,
               gap_to_first: r.gap_to_first || undefined,
+              is_personal_record: !!(r as any).is_personal_record,
               isLocked: !!r.id,
               bowlingFrames: bowlingFrames,
               bowlingCategory: bowlingCategory,
@@ -513,12 +525,14 @@ export function CompetitionRoundsDialog({
               phase: round.phase || null,
               lane: round.lane || null,
               wind_conditions: round.wind_conditions || null,
+              wind_direction: round.wind_direction || null,
               current_conditions: round.current_conditions || null,
               temperature_celsius: round.temperature_celsius || null,
               final_time_seconds: round.final_time_seconds || null,
               ranking: round.ranking || null,
               gap_to_first: round.gap_to_first || null,
-            })
+              is_personal_record: !!round.is_personal_record,
+            } as any)
             .select()
             .single();
 

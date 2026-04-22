@@ -1765,6 +1765,7 @@ export type Database = {
           final_time_seconds: number | null
           gap_to_first: string | null
           id: string
+          is_personal_record: boolean
           lane: number | null
           match_id: string
           notes: string | null
@@ -1777,6 +1778,7 @@ export type Database = {
           temperature_celsius: number | null
           updated_at: string
           wind_conditions: string | null
+          wind_direction: string | null
         }
         Insert: {
           created_at?: string
@@ -1784,6 +1786,7 @@ export type Database = {
           final_time_seconds?: number | null
           gap_to_first?: string | null
           id?: string
+          is_personal_record?: boolean
           lane?: number | null
           match_id: string
           notes?: string | null
@@ -1796,6 +1799,7 @@ export type Database = {
           temperature_celsius?: number | null
           updated_at?: string
           wind_conditions?: string | null
+          wind_direction?: string | null
         }
         Update: {
           created_at?: string
@@ -1803,6 +1807,7 @@ export type Database = {
           final_time_seconds?: number | null
           gap_to_first?: string | null
           id?: string
+          is_personal_record?: boolean
           lane?: number | null
           match_id?: string
           notes?: string | null
@@ -1815,6 +1820,7 @@ export type Database = {
           temperature_celsius?: number | null
           updated_at?: string
           wind_conditions?: string | null
+          wind_direction?: string | null
         }
         Relationships: [
           {
@@ -4075,6 +4081,7 @@ export type Database = {
           position: string | null
           seat_position: number | null
           specialty: string | null
+          start_order: number | null
         }
         Insert: {
           boat_type?: string | null
@@ -4089,6 +4096,7 @@ export type Database = {
           position?: string | null
           seat_position?: number | null
           specialty?: string | null
+          start_order?: number | null
         }
         Update: {
           boat_type?: string | null
@@ -4103,6 +4111,7 @@ export type Database = {
           position?: string | null
           seat_position?: number | null
           specialty?: string | null
+          start_order?: number | null
         }
         Relationships: [
           {

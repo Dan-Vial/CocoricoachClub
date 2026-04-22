@@ -14,6 +14,8 @@ export interface AthleticsLineupEntry {
   discipline: string | null;
   specialty: string | null;
   isSelected: boolean;
+  /** Order in which the athlete starts the events of this competition (1, 2, 3…). */
+  startOrder?: number | null;
 }
 
 interface AthleticsLineupSectionProps {
@@ -54,12 +56,14 @@ export function AthleticsLineupSection({
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
         Pour chaque athlète, coche une ou plusieurs épreuves sur lesquelles tu
-        l'inscris dans cette compétition.
+        l'inscris dans cette compétition. L'ordre dans lequel tu coches définit
+        l'ordre de départ.
       </p>
       {players.map((player) => {
-        const playerSelectedCount = entries.filter(
+        const playerEntries = entries.filter(
           (e) => e.playerId === player.playerId && e.isSelected,
-        ).length;
+        );
+        const playerSelectedCount = playerEntries.length;
         const hasNoEvents = player.pairs.length === 0;
 
         return (
@@ -93,6 +97,7 @@ export function AthleticsLineupSection({
                     eqKey(e, player.playerId, pair.discipline, pair.specialty),
                   );
                   const isSelected = !!entry?.isSelected;
+                  const order = entry?.startOrder ?? null;
                   const id = `${player.playerId}-${pair.discipline}-${pair.specialty || ""}-${idx}`;
                   const discLabel = getDisciplineLabel(pair.discipline);
                   const specLabel = pair.specialty
@@ -120,6 +125,15 @@ export function AthleticsLineupSection({
                           )
                         }
                       />
+                      {isSelected && order != null && (
+                        <Badge
+                          variant="default"
+                          className="h-5 min-w-5 px-1.5 text-[10px] font-bold"
+                          title="Ordre de départ"
+                        >
+                          {order}
+                        </Badge>
+                      )}
                       <span className="text-sm">
                         {specLabel ? (
                           <>
