@@ -1807,38 +1807,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
 
                   {statCategories.map(cat => {
                     const categoryStats = sportStats.filter(s => s.category === cat.key);
-
-                    // Sub-group definitions per category — same logic as TeamCumulativeStats
-                    const subGroupDefs: Record<string, { key: string; label: string; match: (k: string) => boolean }[]> = {
-                      general: [
-                        { key: "scrums", label: "Mêlées", match: (k) => /^scrum/i.test(k) },
-                        { key: "lineouts", label: "Touches", match: (k) => /^lineout/i.test(k) },
-                      ],
-                      scoring: [
-                        { key: "tries", label: "Essais", match: (k) => /^tries$|^tryassists$/i.test(k) },
-                        { key: "conversions", label: "Transformations", match: (k) => /^conversion/i.test(k) },
-                        { key: "penalties", label: "Pénalités", match: (k) => /^penalt(y|ies)(scored|attempts)?$/i.test(k) || /^penaltyattempts$|^penaltiesscored$/i.test(k) },
-                        { key: "drops", label: "Drops", match: (k) => /^drop/i.test(k) },
-                      ],
-                    };
-
-                    const defs = subGroupDefs[cat.key] || [];
-                    let groups: { key: string; label: string | null; items: typeof categoryStats }[];
-                    if (defs.length === 0) {
-                      groups = [{ key: "_all", label: null, items: categoryStats }];
-                    } else {
-                      const buckets = defs.map(d => ({ key: d.key, label: d.label as string | null, items: [] as typeof categoryStats }));
-                      const others: typeof categoryStats = [];
-                      categoryStats.forEach(s => {
-                        const def = defs.find(d => d.match(s.key));
-                        if (def) buckets.find(b => b.key === def.key)!.items.push(s);
-                        else others.push(s);
-                      });
-                      groups = buckets.filter(b => b.items.length > 0);
-                      if (others.length > 0) {
-                        groups.push({ key: "_others", label: groups.length > 0 ? "Autres" : null, items: others });
-                      }
-                    }
+                    const groups = groupStatsByTheme(cat.key, categoryStats);
 
                     const renderTile = (stat: typeof categoryStats[number], opts?: { large?: boolean }) => {
                       const large = opts?.large;
@@ -1868,9 +1837,9 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                             {labeledGroups.map(group => (
                               <div
                                 key={group.key}
-                                className="rounded-md border border-border/50 bg-muted/20 p-1.5 space-y-1"
+                                className={`rounded-md border p-1.5 space-y-1 ${group.color?.ring || "border-border/50"} ${group.color?.soft || "bg-muted/20"}`}
                               >
-                                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-0.5">
+                                <p className={`text-[10px] font-semibold uppercase tracking-wide px-0.5 ${group.color?.accent || "text-muted-foreground"}`}>
                                   {group.label}
                                 </p>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
