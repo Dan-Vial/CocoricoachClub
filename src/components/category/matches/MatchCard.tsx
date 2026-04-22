@@ -321,9 +321,23 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
   const isFinalized = match.is_finalized === true;
   const isTrainingMatch = match.event_type === "training";
 
+  // Result-based color (past matches with scores filled in, team sports with home/away)
+  let resultClass = "";
+  if (isPast && !isTrainingMatch && !isIndividual && match.score_home !== null && match.score_away !== null) {
+    const ourScore = match.is_home ? match.score_home : match.score_away;
+    const theirScore = match.is_home ? match.score_away : match.score_home;
+    if (ourScore! > theirScore!) {
+      resultClass = "bg-green-100 dark:bg-green-950/40 border-green-300 dark:border-green-800/60 hover:bg-green-200/70 dark:hover:bg-green-950/60";
+    } else if (ourScore! < theirScore!) {
+      resultClass = "bg-red-100 dark:bg-red-950/40 border-red-300 dark:border-red-800/60 hover:bg-red-200/70 dark:hover:bg-red-950/60";
+    } else {
+      resultClass = "bg-muted border-muted-foreground/30 hover:bg-muted/80";
+    }
+  }
+
   return (
     <>
-      <div className={`p-4 rounded-lg border transition-colors ${isTrainingMatch ? 'bg-muted/50 border-muted opacity-75' : isFinalized ? 'border-primary/50 bg-primary/5' : 'bg-card hover:bg-accent/5'}`}>
+      <div className={`p-4 rounded-lg border transition-colors ${isTrainingMatch ? 'bg-muted/50 border-muted opacity-75' : resultClass ? resultClass : isFinalized ? 'border-primary/50 bg-primary/5' : 'bg-card hover:bg-accent/5'}`}>
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
