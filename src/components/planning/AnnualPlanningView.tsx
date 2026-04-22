@@ -474,6 +474,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
         categoryId={categoryId}
         sportType={categoryData?.rugby_type}
       />
+      {editingCycle && (
         <EditCycleDialog
           open={!!editingCycle}
           onOpenChange={(open) => !open && setEditingCycle(null)}
