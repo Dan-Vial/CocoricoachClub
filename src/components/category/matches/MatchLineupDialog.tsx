@@ -18,7 +18,12 @@ import { toast } from "sonner";
 import { Users, UserCheck, LayoutGrid, List } from "lucide-react";
 import { SportFieldLineup } from "@/components/matches/SportFieldLineup";
 import { getSportFieldConfig } from "@/lib/constants/sportPositions";
-import { isIndividualSport } from "@/lib/constants/sportTypes";
+import { isIndividualSport, isAthletismeCategory } from "@/lib/constants/sportTypes";
+import {
+  AthleticsLineupSection,
+  type AthleticsLineupEntry,
+  type AthleticsLineupPlayer,
+} from "./AthleticsLineupSection";
 
 interface MatchLineupDialogProps {
   open: boolean;
