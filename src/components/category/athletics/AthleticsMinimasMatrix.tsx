@@ -31,6 +31,8 @@ interface Player {
   first_name: string | null;
   discipline: string | null;
   specialty: string | null;
+  disciplines: string[] | null;
+  specialties: string[] | null;
 }
 
 interface RoundRow {
@@ -112,7 +114,7 @@ export function AthleticsMinimasMatrix({ categoryId }: Props) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("players")
-        .select("id, name, first_name, discipline, specialty")
+        .select("id, name, first_name, discipline, specialty, disciplines, specialties")
         .eq("category_id", categoryId)
         .order("name");
       if (error) throw error;
@@ -207,10 +209,22 @@ export function AthleticsMinimasMatrix({ categoryId }: Props) {
   }, [minimas]);
 
   // Athletes per group (matching discipline + specialty)
+  // Un athlète peut s'aligner sur plusieurs disciplines/spécialités via les tableaux
+  // disciplines[]/specialties[] (paires alignées par index). On vérifie d'abord ces tableaux,
+  // puis on retombe sur les champs single discipline/specialty pour rétro-compatibilité.
   const playersForGroup = (discipline: string, specialty: string | null) =>
     players.filter((p) => {
+      // 1) Match via les tableaux multi-disciplines
+      if (p.disciplines && p.disciplines.length > 0) {
+        const hasMatch = p.disciplines.some((d, i) => {
+          if (d !== discipline) return false;
+          if (!specialty) return true; // groupe sans spécialité → toute occurrence de la discipline
+          return (p.specialties?.[i] || "") === specialty;
+        });
+        if (hasMatch) return true;
+      }
+      // 2) Fallback rétro-compatible (champs single)
       if (p.discipline !== discipline) return false;
-      // If group has a specialty, prefer exact match; otherwise include all of this discipline
       if (specialty) return p.specialty === specialty;
       return true;
     });

@@ -48,6 +48,11 @@ export function AddPlayerDialogWithInvite({
   const [birthDate, setBirthDate] = useState("");
   const [discipline, setDiscipline] = useState("");
   const [specialty, setSpecialty] = useState("");
+  // Athlétisme : un athlète peut pratiquer plusieurs disciplines/spécialités
+  // (ex. sprint 100m + sprint 200m + saut en longueur). La 1ʳᵉ paire est la principale.
+  const [disciplinePairs, setDisciplinePairs] = useState<Array<{ discipline: string; specialty: string }>>([]);
+  const [draftDiscipline, setDraftDiscipline] = useState("");
+  const [draftSpecialty, setDraftSpecialty] = useState("");
   const [position, setPosition] = useState("");
   const [sendInvitation, setSendInvitation] = useState(true);
   const [validationError, setValidationError] = useState("");
@@ -147,7 +152,7 @@ export function AddPlayerDialogWithInvite({
   const showSkiDiscipline = isSki && skiDisciplines.length > 1;
   const disciplineOptions = getDisciplineOptions();
   
-  // Determine specialties
+  // Determine specialties (sélecteur unique non-athlétisme)
   const getSpecialtyOptions = () => {
     if (!discipline) return [];
     if (isAthletics) return ATHLETISME_SPECIALTIES[discipline] || [];
@@ -155,6 +160,30 @@ export function AddPlayerDialogWithInvite({
     return [];
   };
   const availableSpecialties = getSpecialtyOptions();
+
+  // Spécialités disponibles pour la *paire* en cours d'ajout (athlétisme multi-disciplines)
+  const draftAvailableSpecialties =
+    draftDiscipline && isAthletics ? ATHLETISME_SPECIALTIES[draftDiscipline] || [] : [];
+
+  const addDisciplinePair = () => {
+    if (!draftDiscipline) return;
+    const needsSpec = (ATHLETISME_SPECIALTIES[draftDiscipline] || []).length > 0;
+    if (needsSpec && !draftSpecialty) return;
+    const exists = disciplinePairs.some(
+      (p) => p.discipline === draftDiscipline && p.specialty === (draftSpecialty || ""),
+    );
+    if (exists) return;
+    setDisciplinePairs([
+      ...disciplinePairs,
+      { discipline: draftDiscipline, specialty: draftSpecialty || "" },
+    ]);
+    setDraftDiscipline("");
+    setDraftSpecialty("");
+  };
+
+  const removeDisciplinePair = (index: number) => {
+    setDisciplinePairs(disciplinePairs.filter((_, i) => i !== index));
+  };
 
   const resetForm = () => {
     setFirstName("");
@@ -165,6 +194,9 @@ export function AddPlayerDialogWithInvite({
     setBirthDate("");
     setDiscipline("");
     setSpecialty("");
+    setDisciplinePairs([]);
+    setDraftDiscipline("");
+    setDraftSpecialty("");
     setPosition("");
     setSendInvitation(true);
     setValidationError("");
@@ -204,6 +236,8 @@ export function AddPlayerDialogWithInvite({
       birth_date?: string; 
       discipline?: string; 
       specialty?: string; 
+      disciplines?: string[];
+      specialties?: string[];
       position?: string;
       fis_code?: string;
       fis_objective?: string;
@@ -221,11 +255,13 @@ export function AddPlayerDialogWithInvite({
           birth_date: data.birth_date || null,
           discipline: data.discipline || null,
           specialty: data.specialty || null,
+          disciplines: data.disciplines && data.disciplines.length > 0 ? data.disciplines : null,
+          specialties: data.specialties && data.specialties.length > 0 ? data.specialties : null,
           position: data.position || null,
           fis_code: data.fis_code || null,
           fis_objective: data.fis_objective || null,
           fis_objective_date: data.fis_objective_date || null,
-        })
+        } as any)
         .select()
         .single();
       if (error) throw error;
@@ -259,14 +295,24 @@ export function AddPlayerDialogWithInvite({
       return;
     }
 
-    // Validate discipline for sports with disciplines
-    if (hasDisciplines && !discipline) {
-      setValidationError("Veuillez sélectionner une discipline");
-      return;
-    }
-    if (hasDisciplines && discipline && availableSpecialties.length > 0 && !specialty) {
-      setValidationError("Veuillez sélectionner une spécialité");
-      return;
+    // Validate discipline(s) for sports with disciplines
+    if (isAthletics) {
+      // Athlétisme : multi-disciplines obligatoire (au moins 1 paire)
+      if (disciplinePairs.length === 0) {
+        setValidationError(
+          "Ajoutez au moins une discipline (clique sur + après ton choix de discipline/spécialité)",
+        );
+        return;
+      }
+    } else if (hasDisciplines) {
+      if (!discipline) {
+        setValidationError("Veuillez sélectionner une discipline");
+        return;
+      }
+      if (discipline && availableSpecialties.length > 0 && !specialty) {
+        setValidationError("Veuillez sélectionner une spécialité");
+        return;
+      }
     }
 
     // Validate weight category for judo
@@ -282,6 +328,17 @@ export function AddPlayerDialogWithInvite({
     }
 
     try {
+      // Athlétisme : la 1ʳᵉ paire devient discipline/spécialité "principale" (rétro-compatible)
+      // et on stocke aussi la liste complète dans disciplines[]/specialties[].
+      const primaryDiscipline = isAthletics
+        ? disciplinePairs[0]?.discipline || ""
+        : discipline;
+      const primarySpecialty = isAthletics
+        ? disciplinePairs[0]?.specialty || ""
+        : specialty;
+      const disciplineList = isAthletics ? disciplinePairs.map((p) => p.discipline) : undefined;
+      const specialtyList = isAthletics ? disciplinePairs.map((p) => p.specialty || "") : undefined;
+
       // 1. Create the player
       const player = await addPlayer.mutateAsync({
         name: result.data.name,
@@ -290,8 +347,10 @@ export function AddPlayerDialogWithInvite({
         phone: playerPhone.trim() || undefined,
         birth_year: result.data.birthYear,
         birth_date: birthDate || undefined,
-        discipline: discipline || undefined,
-        specialty: specialty || undefined,
+        discipline: primaryDiscipline || undefined,
+        specialty: primarySpecialty || undefined,
+        disciplines: disciplineList,
+        specialties: specialtyList,
         position: position || undefined,
         fis_code: fisCode.trim() || undefined,
         fis_objective: fisObjective.trim() || undefined,
@@ -527,8 +586,107 @@ export function AddPlayerDialogWithInvite({
               </div>
             )}
 
-            {/* Disciplines for all sports */}
-            {hasDisciplines && (
+            {/* Athlétisme : multi-disciplines (un athlète peut s'aligner sur plusieurs épreuves) */}
+            {isAthletics && (
+              <div className="space-y-2 rounded-lg border p-3 bg-muted/20">
+                <Label className="text-sm font-medium">Disciplines pratiquées *</Label>
+                <p className="text-xs text-muted-foreground">
+                  Un athlète peut pratiquer plusieurs disciplines et spécialités (ex. sprint 100m + sprint 200m + saut en longueur). La 1ʳᵉ ajoutée sera la principale.
+                </p>
+
+                {disciplinePairs.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {disciplinePairs.map((pair, i) => {
+                      const discLabel =
+                        ATHLETISME_DISCIPLINES.find((d) => d.value === pair.discipline)?.label ||
+                        pair.discipline;
+                      const specLabel = pair.specialty
+                        ? (ATHLETISME_SPECIALTIES[pair.discipline] || []).find(
+                            (s) => s.value === pair.specialty,
+                          )?.label || pair.specialty
+                        : null;
+                      return (
+                        <span
+                          key={`${pair.discipline}-${pair.specialty}-${i}`}
+                          className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${
+                            i === 0
+                              ? "bg-primary text-primary-foreground border-transparent"
+                              : "bg-muted text-foreground"
+                          }`}
+                        >
+                          <span>
+                            {discLabel}
+                            {specLabel ? ` · ${specLabel}` : ""}
+                            {i === 0 ? " (principale)" : ""}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeDisciplinePair(i)}
+                            className="ml-0.5 rounded-sm hover:bg-foreground/10 p-0.5"
+                            aria-label="Retirer cette discipline"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                  <Select
+                    value={draftDiscipline}
+                    onValueChange={(val) => {
+                      setDraftDiscipline(val);
+                      setDraftSpecialty("");
+                    }}
+                  >
+                    <SelectTrigger className="w-full bg-background">
+                      <SelectValue placeholder="Discipline" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border z-[200] max-h-[300px]">
+                      {ATHLETISME_DISCIPLINES.map((disc) => (
+                        <SelectItem key={disc.value} value={disc.value}>
+                          {disc.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {draftAvailableSpecialties.length > 0 && (
+                    <Select value={draftSpecialty} onValueChange={setDraftSpecialty}>
+                      <SelectTrigger className="w-full bg-background">
+                        <SelectValue placeholder="Spécialité" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border z-[200] max-h-[300px]">
+                        {draftAvailableSpecialties.map((spec) => (
+                          <SelectItem key={spec.value} value={spec.value}>
+                            {spec.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={addDisciplinePair}
+                    disabled={
+                      !draftDiscipline ||
+                      (draftAvailableSpecialties.length > 0 && !draftSpecialty)
+                    }
+                    aria-label="Ajouter cette discipline"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Discipline unique pour les autres sports (natation, ski, surf, triathlon) */}
+            {hasDisciplines && !isAthletics && (
               <div className="space-y-2">
                 <Label htmlFor="discipline">Discipline *</Label>
                 <Select 
@@ -552,7 +710,7 @@ export function AddPlayerDialogWithInvite({
               </div>
             )}
 
-            {hasDisciplines && discipline && availableSpecialties.length > 0 && (
+            {hasDisciplines && !isAthletics && discipline && availableSpecialties.length > 0 && (
               <div className="space-y-2">
                 <Label htmlFor="specialty">Spécialité *</Label>
                 <Select value={specialty} onValueChange={setSpecialty}>
