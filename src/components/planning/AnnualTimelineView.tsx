@@ -30,6 +30,10 @@ interface PeriodizationCycle {
 
 interface AnnualTimelineViewProps {
   year: number;
+  /** Optional custom period start (defaults to Jan 1 of `year`). */
+  periodStart?: Date;
+  /** Optional custom period end (defaults to Dec 31 of `year`). */
+  periodEnd?: Date;
   categories: PeriodizationCategory[];
   cycles: PeriodizationCycle[];
   sessions: { id: string; session_date: string }[];
