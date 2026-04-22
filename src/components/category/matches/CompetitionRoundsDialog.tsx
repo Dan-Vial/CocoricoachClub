@@ -341,8 +341,12 @@ export function CompetitionRoundsDialog({
     if (lineup && lineup.length > 0) {
       const newBowlingBlocks: Record<string, BowlingBlock[]> = {};
       
-      const playersData = lineup.map((l) => {
+      const playersData = lineup.map((l: any) => {
         const player = l.players as { id: string; name: string; first_name?: string; discipline?: string; specialty?: string } | null;
+        // Prefer the lineup's discipline/specialty (per-event inscription).
+        // Fallback to the player's primary discipline/specialty for backward compat.
+        const effectiveDiscipline = l.discipline || player?.discipline || undefined;
+        const effectiveSpecialty = l.specialty || player?.specialty || undefined;
         const playerRounds = existingRounds?.filter(r => r.player_id === l.player_id) || [];
         
         // For bowling: reconstruct blocks from existing rounds
@@ -357,7 +361,6 @@ export function CompetitionRoundsDialog({
             const ballData = statData.ballData as any | undefined;
             const { bowlingFrames: _, bowlingCategory: _bc, roundDate: _rd, blockId: _bi, ballData: _bd, ...cleanStats } = statData;
             
-            // Create or find block
             const effectiveBlockId = blockId || `legacy_${roundDate || "nodate"}_${bowlingCategory || "nocat"}_${r.phase || "nophase"}`;
             if (!blockMap.has(effectiveBlockId)) {
               blockMap.set(effectiveBlockId, {
@@ -402,8 +405,8 @@ export function CompetitionRoundsDialog({
           return {
             playerId: l.player_id,
             playerName: [player?.first_name, player?.name].filter(Boolean).join(" ") || "Athlète",
-            discipline: player?.discipline || undefined,
-            specialty: player?.specialty || undefined,
+            discipline: effectiveDiscipline,
+            specialty: effectiveSpecialty,
             boat_type: l.boat_type || undefined,
             crew_role: l.crew_role || undefined,
             seat_position: l.seat_position || undefined,
@@ -411,12 +414,12 @@ export function CompetitionRoundsDialog({
           };
         }
         
-        // Non-bowling path (unchanged)
+        // Non-bowling path
         return {
           playerId: l.player_id,
           playerName: [player?.first_name, player?.name].filter(Boolean).join(" ") || "Athlète",
-          discipline: player?.discipline || undefined,
-          specialty: player?.specialty || undefined,
+          discipline: effectiveDiscipline,
+          specialty: effectiveSpecialty,
           boat_type: l.boat_type || undefined,
           crew_role: l.crew_role || undefined,
           seat_position: l.seat_position || undefined,
