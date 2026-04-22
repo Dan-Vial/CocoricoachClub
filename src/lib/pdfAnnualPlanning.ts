@@ -354,22 +354,36 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
       }
     }
 
-    // Competition markers (gold) inside the cycles area
+    // Competition markers (gold trophy + name) inside the cycles area
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(data.year, m, d);
       const dateKey = format(date, "yyyy-MM-dd");
       const dayMatches = matchesByDate.get(dateKey);
       if (dayMatches && dayMatches.length > 0) {
         const y = gridTop + monthHeaderH + (d - 1) * dayRowH;
-        const cx = xCyclesStart + cyclesAreaW / 2;
         const cy = y + dayRowH / 2;
-        pdf.setFillColor(212, 160, 23); // gold
-        pdf.setDrawColor(140, 100, 10);
-        pdf.setLineWidth(0.3);
-        pdf.circle(cx, cy, Math.min(1.5, dayRowH * 0.38), "FD");
-      }
+        const trophyX = xCyclesStart + 1.6;
+        const trophySize = Math.min(2.4, dayRowH * 0.7);
+        drawTrophyIcon(pdf, trophyX, cy, trophySize);
 
-      // (today highlight removed per user request)
+        // Match/competition name next to the trophy
+        const firstMatch = dayMatches[0];
+        const label = firstMatch.opponent || firstMatch.competition || "Compétition";
+        const extra = dayMatches.length > 1 ? ` (+${dayMatches.length - 1})` : "";
+        const fullLabel = `${label}${extra}`;
+        const textX = trophyX + trophySize + 0.8;
+        const availableW = (xCyclesStart + cyclesAreaW) - textX - 0.5;
+        pdf.setFont("helvetica", "bold");
+        const labelFs = Math.max(4.5, Math.min(6.5, dayRowH * 0.55));
+        pdf.setFontSize(labelFs);
+        // White text outline by drawing a small white rect under text for contrast
+        const truncated = pdf.splitTextToSize(fullLabel, Math.max(8, availableW))[0] || fullLabel;
+        const textW = pdf.getTextWidth(truncated);
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(textX - 0.4, cy - labelFs * 0.4, Math.min(textW + 0.8, availableW + 0.4), labelFs * 0.7, "F");
+        pdf.setTextColor(60, 45, 10);
+        pdf.text(truncated, textX, cy + labelFs * 0.18);
+      }
     }
   }
 
