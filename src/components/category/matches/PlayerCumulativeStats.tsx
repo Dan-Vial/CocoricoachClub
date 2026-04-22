@@ -12,6 +12,7 @@ import { BarChart3, Trophy, Target, Shield, Activity, Dumbbell, Filter, CheckSqu
 import { isRugbyType } from "@/lib/constants/sportTypes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { getStatCategories, type StatField } from "@/lib/constants/sportStats";
 import { groupStatsByTheme } from "@/lib/statSubGroups";
@@ -808,7 +809,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
 
                 doc.setFontSize(6.5);
                 doc.setTextColor(30, 41, 59);
-                const labelTxt = s.shortLabel.length > 18 ? s.shortLabel.substring(0, 18) : s.shortLabel;
+                const fullLabel = s.label || s.shortLabel;
+                const labelTxt = fullLabel.length > 30 ? fullLabel.substring(0, 28) + "…" : fullLabel;
                 doc.text(labelTxt, bx + 2, ry);
                 doc.text(s.computedFrom ? `${val}%` : String(val), cTotalX, ry, { align: "center" });
                 doc.text(avgVal || "—", cAvgX, ry, { align: "center" });
@@ -859,7 +861,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                 doc.setFontSize(6);
                 doc.setFont("helvetica", "normal");
                 doc.setTextColor(71, 85, 105);
-                doc.text(s.shortLabel.substring(0, 16), tx + tileW / 2, ty + 10, { align: "center" });
+                doc.text((s.label || s.shortLabel).substring(0, 22), tx + tileW / 2, ty + 10, { align: "center" });
               });
               y += blockH + 2;
             });
@@ -1006,7 +1008,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
               }
 
               const colWidths = [55, 18, ...chunk.flatMap(() => [20, 16])];
-              const headers = ["Athlète", "M", ...chunk.flatMap(s => [s.shortLabel, "+/-"])];
+              const headers = ["Athlète", "M", ...chunk.flatMap(s => [s.label || s.shortLabel, "+/-"])];
               // Header row tinted with the sub-group's body color
               doc.setFillColor(...palette.body);
               doc.rect(14, y, pageW - 28, 7, "F");
@@ -1015,7 +1017,9 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
               doc.setTextColor(...palette.accent);
               let x = 14;
               headers.forEach((h, i) => {
-                doc.text(h.substring(0, 10), x + 1, y + 5);
+                const maxLen = i <= 1 ? 10 : 14;
+                const txt = h.length > maxLen ? h.substring(0, maxLen - 1) + "…" : h;
+                doc.text(txt, x + 1, y + 5);
                 x += colWidths[i] || 18;
               });
               y += 9;
@@ -1479,7 +1483,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
           let x = 14;
           group.items.forEach((s, i) => {
             if (i > 0) doc.line(x, y, x, y + 7);
-            doc.text(s.shortLabel.substring(0, 12), x + 1, y + 5);
+            const fullL = s.label || s.shortLabel;
+            doc.text(fullL.length > 16 ? fullL.substring(0, 15) + "…" : fullL, x + 1, y + 5);
             x += colW;
           });
           y += 7;
@@ -2038,17 +2043,22 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                       const val = player.sportData[stat.key] || 0;
                       const prog = playerProgressions[player.playerId]?.[stat.key] || 0;
                       return (
-                        <div
-                          key={stat.key}
-                          title={stat.label}
-                          className={`${large ? "p-2" : "p-1"} bg-muted/50 rounded text-center space-y-0 border border-border/50`}
-                        >
-                          <p className={`${large ? "text-base" : "text-xs"} font-bold leading-tight`}>{stat.computedFrom ? `${val}%` : val}</p>
-                          <p className={`${large ? "text-[10px]" : "text-[9px]"} text-muted-foreground leading-tight`}>{stat.shortLabel}</p>
-                          {matchesDataForCharts.length >= 2 && (
-                            <ProgressionIndicator value={prog} />
-                          )}
-                        </div>
+                        <Tooltip key={stat.key}>
+                          <TooltipTrigger asChild>
+                            <div
+                              className={`${large ? "p-2" : "p-1"} bg-muted/50 rounded text-center space-y-0 border border-border/50`}
+                            >
+                              <p className={`${large ? "text-base" : "text-xs"} font-bold leading-tight`}>{stat.computedFrom ? `${val}%` : val}</p>
+                              <p className={`${large ? "text-[10px]" : "text-[9px]"} text-muted-foreground leading-tight`}>{stat.shortLabel}</p>
+                              {matchesDataForCharts.length >= 2 && (
+                                <ProgressionIndicator value={prog} />
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <p className="font-semibold">{stat.label}</p>
+                          </TooltipContent>
+                        </Tooltip>
                       );
                     };
 
@@ -2265,12 +2275,18 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                             group.items.map((stat, sIdx) => (
                               <TableHead
                                 key={stat.key}
-                                title={stat.label}
                                 className={`text-center ${group.color?.head || ""} ${
                                   gIdx > 0 && sIdx === 0 ? "border-l-2 border-l-background" : ""
                                 }`}
                               >
-                                {stat.shortLabel}
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="inline-block">{stat.shortLabel}</span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="max-w-xs">
+                                    <p className="font-semibold">{stat.label}</p>
+                                  </TooltipContent>
+                                </Tooltip>
                               </TableHead>
                             ))
                           )}
