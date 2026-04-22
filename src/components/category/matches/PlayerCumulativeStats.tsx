@@ -1127,10 +1127,21 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
 
           groups.forEach((group, gi) => {
             const palette = pdfGroupColor(gi);
-            // Chunk stats by 6 inside the group to keep tables readable
+            // Adaptive chunking: each stat needs (value + +/-) ≈ 26mm.
+            // Compute how many fit on one row given the available width.
+            const innerW = pageW - 28;
+            const athleteColW = 44;
+            const matchesColW = 10;
+            const minStatPairW = 26;
+            const availableW = innerW - athleteColW - matchesColW;
+            const statsPerRow = Math.max(1, Math.min(group.items.length, Math.floor(availableW / minStatPairW)));
+            const statPairW = availableW / statsPerRow;
+            const valColW = statPairW * 0.58;
+            const progColW = statPairW * 0.42;
+
             const chunks: StatField[][] = [];
-            for (let i = 0; i < group.items.length; i += 6) {
-              chunks.push(group.items.slice(i, i + 6));
+            for (let i = 0; i < group.items.length; i += statsPerRow) {
+              chunks.push(group.items.slice(i, i + statsPerRow));
             }
 
             chunks.forEach((chunk, chunkIdx) => {
