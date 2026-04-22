@@ -498,17 +498,21 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    {match.score_home !== null && match.score_away !== null ? (
-                      <span className={`font-bold text-xl ${
-                        match.score_home > match.score_away
+                    {match.score_home !== null && match.score_away !== null ? (() => {
+                      const ourScore = match.is_home ? match.score_home : match.score_away;
+                      const theirScore = match.is_home ? match.score_away : match.score_home;
+                      const colorClass =
+                        ourScore! > theirScore!
                           ? "text-green-500"
-                          : match.score_home < match.score_away
+                          : ourScore! < theirScore!
                           ? "text-destructive"
-                          : "text-muted-foreground"
-                      }`}>
-                        {match.score_home} - {match.score_away}
-                      </span>
-                    ) : (
+                          : "text-muted-foreground";
+                      return (
+                        <span className={`font-bold text-xl ${colorClass}`}>
+                          {match.score_home} - {match.score_away}
+                        </span>
+                      );
+                    })() : (
                       <span className="text-muted-foreground text-sm">Score non renseigné</span>
                     )}
                     <Button
