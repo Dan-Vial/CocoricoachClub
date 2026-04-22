@@ -39,6 +39,7 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
   const [discipline, setDiscipline] = useState("");
   const [specialty, setSpecialty] = useState<string>(NONE_SPECIALTY);
   const [label, setLabel] = useState("Minima fédéral");
+  const [level, setLevel] = useState("national");
   const [targetValue, setTargetValue] = useState("");
   const [unit, setUnit] = useState("sec");
   const [lowerIsBetter, setLowerIsBetter] = useState(true);
