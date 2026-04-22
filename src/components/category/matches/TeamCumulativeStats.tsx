@@ -98,18 +98,21 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
   }, [matchesWithScores]);
 
   // Aggregate effective play time / longest sequence / average sequence
+  // Always render the three tiles when at least one match is selected, so coaches
+  // see the slot (with "—" when no value has been entered yet).
   const playTimeSummary = useMemo(() => {
+    if (matchesWithScores.length === 0) return null;
+
+    // Accept any non-null numeric value (including 0) so saved data is always reflected.
     const epts = matchesWithScores
       .map(m => m.effective_play_time)
-      .filter((v): v is number => typeof v === "number" && v > 0);
+      .filter((v): v is number => typeof v === "number");
     const longs = matchesWithScores
       .map(m => m.longest_play_sequence)
-      .filter((v): v is number => typeof v === "number" && v > 0);
+      .filter((v): v is number => typeof v === "number");
     const avgs = matchesWithScores
       .map(m => m.average_play_sequence)
-      .filter((v): v is number => typeof v === "number" && v > 0);
-
-    if (epts.length === 0 && longs.length === 0 && avgs.length === 0) return null;
+      .filter((v): v is number => typeof v === "number");
 
     const avg = (arr: number[]) =>
       arr.length > 0 ? Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10 : null;
@@ -119,6 +122,9 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
       longestSequence: longs.length > 0 ? Math.max(...longs) : null,
       averageSequence: avg(avgs),
       count: matchesWithScores.length,
+      filledEpt: epts.length,
+      filledLong: longs.length,
+      filledAvg: avgs.length,
     };
   }, [matchesWithScores]);
 
