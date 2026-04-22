@@ -338,11 +338,13 @@ export function MatchLineupDialog({
         <div className="flex gap-4 text-sm text-muted-foreground mb-2 flex-shrink-0 flex-wrap">
           <span className="flex items-center gap-1">
             <UserCheck className="h-4 w-4" />
-            {isDoublesMatch 
-              ? `${selectedCount}/2 joueurs sélectionnés`
-              : `${selectedCount} ${isIndividual ? "participants" : "athlètes"}`}
+            {isAthletics
+              ? `${selectedCount} athlète${selectedCount > 1 ? "s" : ""} • ${athleticsSelectedCount} épreuve${athleticsSelectedCount > 1 ? "s" : ""}`
+              : isDoublesMatch
+                ? `${selectedCount}/2 joueurs sélectionnés`
+                : `${selectedCount} ${isIndividual ? "participants" : "athlètes"}`}
           </span>
-          {!isIndividual && !isDoublesMatch && (
+          {!isIndividual && !isDoublesMatch && !isAthletics && (
             <>
               <span>{starterCount}/{fieldConfig.starters} titulaires</span>
               <span>{substituteCount}/{fieldConfig.substitutes} remplaçants</span>
@@ -352,8 +354,14 @@ export function MatchLineupDialog({
 
         <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="pr-2">
-            {/* Doubles match: pair selection (max 2) */}
-            {isDoublesMatch ? (
+            {/* Athletics: per-event selection */}
+            {isAthletics ? (
+              <AthleticsLineupSection
+                players={athleticsPlayers}
+                entries={athleticsEntries}
+                onToggle={toggleAthleticsEntry}
+              />
+            ) : isDoublesMatch ? (
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground mb-3">
                   Sélectionnez les 2 joueurs qui forment la paire pour ce match.
