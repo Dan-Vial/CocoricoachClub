@@ -597,7 +597,7 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
   pdf.setTextColor(40, 45, 60);
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(6.5);
-  pdf.text("Échelle 0 → 10", margin + 2, scaleTop + scaleBarH / 2 + 1.2);
+  pdf.text("Intensité de 0 à 10", margin + 2, scaleTop + scaleBarH / 2 + 1.2);
 
   // 11 colored cells (0..10)
   const cellW = scaleBarW / 11;
