@@ -680,9 +680,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
             if (y + maxBlockH > pageH - 12) { doc.addPage(); y = 15; }
 
             labeledGroups.forEach((group, gi) => {
-              const palette = group.color
-                ? pdfGroupColor(STAT_GROUP_PALETTE_INDEX(group, labeledGroups))
-                : pdfGroupColor(gi);
+              const palette = pdfGroupColor(gi);
               const bx = 14 + gi * (blockW + gap);
               const by = y;
 
