@@ -420,6 +420,8 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
               {viewMode === "timeline" && (
                 <AnnualTimelineView
                   year={selectedYear.getFullYear()}
+                  periodStart={periodStart}
+                  periodEnd={periodEnd}
                   categories={categories}
                   cycles={cycles}
                   sessions={sessions}
@@ -435,6 +437,8 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
               {viewMode === "heatmap" && (
                 <AnnualLoadHeatmap
                   year={selectedYear.getFullYear()}
+                  periodStart={periodStart}
+                  periodEnd={periodEnd}
                   categories={categories}
                   cycles={cycles}
                   sessions={sessions}
@@ -449,7 +453,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
       <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b bg-gradient-to-r from-muted/20 to-transparent">
           <h3 className="text-sm font-bold tracking-tight text-muted-foreground">
-            Calendrier {selectedYear.getFullYear()}
+            Calendrier {periodLabel}
           </h3>
         </div>
         <div className="p-4 space-y-3">
