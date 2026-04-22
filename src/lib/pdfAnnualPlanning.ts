@@ -237,11 +237,15 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
     return { year: data.year + Math.floor(totalMonth / 12), month: totalMonth % 12 };
   });
   const lastMs = monthsSeq[11];
-  const periodLabel = data.periodLabel ?? (
+  // Note: jsPDF's built-in Helvetica doesn't support the "→" arrow glyph,
+  // it renders as garbled text. We sanitize any provided periodLabel and use
+  // " a " (sans accent) as the default separator for the same reason.
+  const rawPeriodLabel = data.periodLabel ?? (
     startMonth === 0
       ? String(data.year)
-      : `${data.year} → ${lastMs.year}`
+      : `${data.year} a ${lastMs.year}`
   );
+  const periodLabel = rawPeriodLabel.replace(/→/g, "a").replace(/[àâ]/g, "a");
 
   // ── Header band ──
   pdf.setFillColor(28, 33, 50);
