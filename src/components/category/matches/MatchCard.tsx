@@ -547,20 +547,26 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
               </Button>
             )}
             {hasRoundBasedStats ? (
-              isTrainingMatch ? (
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start opacity-50 cursor-not-allowed" disabled>
-                  <Lock className="h-3.5 w-3.5" />
-                  {sportType.toLowerCase().includes("bowling") ? `Parties (${roundsCount || 0})` : `Épreuves (${roundsCount || 0})`}
+              <>
+                {isTrainingMatch ? (
+                  <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start opacity-50 cursor-not-allowed" disabled>
+                    <Lock className="h-3.5 w-3.5" />
+                    {sportType.toLowerCase().includes("bowling") ? `Parties (${roundsCount || 0})` : `Épreuves (${roundsCount || 0})`}
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start" onClick={() => setIsRoundsOpen(true)}>
+                    <Swords className="h-3.5 w-3.5" />
+                    {sportType.toLowerCase().includes("judo") ? `Combats (${roundsCount || 0})` : 
+                     sportType.toLowerCase().includes("bowling") ? `Parties (${roundsCount || 0})` : 
+                     sportType.toLowerCase().includes("aviron") ? `Courses (${roundsCount || 0})` : 
+                     `Épreuves (${roundsCount || 0})`}
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start" onClick={() => setIsAggregatedStatsOpen(true)}>
+                  <BarChart3 className="h-3.5 w-3.5" />
+                  Statistiques
                 </Button>
-              ) : (
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start" onClick={() => setIsRoundsOpen(true)}>
-                  <Swords className="h-3.5 w-3.5" />
-                  {sportType.toLowerCase().includes("judo") ? `Combats (${roundsCount || 0})` : 
-                   sportType.toLowerCase().includes("bowling") ? `Parties (${roundsCount || 0})` : 
-                   sportType.toLowerCase().includes("aviron") ? `Courses (${roundsCount || 0})` : 
-                   `Épreuves (${roundsCount || 0})`}
-                </Button>
-              )
+              </>
             ) : (
               <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start" onClick={() => setIsStatsOpen(true)}>
                 <BarChart3 className="h-3.5 w-3.5" />
