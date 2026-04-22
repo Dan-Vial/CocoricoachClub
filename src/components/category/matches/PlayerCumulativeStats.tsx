@@ -2007,64 +2007,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
 
             {statCategories.map(cat => {
               const categoryStats = sportStats.filter(s => s.category === cat.key);
-
-              // Sub-group definitions per category — same as TeamCumulativeStats / individual blocks
-              const tableSubGroupDefs: Record<string, { key: string; label: string; match: (k: string) => boolean }[]> = {
-                general: [
-                  { key: "scrums", label: "Mêlées", match: (k) => /^scrum/i.test(k) },
-                  { key: "lineouts", label: "Touches", match: (k) => /^lineout/i.test(k) },
-                ],
-                scoring: [
-                  { key: "tries", label: "Essais", match: (k) => /^tries$|^tryassists$/i.test(k) },
-                  { key: "conversions", label: "Transformations", match: (k) => /^conversion/i.test(k) },
-                  { key: "penalties", label: "Pénalités", match: (k) => /^penalt(y|ies)(scored|attempts)?$/i.test(k) || /^penaltyattempts$|^penaltiesscored$/i.test(k) },
-                  { key: "drops", label: "Drops", match: (k) => /^drop/i.test(k) },
-                ],
-              };
-
-              // Theme color palette (using Tailwind utility classes that handle light/dark)
-              const themePalette = [
-                { head: "bg-sky-100 dark:bg-sky-950/40 text-sky-900 dark:text-sky-200 border-sky-200 dark:border-sky-900", body: "bg-sky-50/50 dark:bg-sky-950/20" },
-                { head: "bg-violet-100 dark:bg-violet-950/40 text-violet-900 dark:text-violet-200 border-violet-200 dark:border-violet-900", body: "bg-violet-50/50 dark:bg-violet-950/20" },
-                { head: "bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-900", body: "bg-amber-50/50 dark:bg-amber-950/20" },
-                { head: "bg-rose-100 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 border-rose-200 dark:border-rose-900", body: "bg-rose-50/50 dark:bg-rose-950/20" },
-                { head: "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 border-emerald-200 dark:border-emerald-900", body: "bg-emerald-50/50 dark:bg-emerald-950/20" },
-                { head: "bg-cyan-100 dark:bg-cyan-950/40 text-cyan-900 dark:text-cyan-200 border-cyan-200 dark:border-cyan-900", body: "bg-cyan-50/50 dark:bg-cyan-950/20" },
-              ];
-
-              // Build column groups (label + items) preserving order of categoryStats
-              const tableDefs = tableSubGroupDefs[cat.key] || [];
-              type ColGroup = { key: string; label: string | null; items: StatField[]; color: typeof themePalette[number] | null };
-              let columnGroups: ColGroup[] = [];
-              if (tableDefs.length === 0) {
-                columnGroups = [{ key: "_all", label: null, items: categoryStats, color: null }];
-              } else {
-                const buckets: ColGroup[] = tableDefs.map((d, idx) => ({
-                  key: d.key,
-                  label: d.label,
-                  items: [],
-                  color: themePalette[idx % themePalette.length],
-                }));
-                const others: StatField[] = [];
-                categoryStats.forEach(s => {
-                  const def = tableDefs.find(d => d.match(s.key));
-                  if (def) {
-                    buckets.find(b => b.key === def.key)!.items.push(s);
-                  } else {
-                    others.push(s);
-                  }
-                });
-                columnGroups = buckets.filter(b => b.items.length > 0);
-                if (others.length > 0) {
-                  columnGroups.push({
-                    key: "_others",
-                    label: columnGroups.length > 0 ? "Autres" : null,
-                    items: others,
-                    color: columnGroups.length > 0 ? themePalette[columnGroups.length % themePalette.length] : null,
-                  });
-                }
-              }
-
+              const columnGroups = groupStatsByTheme(cat.key, categoryStats);
               const hasGroupLabels = columnGroups.some(g => g.label);
 
               return (
