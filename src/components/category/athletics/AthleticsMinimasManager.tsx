@@ -151,13 +151,16 @@ export function AthleticsMinimasManager({ categoryId }: Props) {
     onError: () => toast.error("Erreur lors de la suppression"),
   });
 
-  // Group by discipline
+  // Group by discipline + sort by level rank desc (most prestigious first)
   const grouped = minimas.reduce((acc, m) => {
     const disc = ATHLETISME_DISCIPLINES.find((d) => d.value === m.discipline)?.label || m.discipline;
     if (!acc[disc]) acc[disc] = [];
     acc[disc].push(m);
     return acc;
   }, {} as Record<string, Minima[]>);
+  Object.values(grouped).forEach((items) => {
+    items.sort((a, b) => (getMinimaLevel(b.level)?.rank || 0) - (getMinimaLevel(a.level)?.rank || 0));
+  });
 
   const availableSpecialties = discipline ? ATHLETISME_SPECIALTIES[discipline] || [] : [];
 
