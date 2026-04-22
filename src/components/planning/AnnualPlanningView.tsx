@@ -232,6 +232,23 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
     setAddCycleOpen(true);
   }, [activeCategoryId, categories]);
 
+  const handleExportPdf = useCallback(() => {
+    try {
+      exportAnnualPlanningToPdf({
+        year: selectedYear.getFullYear(),
+        categoryName: categoryData?.name || "Catégorie",
+        clubName: categoryData?.clubs?.name,
+        categories,
+        cycles,
+        matches,
+      });
+      toast.success("PDF généré avec succès");
+    } catch (e) {
+      console.error(e);
+      toast.error("Erreur lors de la génération du PDF");
+    }
+  }, [selectedYear, categoryData, categories, cycles, matches]);
+
   return (
     <div className="space-y-4">
       {/* ─── HEADER ─── */}
