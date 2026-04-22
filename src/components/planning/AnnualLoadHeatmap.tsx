@@ -196,25 +196,6 @@ export function AnnualLoadHeatmap({ year, categories, cycles, sessions }: Annual
           );
         })}
 
-        {/* Global load row */}
-        <div className="flex items-stretch border-b border-border/30 bg-muted/10">
-          <div className="w-36 min-w-[144px] shrink-0 flex items-center px-3 py-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Total</span>
-          </div>
-          <div className="flex-1 flex">
-            {heatData.globalScores.map((score, wi) => (
-              <div
-                key={wi}
-                className="border-l border-border/5 first:border-l-0 min-h-[28px] transition-colors hover:brightness-90"
-                style={{
-                  width: `${100 / weeks.length}%`,
-                  backgroundColor: getHeatColor(score, heatData.globalScoresMax),
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
         {/* Session count row */}
         <div className="flex items-stretch mt-1">
           <div className="w-36 min-w-[144px] shrink-0 flex items-center px-3 py-1.5">
