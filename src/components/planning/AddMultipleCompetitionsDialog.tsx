@@ -34,6 +34,8 @@ interface AddMultipleCompetitionsDialogProps {
   onOpenChange: (open: boolean) => void;
   categoryId: string;
   sportType?: string;
+  prefilledStartDate?: Date;
+  prefilledEndDate?: Date;
 }
 
 const CUSTOM_COMPETITION_VALUE = "__custom__";
