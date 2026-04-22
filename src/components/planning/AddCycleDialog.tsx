@@ -94,9 +94,6 @@ export function AddCycleDialog({ open, onOpenChange, categoryId, categories, pre
     setIntensity(0);
     setVolume(0);
     setDominantQuality("");
-    setLoadPattern("");
-    setFatigueTarget("");
-    setSessionsPerWeek(null);
     setCustomColor("");
   };
 
