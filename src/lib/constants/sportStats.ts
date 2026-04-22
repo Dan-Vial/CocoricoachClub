@@ -69,6 +69,9 @@ export const RUGBY_STATS: StatField[] = [
   { key: "lineoutDefenseRate", label: "% Touches adverses volées", shortLabel: "% T. vol.", category: "defense", type: "percentage", max: 100, computedFrom: { successKey: "lineoutSteals", totalKey: "lineoutDefenseTotal" } },
   // Individual Stats - General
   { key: "minutesPlayed", label: "Minutes jouées", shortLabel: "Min.", category: "general", type: "number" },
+  { key: "effectivePlayingTime", label: "Temps de jeu effectif (min)", shortLabel: "TJE", category: "general", type: "number" },
+  { key: "longestSequence", label: "Séquence la plus longue (min)", shortLabel: "Séq. max", category: "general", type: "number" },
+  { key: "averageSequence", label: "Séquence moyenne (min)", shortLabel: "Séq. moy.", category: "general", type: "number" },
   { key: "starts", label: "Titularisations", shortLabel: "Titu.", category: "general", type: "number" },
   { key: "totalCollisions", label: "Collisions totales", shortLabel: "Collisions", category: "general", type: "number" },
   { key: "collisionsOver5m", label: "Collision +5m (élan ≥5m)", shortLabel: "Coll. +5m", category: "general", type: "number" },
@@ -83,6 +86,9 @@ export const RUGBY_STATS: StatField[] = [
 export const FOOTBALL_STATS: StatField[] = [
   // Individual Stats - General
   { key: "minutesPlayed", label: "Minutes jouées", shortLabel: "Min.", category: "general", type: "number" },
+  { key: "effectivePlayingTime", label: "Temps de jeu effectif (min)", shortLabel: "TJE", category: "general", type: "number" },
+  { key: "longestSequence", label: "Séquence la plus longue (min)", shortLabel: "Séq. max", category: "general", type: "number" },
+  { key: "averageSequence", label: "Séquence moyenne (min)", shortLabel: "Séq. moy.", category: "general", type: "number" },
   { key: "starts", label: "Titularisations", shortLabel: "Titu.", category: "general", type: "number" },
   { key: "totalDistance", label: "Distance totale (m)", shortLabel: "Distance", category: "general", type: "number" },
   { key: "sprintCount", label: "Nombre de sprints", shortLabel: "Sprints", category: "general", type: "number" },
@@ -135,6 +141,9 @@ export const FOOTBALL_STATS: StatField[] = [
 // Football goalkeeper stats
 export const FOOTBALL_GOALKEEPER_STATS: StatField[] = [
   { key: "minutesPlayed", label: "Minutes jouées", shortLabel: "Min.", category: "general", type: "number" },
+  { key: "effectivePlayingTime", label: "Temps de jeu effectif (min)", shortLabel: "TJE", category: "general", type: "number" },
+  { key: "longestSequence", label: "Séquence la plus longue (min)", shortLabel: "Séq. max", category: "general", type: "number" },
+  { key: "averageSequence", label: "Séquence moyenne (min)", shortLabel: "Séq. moy.", category: "general", type: "number" },
   { key: "yellowCards", label: "Cartons jaunes", shortLabel: "Jaunes", category: "general", type: "number" },
   { key: "redCards", label: "Cartons rouges", shortLabel: "Rouges", category: "general", type: "number" },
   { key: "saves", label: "Arrêts", shortLabel: "Arrêts", category: "scoring", type: "number" },
@@ -153,6 +162,9 @@ export const FOOTBALL_GOALKEEPER_STATS: StatField[] = [
 export const HANDBALL_STATS: StatField[] = [
   // Individual Stats - General
   { key: "playingTime", label: "Temps de jeu (min)", shortLabel: "Temps jeu", category: "general", type: "number" },
+  { key: "effectivePlayingTime", label: "Temps de jeu effectif (min)", shortLabel: "TJE", category: "general", type: "number" },
+  { key: "longestSequence", label: "Séquence la plus longue (min)", shortLabel: "Séq. max", category: "general", type: "number" },
+  { key: "averageSequence", label: "Séquence moyenne (min)", shortLabel: "Séq. moy.", category: "general", type: "number" },
   { key: "starts", label: "Titularisations", shortLabel: "Titu.", category: "general", type: "number" },
   { key: "yellowCards", label: "Cartons jaunes", shortLabel: "Jaunes", category: "general", type: "number" },
   { key: "redCards", label: "Cartons rouges", shortLabel: "Rouges", category: "general", type: "number" },
@@ -187,6 +199,9 @@ export const HANDBALL_STATS: StatField[] = [
 // Handball goalkeeper stats
 export const HANDBALL_GOALKEEPER_STATS: StatField[] = [
   { key: "playingTime", label: "Temps de jeu (min)", shortLabel: "Temps jeu", category: "general", type: "number" },
+  { key: "effectivePlayingTime", label: "Temps de jeu effectif (min)", shortLabel: "TJE", category: "general", type: "number" },
+  { key: "longestSequence", label: "Séquence la plus longue (min)", shortLabel: "Séq. max", category: "general", type: "number" },
+  { key: "averageSequence", label: "Séquence moyenne (min)", shortLabel: "Séq. moy.", category: "general", type: "number" },
   { key: "yellowCards", label: "Cartons jaunes", shortLabel: "Jaunes", category: "general", type: "number" },
   { key: "redCards", label: "Cartons rouges", shortLabel: "Rouges", category: "general", type: "number" },
   { key: "twoMinutes", label: "Exclusions 2 min", shortLabel: "2 min", category: "general", type: "number" },
@@ -204,6 +219,9 @@ export const VOLLEYBALL_STATS: StatField[] = [
   // Individual Stats - General
   { key: "setsPlayed", label: "Sets joués", shortLabel: "Sets", category: "general", type: "number" },
   { key: "playingTime", label: "Temps de jeu (min)", shortLabel: "Temps jeu", category: "general", type: "number" },
+  { key: "effectivePlayingTime", label: "Temps de jeu effectif (min)", shortLabel: "TJE", category: "general", type: "number" },
+  { key: "longestSequence", label: "Séquence la plus longue (min)", shortLabel: "Séq. max", category: "general", type: "number" },
+  { key: "averageSequence", label: "Séquence moyenne (min)", shortLabel: "Séq. moy.", category: "general", type: "number" },
   { key: "starts", label: "Titularisations", shortLabel: "Titu.", category: "general", type: "number" },
   { key: "jumpCount", label: "Nombre de sauts", shortLabel: "Sauts", category: "general", type: "number" },
   { key: "attackJumps", label: "Sauts d'attaque", shortLabel: "S. attaque", category: "general", type: "number" },
@@ -243,6 +261,9 @@ export const VOLLEYBALL_STATS: StatField[] = [
 export const BASKETBALL_STATS: StatField[] = [
   // Individual Stats - General
   { key: "minutesPlayed", label: "Minutes jouées", shortLabel: "Min.", category: "general", type: "number" },
+  { key: "effectivePlayingTime", label: "Temps de jeu effectif (min)", shortLabel: "TJE", category: "general", type: "number" },
+  { key: "longestSequence", label: "Séquence la plus longue (min)", shortLabel: "Séq. max", category: "general", type: "number" },
+  { key: "averageSequence", label: "Séquence moyenne (min)", shortLabel: "Séq. moy.", category: "general", type: "number" },
   { key: "starts", label: "Titularisations", shortLabel: "Titu.", category: "general", type: "number" },
   { key: "personalFouls", label: "Fautes personnelles", shortLabel: "Fautes", category: "general", type: "number" },
   { key: "technicalFouls", label: "Fautes techniques", shortLabel: "F. tech.", category: "general", type: "number" },
