@@ -264,7 +264,9 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
   const handleExportPdf = useCallback(() => {
     try {
       exportAnnualPlanningToPdf({
-        year: selectedYear.getFullYear(),
+        year: periodStart.getFullYear(),
+        startMonth,
+        periodLabel,
         categoryName: categoryData?.name || "Catégorie",
         clubName: categoryData?.clubs?.name,
         categories,
@@ -276,7 +278,7 @@ export function AnnualPlanningView({ categoryId }: AnnualPlanningViewProps) {
       console.error(e);
       toast.error("Erreur lors de la génération du PDF");
     }
-  }, [selectedYear, categoryData, categories, cycles, matches]);
+  }, [periodStart, startMonth, periodLabel, categoryData, categories, cycles, matches]);
 
   return (
     <div className="space-y-4">
