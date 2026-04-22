@@ -743,78 +743,149 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
           const labeledGroups = groups.filter(g => g.label);
           const unlabeledGroups = groups.filter(g => !g.label);
 
-          // Render labeled groups side-by-side (each as a colored block)
-          if (labeledGroups.length > 0) {
-            const gap = 4;
-            const blockW = (innerW - gap * (labeledGroups.length - 1)) / labeledGroups.length;
+          // Build the per-match column descriptors used by labeled blocks.
+          // Always one column per selected match (header = "ADV" + "dd/MM").
+          // Falls back to a single column when only one match is selected
+          // (matchesDataForCharts is only populated when >= 2 matches).
+          const matchCols = (() => {
+            if (matchesDataForCharts.length >= 2) {
+              return matchesDataForCharts.map(m => {
+                const info = allMatches.find(mm => mm.id === m.matchId);
+                const opp = (info?.opponent || "?").substring(0, 8);
+                const date = info?.match_date ? format(new Date(info.match_date), "dd/MM") : "";
+                return {
+                  matchId: m.matchId,
+                  header1: opp,
+                  header2: date,
+                  getTeamVal: (key: string) =>
+                    Object.values(m.players).reduce((sum, p) => sum + (p.sportData[key] || 0), 0),
+                };
+              });
+            }
+            // Only one selected match -> use selectedMatches[0] and read team total from `stats`
+            if (selectedMatches.length === 1) {
+              const info = selectedMatches[0];
+              return [{
+                matchId: info.id,
+                header1: (info.opponent || "?").substring(0, 8),
+                header2: info.match_date ? format(new Date(info.match_date), "dd/MM") : "",
+                getTeamVal: (key: string) =>
+                  stats.reduce((sum, p) => sum + (p.sportData[key] || 0), 0),
+              }];
+            }
+            return [];
+          })();
 
-            // Pre-compute per-block heights to align row tops
+          // Render each labeled group as a FULL-WIDTH colored block so per-match
+          // columns have enough horizontal space.
+          if (labeledGroups.length > 0) {
             const titleH = 6;
-            const headerH = 6;
+            const headerH = 7;
             const rowH = 5;
             const padding = 2;
-            const blockHeights = labeledGroups.map(g =>
-              titleH + headerH + g.items.length * rowH + padding * 2
-            );
-            const maxBlockH = Math.max(...blockHeights);
-
-            if (y + maxBlockH > pageH - 12) { doc.addPage(); y = 15; }
 
             labeledGroups.forEach((group, gi) => {
               const palette = pdfGroupColor(gi);
-              const bx = 14 + gi * (blockW + gap);
+              const blockH = titleH + headerH + group.items.length * rowH + padding * 2;
+              if (y + blockH > pageH - 12) { doc.addPage(); y = 15; }
+
+              const bx = 14;
               const by = y;
+              const blockW = innerW;
 
               // Outer block (body tint + colored border)
               doc.setFillColor(...palette.body);
               doc.setDrawColor(...palette.border);
               doc.setLineWidth(0.4);
-              doc.roundedRect(bx, by, blockW, maxBlockH, 1.5, 1.5, "FD");
+              doc.roundedRect(bx, by, blockW, blockH, 1.5, 1.5, "FD");
 
               // Title band
               doc.setFillColor(...palette.head);
               doc.roundedRect(bx, by, blockW, titleH, 1.5, 1.5, "F");
-              // Square off bottom of title band
               doc.rect(bx, by + titleH - 1.5, blockW, 1.5, "F");
 
-              doc.setFontSize(7);
+              doc.setFontSize(8);
               doc.setFont("helvetica", "bold");
               doc.setTextColor(...palette.accent);
-              doc.text(String(group.label).toUpperCase(), bx + 2, by + 4.2);
+              doc.text(String(group.label).toUpperCase(), bx + 2.5, by + 4.4);
 
-              // Column headers (Stat / Total / Moy / +/-)
-              const cTotalX = bx + blockW - 22;
-              const cAvgX = bx + blockW - 14;
-              const cProgX = bx + blockW - 5;
-              let ry = by + titleH + headerH - 1.5;
+              // Column layout: Stat | match1..N | Moy | +/-
+              const labelColW = 60;          // wide enough for full stat label
+              const summaryColW = 14;        // Moy + +/- columns
+              const matchAreaW = blockW - labelColW - summaryColW * 2 - 2;
+              const matchColW = matchCols.length > 0 ? matchAreaW / matchCols.length : 0;
+              const cMoyX = bx + labelColW + matchAreaW + summaryColW / 2;
+              const cProgX = bx + labelColW + matchAreaW + summaryColW + summaryColW / 2;
+
+              // Header row
+              let ry = by + titleH + 3;
               doc.setFontSize(6);
               doc.setFont("helvetica", "bold");
               doc.setTextColor(71, 85, 105);
-              doc.text("Stat", bx + 2, ry);
-              doc.text("Tot", cTotalX, ry, { align: "center" });
-              doc.text("Moy", cAvgX, ry, { align: "center" });
+              doc.text("Statistique", bx + 2.5, ry);
+              matchCols.forEach((mc, i) => {
+                const cx = bx + labelColW + matchColW * i + matchColW / 2;
+                doc.text(mc.header1, cx, ry - 1.5, { align: "center" });
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(5.5);
+                doc.text(mc.header2, cx, ry + 1.8, { align: "center" });
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(6);
+              });
+              doc.text("Moy", cMoyX, ry, { align: "center" });
               doc.text("+/-", cProgX, ry, { align: "center" });
 
-              // Rows
+              // Separator line under header
+              doc.setDrawColor(...palette.border);
+              doc.setLineWidth(0.3);
+              doc.line(bx + 1, by + titleH + headerH - 1, bx + blockW - 1, by + titleH + headerH - 1);
+
+              // Data rows
               doc.setFont("helvetica", "normal");
-              ry = by + titleH + headerH + 1;
+              ry = by + titleH + headerH + 2;
               group.items.forEach((s, idx) => {
                 if (idx % 2 === 1) {
                   doc.setFillColor(...palette.head);
                   doc.rect(bx + 0.6, ry - 3.6, blockW - 1.2, rowH, "F");
                 }
-                const val = teamStats[s.key] || 0;
-                const avgVal = s.computedFrom ? "" : String(Math.round((val / Math.max(selectedCount, 1)) * 10) / 10);
+
+                const totalVal = teamStats[s.key] || 0;
+                const avgValTxt = s.computedFrom
+                  ? ""
+                  : String(Math.round((totalVal / Math.max(selectedCount, 1)) * 10) / 10);
                 const prog = teamProgression[s.key] || 0;
 
+                // Stat label (full name, larger truncation budget)
                 doc.setFontSize(6.5);
                 doc.setTextColor(30, 41, 59);
                 const fullLabel = s.label || s.shortLabel;
-                const labelTxt = fullLabel.length > 30 ? fullLabel.substring(0, 28) + "…" : fullLabel;
-                doc.text(labelTxt, bx + 2, ry);
-                doc.text(s.computedFrom ? `${val}%` : String(val), cTotalX, ry, { align: "center" });
-                doc.text(avgVal || "—", cAvgX, ry, { align: "center" });
+                const labelTxt = fullLabel.length > 38 ? fullLabel.substring(0, 36) + "…" : fullLabel;
+                doc.text(labelTxt, bx + 2.5, ry);
 
+                // Per-match values
+                doc.setFontSize(6.5);
+                doc.setTextColor(30, 41, 59);
+                matchCols.forEach((mc, i) => {
+                  const cx = bx + labelColW + matchColW * i + matchColW / 2;
+                  if (s.computedFrom) {
+                    // Recompute % per match from the underlying success/total/failure keys
+                    const cf = s.computedFrom;
+                    const success = mc.getTeamVal(cf.successKey);
+                    const tot = cf.totalKey
+                      ? mc.getTeamVal(cf.totalKey)
+                      : success + mc.getTeamVal(cf.failureKey!);
+                    const pct = tot > 0 ? Math.round((success / tot) * 100) : 0;
+                    doc.text(`${pct}%`, cx, ry, { align: "center" });
+                  } else {
+                    doc.text(String(mc.getTeamVal(s.key)), cx, ry, { align: "center" });
+                  }
+                });
+
+                // Moy
+                doc.setTextColor(30, 41, 59);
+                doc.text(avgValTxt || (s.computedFrom ? `${totalVal}%` : "—"), cMoyX, ry, { align: "center" });
+
+                // +/-
                 if (matchesDataForCharts.length >= 2 && !s.computedFrom) {
                   if (prog > 0) doc.setTextColor(22, 163, 74);
                   else if (prog < 0) doc.setTextColor(220, 38, 38);
@@ -826,8 +897,9 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                 }
                 ry += rowH;
               });
+
+              y += blockH + 4;
             });
-            y += maxBlockH + 4;
           }
 
           // Render unlabeled groups (full-width) as a flat 4-column grid of mini-tiles
