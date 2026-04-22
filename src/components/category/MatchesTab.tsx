@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Calendar, BarChart3, Settings2, Camera } from "lucide-react";
+import { Plus, Calendar, BarChart3, Settings2, Camera, CalendarClock, History } from "lucide-react";
 import { AddMatchCalendarDialog } from "./matches/AddMatchCalendarDialog";
 import { MatchCard } from "./matches/MatchCard";
 import { PlayerCumulativeStats } from "./matches/PlayerCumulativeStats";
@@ -111,31 +111,71 @@ export function MatchesTab({ categoryId, sportType }: MatchesTabProps) {
                 </div>
               ) : (
                 <div className="space-y-8">
-                  {upcomingMatches.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4 text-primary">
-                        {itemLabelPluralCapital} à venir ({upcomingMatches.length})
-                      </h3>
+                  {/* === UPCOMING SECTION === */}
+                  <section className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4 sm:p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-primary/15 text-primary">
+                          <CalendarClock className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <h3 className="text-base sm:text-lg font-bold text-primary leading-tight">
+                            {itemLabelPluralCapital} à venir
+                          </h3>
+                          <p className="text-[11px] text-muted-foreground">
+                            Programmé{isIndividual ? "e" : ""}s prochainement
+                          </p>
+                        </div>
+                      </div>
+                      <span className="inline-flex items-center justify-center min-w-[32px] h-7 px-2 rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                        {upcomingMatches.length}
+                      </span>
+                    </div>
+                    {upcomingMatches.length > 0 ? (
                       <div className="space-y-3">
                         {upcomingMatches.map((match) => (
                           <MatchCard key={match.id} match={match} categoryId={categoryId} />
                         ))}
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic text-center py-4">
+                        Aucun{isIndividual ? "e" : ""} {itemLabel} à venir
+                      </p>
+                    )}
+                  </section>
 
-                  {pastMatches.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4 text-muted-foreground">
-                        {itemLabelPluralCapital} passé{isIndividual ? "e" : ""}s ({pastMatches.length})
-                      </h3>
+                  {/* === PAST SECTION === */}
+                  <section className="rounded-xl border border-border bg-muted/30 p-4 sm:p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-muted text-muted-foreground">
+                          <History className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <h3 className="text-base sm:text-lg font-bold text-foreground/80 leading-tight">
+                            {itemLabelPluralCapital} passé{isIndividual ? "e" : ""}s
+                          </h3>
+                          <p className="text-[11px] text-muted-foreground">
+                            Historique et résultats
+                          </p>
+                        </div>
+                      </div>
+                      <span className="inline-flex items-center justify-center min-w-[32px] h-7 px-2 rounded-full bg-muted-foreground/20 text-foreground text-xs font-bold">
+                        {pastMatches.length}
+                      </span>
+                    </div>
+                    {pastMatches.length > 0 ? (
                       <div className="space-y-3">
                         {[...pastMatches].reverse().map((match) => (
                           <MatchCard key={match.id} match={match} categoryId={categoryId} />
                         ))}
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic text-center py-4">
+                        Aucun{isIndividual ? "e" : ""} {itemLabel} passé{isIndividual ? "e" : ""}
+                      </p>
+                    )}
+                  </section>
                 </div>
               )}
             </CardContent>
