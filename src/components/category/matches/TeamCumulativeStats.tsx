@@ -157,7 +157,8 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
     return result;
   };
 
-  const renderStatTile = (stat: StatField) => {
+  const renderStatTile = (stat: StatField, opts?: { large?: boolean }) => {
+    const large = opts?.large;
     const val = teamTotals.totals[stat.key] || 0;
     const avg = teamTotals.matchCount > 0 ? Math.round((val / teamTotals.matchCount) * 10) / 10 : 0;
     const prog = teamProgression[stat.key] || 0;
@@ -171,14 +172,14 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
       else toneClass = "bg-amber-500/10 border-amber-500/30";
     }
     return (
-      <div key={stat.key} className={`p-1.5 rounded-md text-center space-y-0 border ${toneClass}`}>
-        <p className="text-base font-bold leading-tight">
+      <div key={stat.key} className={`${large ? "p-2.5" : "p-1.5"} rounded-md text-center space-y-0 border ${toneClass}`}>
+        <p className={`${large ? "text-xl" : "text-base"} font-bold leading-tight`}>
           {stat.computedFrom ? `${val}%` : val}
         </p>
-        <p className="text-[9px] text-muted-foreground leading-tight">{stat.shortLabel}</p>
+        <p className={`${large ? "text-[11px]" : "text-[9px]"} text-muted-foreground leading-tight`}>{stat.shortLabel}</p>
         <div className="flex items-center justify-center gap-0.5 flex-wrap">
           {!stat.computedFrom && (
-            <span className="text-[9px] text-muted-foreground">Moy {avg}</span>
+            <span className={`${large ? "text-[10px]" : "text-[9px]"} text-muted-foreground`}>Moy {avg}</span>
           )}
           {!neutral && matchesData.length >= 2 && !stat.computedFrom && (
             <ProgressionBadge value={prog} />
