@@ -109,6 +109,34 @@ export function AggregatedRoundStatsDialog({
     enabled: open && !!matchId,
   });
 
+  // Fetch athletics minimas for the category (only when relevant)
+  const { data: athleticsMinimas = [] } = useQuery({
+    queryKey: ["athletics_minimas_dialog", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("athletics_minimas" as any)
+        .select("*")
+        .eq("category_id", categoryId);
+      if (error) throw error;
+      return (data || []) as unknown as AthleticsMinima[];
+    },
+    enabled: open && isAthletics,
+  });
+
+  // Fetch athletics records for the category
+  const { data: athleticsRecords = [] } = useQuery({
+    queryKey: ["athletics_records_dialog", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("athletics_records" as any)
+        .select("*")
+        .eq("category_id", categoryId);
+      if (error) throw error;
+      return (data || []) as unknown as AthleticsRecord[];
+    },
+    enabled: open && isAthletics,
+  });
+
   // Calculate aggregated stats per player
   const playerStats: PlayerAggregatedStats[] = [];
 
