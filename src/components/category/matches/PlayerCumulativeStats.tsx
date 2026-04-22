@@ -642,66 +642,152 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
           y += 28;
         }
 
-        // ---- Stats by category (team totals + avg + progression) ----
+        // ---- Stats by category, organised in colored sub-blocks (mirrors UI) ----
         statCategories.forEach(cat => {
           const categoryStats = sportStats.filter(s => s.category === cat.key);
           if (categoryStats.length === 0) return;
 
-          if (y > pageH - 45) { doc.addPage(); y = 15; }
+          const groups = groupStatsByTheme(cat.key, categoryStats);
 
+          if (y > pageH - 50) { doc.addPage(); y = 15; }
+
+          // Category title
           doc.setTextColor(30, 41, 59);
           doc.setFontSize(12);
           doc.setFont("helvetica", "bold");
           doc.text(cat.label, 14, y);
           y += 6;
 
-          // Header row
-          const colW = [70, 30, 30, 30];
-          const totalRowW = colW.reduce((a, b) => a + b, 0);
-          const startX = (pageW - totalRowW) / 2;
-          doc.setFillColor(241, 245, 249);
-          doc.roundedRect(startX, y, totalRowW, 8, 1.5, 1.5, "F");
-          doc.setFontSize(8);
-          doc.setFont("helvetica", "bold");
-          doc.setTextColor(71, 85, 105);
-          doc.text("Statistique", startX + 3, y + 5.5);
-          doc.text("Total", startX + colW[0] + colW[1] / 2, y + 5.5, { align: "center" });
-          doc.text("Moy/match", startX + colW[0] + colW[1] + colW[2] / 2, y + 5.5, { align: "center" });
-          doc.text("Progression", startX + colW[0] + colW[1] + colW[2] + colW[3] / 2, y + 5.5, { align: "center" });
-          y += 10;
+          const innerW = pageW - 28;
+          const labeledGroups = groups.filter(g => g.label);
+          const unlabeledGroups = groups.filter(g => !g.label);
 
-          doc.setFont("helvetica", "normal");
-          categoryStats.forEach((s, idx) => {
-            if (y > pageH - 12) { doc.addPage(); y = 15; }
-            const val = teamStats[s.key] || 0;
-            const avg = s.computedFrom ? "" : String(Math.round((val / Math.max(selectedCount, 1)) * 10) / 10);
-            const prog = teamProgression[s.key] || 0;
+          // Render labeled groups side-by-side (each as a colored block)
+          if (labeledGroups.length > 0) {
+            const gap = 4;
+            const blockW = (innerW - gap * (labeledGroups.length - 1)) / labeledGroups.length;
 
-            // Zebra
-            if (idx % 2 === 0) {
-              doc.setFillColor(248, 250, 252);
-              doc.rect(startX, y - 1, totalRowW, 7, "F");
-            }
+            // Pre-compute per-block heights to align row tops
+            const titleH = 6;
+            const headerH = 6;
+            const rowH = 5;
+            const padding = 2;
+            const blockHeights = labeledGroups.map(g =>
+              titleH + headerH + g.items.length * rowH + padding * 2
+            );
+            const maxBlockH = Math.max(...blockHeights);
 
-            doc.setTextColor(30, 41, 59);
-            doc.setFontSize(8);
-            doc.text(s.label, startX + 3, y + 4);
-            doc.text(s.computedFrom ? `${val}%` : String(val), startX + colW[0] + colW[1] / 2, y + 4, { align: "center" });
-            doc.text(avg, startX + colW[0] + colW[1] + colW[2] / 2, y + 4, { align: "center" });
+            if (y + maxBlockH > pageH - 12) { doc.addPage(); y = 15; }
 
-            // Progression with color
-            if (matchesDataForCharts.length >= 2 && !s.computedFrom) {
-              if (prog > 0) doc.setTextColor(22, 163, 74);
-              else if (prog < 0) doc.setTextColor(220, 38, 38);
-              else doc.setTextColor(100, 116, 139);
-              doc.text(prog > 0 ? `+${prog}` : String(prog), startX + colW[0] + colW[1] + colW[2] + colW[3] / 2, y + 4, { align: "center" });
-            } else {
-              doc.setTextColor(100, 116, 139);
-              doc.text("—", startX + colW[0] + colW[1] + colW[2] + colW[3] / 2, y + 4, { align: "center" });
-            }
-            y += 7;
-          });
-          y += 5;
+            labeledGroups.forEach((group, gi) => {
+              const palette = group.color
+                ? pdfGroupColor(STAT_GROUP_PALETTE_INDEX(group, labeledGroups))
+                : pdfGroupColor(gi);
+              const bx = 14 + gi * (blockW + gap);
+              const by = y;
+
+              // Outer block (body tint + colored border)
+              doc.setFillColor(...palette.body);
+              doc.setDrawColor(...palette.border);
+              doc.setLineWidth(0.4);
+              doc.roundedRect(bx, by, blockW, maxBlockH, 1.5, 1.5, "FD");
+
+              // Title band
+              doc.setFillColor(...palette.head);
+              doc.roundedRect(bx, by, blockW, titleH, 1.5, 1.5, "F");
+              // Square off bottom of title band
+              doc.rect(bx, by + titleH - 1.5, blockW, 1.5, "F");
+
+              doc.setFontSize(7);
+              doc.setFont("helvetica", "bold");
+              doc.setTextColor(...palette.accent);
+              doc.text(String(group.label).toUpperCase(), bx + 2, by + 4.2);
+
+              // Column headers (Stat / Total / Moy / +/-)
+              const cTotalX = bx + blockW - 22;
+              const cAvgX = bx + blockW - 14;
+              const cProgX = bx + blockW - 5;
+              let ry = by + titleH + headerH - 1.5;
+              doc.setFontSize(6);
+              doc.setFont("helvetica", "bold");
+              doc.setTextColor(71, 85, 105);
+              doc.text("Stat", bx + 2, ry);
+              doc.text("Tot", cTotalX, ry, { align: "center" });
+              doc.text("Moy", cAvgX, ry, { align: "center" });
+              doc.text("+/-", cProgX, ry, { align: "center" });
+
+              // Rows
+              doc.setFont("helvetica", "normal");
+              ry = by + titleH + headerH + 1;
+              group.items.forEach((s, idx) => {
+                if (idx % 2 === 1) {
+                  doc.setFillColor(...palette.head);
+                  doc.rect(bx + 0.6, ry - 3.6, blockW - 1.2, rowH, "F");
+                }
+                const val = teamStats[s.key] || 0;
+                const avgVal = s.computedFrom ? "" : String(Math.round((val / Math.max(selectedCount, 1)) * 10) / 10);
+                const prog = teamProgression[s.key] || 0;
+
+                doc.setFontSize(6.5);
+                doc.setTextColor(30, 41, 59);
+                const labelTxt = s.shortLabel.length > 18 ? s.shortLabel.substring(0, 18) : s.shortLabel;
+                doc.text(labelTxt, bx + 2, ry);
+                doc.text(s.computedFrom ? `${val}%` : String(val), cTotalX, ry, { align: "center" });
+                doc.text(avgVal || "—", cAvgX, ry, { align: "center" });
+
+                if (matchesDataForCharts.length >= 2 && !s.computedFrom) {
+                  if (prog > 0) doc.setTextColor(22, 163, 74);
+                  else if (prog < 0) doc.setTextColor(220, 38, 38);
+                  else doc.setTextColor(100, 116, 139);
+                  doc.text(prog > 0 ? `+${prog}` : String(prog), cProgX, ry, { align: "center" });
+                } else {
+                  doc.setTextColor(148, 163, 184);
+                  doc.text("—", cProgX, ry, { align: "center" });
+                }
+                ry += rowH;
+              });
+            });
+            y += maxBlockH + 4;
+          }
+
+          // Render unlabeled groups (full-width) as a flat 4-column grid of mini-tiles
+          if (unlabeledGroups.length > 0) {
+            const palette = pdfGroupColor(labeledGroups.length); // continue palette progression
+            unlabeledGroups.forEach(group => {
+              const cols = 4;
+              const tileW = (innerW - (cols - 1) * 3) / cols;
+              const tileH = 12;
+              const rows = Math.ceil(group.items.length / cols);
+              const blockH = rows * (tileH + 2);
+              if (y + blockH > pageH - 12) { doc.addPage(); y = 15; }
+
+              group.items.forEach((s, idx) => {
+                const col = idx % cols;
+                const row = Math.floor(idx / cols);
+                const tx = 14 + col * (tileW + 3);
+                const ty = y + row * (tileH + 2);
+                const val = teamStats[s.key] || 0;
+
+                doc.setFillColor(...palette.body);
+                doc.setDrawColor(...palette.border);
+                doc.setLineWidth(0.3);
+                doc.roundedRect(tx, ty, tileW, tileH, 1.2, 1.2, "FD");
+
+                doc.setFontSize(9);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(...palette.accent);
+                doc.text(s.computedFrom ? `${val}%` : String(val), tx + tileW / 2, ty + 5.5, { align: "center" });
+
+                doc.setFontSize(6);
+                doc.setFont("helvetica", "normal");
+                doc.setTextColor(71, 85, 105);
+                doc.text(s.shortLabel.substring(0, 16), tx + tileW / 2, ty + 10, { align: "center" });
+              });
+              y += blockH + 2;
+            });
+          }
+
+          y += 4;
         });
 
         // ---- Evolution per match (table showing per-match team totals for key stats) ----
