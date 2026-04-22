@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -12,11 +13,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Trophy, Target, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Trophy, Target, TrendingUp, TrendingDown, Minus, FileDown } from "lucide-react";
 import { ATHLETISME_DISCIPLINES } from "@/lib/constants/sportTypes";
 import { computeDelta, type AthleticsMinima, type AthleticsRecord } from "@/lib/athletics/recordsHelpers";
 import { getMinimaLevel } from "@/lib/athletics/minimaLevels";
+import { exportAthleticsMinimasReport } from "@/lib/athletics/exportPdf";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Props {
   categoryId: string;
@@ -234,19 +237,67 @@ export function AthleticsMinimasMatrix({ categoryId }: Props) {
     );
   }
 
+  // Handle PDF export
+  const handleExport = async () => {
+    try {
+      const { data: cat } = await supabase
+        .from("categories")
+        .select("name, clubs(name)")
+        .eq("id", categoryId)
+        .maybeSingle();
+
+      const exportPlayers = players.map((p) => {
+        const bestExact = bestMap.get(`${p.id}|${p.discipline}|${p.specialty || ""}`);
+        const bestDisc = bestMap.get(`${p.id}|${p.discipline}|`);
+        return {
+          id: p.id,
+          fullName: `${p.first_name ? p.first_name + " " : ""}${p.name}`.trim(),
+          discipline: p.discipline,
+          specialty: p.specialty,
+          bestPerformance: bestExact ?? bestDisc ?? null,
+        };
+      });
+
+      exportAthleticsMinimasReport({
+        clubName: (cat?.clubs as any)?.name || "Club",
+        categoryName: cat?.name || "Catégorie",
+        players: exportPlayers,
+        minimas,
+        records,
+      });
+      toast.success("PDF généré avec succès");
+    } catch (e: any) {
+      toast.error("Erreur d'export : " + (e?.message || "inconnu"));
+    }
+  };
+
   return (
     <TooltipProvider>
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Target className="h-5 w-5 text-primary" />
-            Matrice Minimas × Athlètes
-          </CardTitle>
-          <CardDescription>
-            Delta entre la meilleure performance de la saison (compétition) et chaque minima.
-            <span className="text-emerald-600 font-medium"> Vert</span> = minima atteint,
-            <span className="text-destructive font-medium"> rouge</span> = en dessous.
-          </CardDescription>
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-1">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Target className="h-5 w-5 text-primary" />
+                Matrice Minimas × Athlètes
+              </CardTitle>
+              <CardDescription>
+                Delta entre la meilleure performance de la saison (compétition) et chaque minima.
+                <span className="text-emerald-600 font-medium"> Vert</span> = minima atteint,
+                <span className="text-destructive font-medium"> rouge</span> = en dessous.
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              disabled={players.length === 0}
+              className="shrink-0"
+            >
+              <FileDown className="h-4 w-4 mr-2" />
+              Export PDF
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {Object.entries(groupedMinimas).map(([groupKey, group]) => {

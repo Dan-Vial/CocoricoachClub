@@ -18,6 +18,9 @@ import { toast } from "sonner";
 import jsPDF from "jspdf";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { AthleticsDeltaBadge } from "@/components/category/athletics/AthleticsDeltaBadge";
+import { findMatchingReference, type AthleticsMinima, type AthleticsRecord } from "@/lib/athletics/recordsHelpers";
+import { getMinimaLevel } from "@/lib/athletics/minimaLevels";
 
 interface AggregatedRoundStatsDialogProps {
   open: boolean;
@@ -104,6 +107,34 @@ export function AggregatedRoundStatsDialog({
       return rounds;
     },
     enabled: open && !!matchId,
+  });
+
+  // Fetch athletics minimas for the category (only when relevant)
+  const { data: athleticsMinimas = [] } = useQuery({
+    queryKey: ["athletics_minimas_dialog", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("athletics_minimas" as any)
+        .select("*")
+        .eq("category_id", categoryId);
+      if (error) throw error;
+      return (data || []) as unknown as AthleticsMinima[];
+    },
+    enabled: open && isAthletics,
+  });
+
+  // Fetch athletics records for the category
+  const { data: athleticsRecords = [] } = useQuery({
+    queryKey: ["athletics_records_dialog", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("athletics_records" as any)
+        .select("*")
+        .eq("category_id", categoryId);
+      if (error) throw error;
+      return (data || []) as unknown as AthleticsRecord[];
+    },
+    enabled: open && isAthletics,
   });
 
   // Calculate aggregated stats per player
@@ -601,6 +632,83 @@ export function AggregatedRoundStatsDialog({
                                 <p className="font-bold">{player.qualifications}/{player.roundCount}</p>
                               </div>
                             </div>
+
+                            {/* Records & Minimas comparison (athletics) */}
+                            {(() => {
+                              const matchingMinimas = athleticsMinimas.filter(m =>
+                                m.discipline === (player.discipline || "") &&
+                                ((m.specialty || "") === (player.specialty || "") || !m.specialty)
+                              );
+                              const playerRecord = findMatchingReference(
+                                athleticsRecords.filter(r => r.player_id === player.playerId),
+                                player.discipline,
+                                player.specialty
+                              );
+                              if (matchingMinimas.length === 0 && !playerRecord) return null;
+
+                              const lowerIsBetter = matchingMinimas[0]?.lower_is_better
+                                ?? playerRecord?.lower_is_better
+                                ?? true;
+                              const unit = matchingMinimas[0]?.unit || playerRecord?.unit || "";
+
+                              // Compute best perf: time-based use bestTime, else max numeric stat
+                              let bestPerf: number | null = null;
+                              if (lowerIsBetter && player.bestTime != null) {
+                                bestPerf = player.bestTime;
+                              } else {
+                                const allValues: number[] = [];
+                                player.rounds.forEach(r => {
+                                  Object.entries(r.stats).forEach(([k, v]) => {
+                                    if (typeof v === "number" && v > 0 && !/wind|temp|condition|ranking|lane/i.test(k)) {
+                                      allValues.push(v);
+                                    }
+                                  });
+                                });
+                                if (allValues.length > 0) {
+                                  bestPerf = lowerIsBetter ? Math.min(...allValues) : Math.max(...allValues);
+                                }
+                              }
+
+                              if (bestPerf == null) return null;
+
+                              // Build refs: PB, SB, then each minima sorted by rank
+                              const refs: { label: string; reference: number; unit: string; level?: string }[] = [];
+                              if (playerRecord?.personal_best != null) {
+                                refs.push({ label: "PB", reference: playerRecord.personal_best, unit });
+                              }
+                              if (playerRecord?.season_best != null) {
+                                refs.push({ label: "SB", reference: playerRecord.season_best, unit });
+                              }
+                              [...matchingMinimas]
+                                .sort((a, b) => (getMinimaLevel(a.level)?.rank || 0) - (getMinimaLevel(b.level)?.rank || 0))
+                                .forEach(m => {
+                                  refs.push({
+                                    label: getMinimaLevel(m.level)?.label || m.level,
+                                    reference: m.target_value,
+                                    unit: m.unit,
+                                    level: m.level,
+                                  });
+                                });
+
+                              return (
+                                <div className="space-y-2 p-3 rounded-md border bg-muted/20">
+                                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                                    <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
+                                      <Target className="h-4 w-4" />
+                                      Records & Minimas
+                                    </h4>
+                                    <div className="text-xs text-muted-foreground">
+                                      Meilleure perf. : <span className="font-mono font-bold text-foreground">{bestPerf.toFixed(2)} {unit}</span>
+                                    </div>
+                                  </div>
+                                  <AthleticsDeltaBadge
+                                    actual={bestPerf}
+                                    lowerIsBetter={lowerIsBetter}
+                                    references={refs}
+                                  />
+                                </div>
+                              );
+                            })()}
 
                             {/* Rounds detail table */}
                             {player.rounds.length > 0 && (
