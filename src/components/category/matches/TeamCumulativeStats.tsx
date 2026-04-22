@@ -121,12 +121,80 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
   const isNeutralStat = (key: string) =>
     /minutesplayed|playingtime|starts|manofmatch/i.test(key);
 
+  // Sub-group definitions per category. Order matters; first matching group wins.
+  // Each group bundles related stats inside a category for clearer reading.
+  const subGroupDefs: Record<string, { key: string; label: string; match: (k: string) => boolean }[]> = {
+    general: [
+      { key: "scrums", label: "Mêlées", match: (k) => /^scrum/i.test(k) },
+      { key: "lineouts", label: "Touches", match: (k) => /^lineout/i.test(k) },
+    ],
+    scoring: [
+      { key: "tries", label: "Essais", match: (k) => /^tries$|^tryassists$/i.test(k) },
+      { key: "conversions", label: "Transformations", match: (k) => /^conversion/i.test(k) },
+      { key: "penalties", label: "Pénalités", match: (k) => /^penalt(y|ies)(scored|attempts)?$/i.test(k) || /^penaltyattempts$|^penaltiesscored$/i.test(k) },
+      { key: "drops", label: "Drops", match: (k) => /^drop/i.test(k) },
+    ],
+  };
+
+  const groupStats = (catKey: string, statsList: StatField[]) => {
+    const defs = subGroupDefs[catKey] || [];
+    if (defs.length === 0) return [{ key: "_all", label: null as string | null, items: statsList }];
+    const buckets: { key: string; label: string | null; items: StatField[] }[] = defs.map(d => ({
+      key: d.key, label: d.label, items: [],
+    }));
+    const others: StatField[] = [];
+    statsList.forEach(s => {
+      const def = defs.find(d => d.match(s.key));
+      if (def) {
+        const bucket = buckets.find(b => b.key === def.key)!;
+        bucket.items.push(s);
+      } else {
+        others.push(s);
+      }
+    });
+    const result = buckets.filter(b => b.items.length > 0);
+    if (others.length > 0) result.push({ key: "_others", label: result.length > 0 ? "Autres" : null, items: others });
+    return result;
+  };
+
+  const renderStatTile = (stat: StatField) => {
+    const val = teamTotals.totals[stat.key] || 0;
+    const avg = teamTotals.matchCount > 0 ? Math.round((val / teamTotals.matchCount) * 10) / 10 : 0;
+    const prog = teamProgression[stat.key] || 0;
+    const neutral = isNeutralStat(stat.key);
+    const lowerIsBetter = /turnover|missed|error|penalt(y|ies)_conceded|fault|loss|interception_conceded/i.test(stat.key);
+    const effectiveProg = lowerIsBetter ? -prog : prog;
+    let toneClass = "bg-muted/50 border-border/60";
+    if (!neutral && matchesData.length >= 2 && !stat.computedFrom) {
+      if (effectiveProg > 0) toneClass = "bg-emerald-500/10 border-emerald-500/30 dark:bg-emerald-500/15";
+      else if (effectiveProg < 0) toneClass = "bg-destructive/10 border-destructive/30";
+      else toneClass = "bg-amber-500/10 border-amber-500/30";
+    }
+    return (
+      <div key={stat.key} className={`p-1.5 rounded-md text-center space-y-0 border ${toneClass}`}>
+        <p className="text-base font-bold leading-tight">
+          {stat.computedFrom ? `${val}%` : val}
+        </p>
+        <p className="text-[9px] text-muted-foreground leading-tight">{stat.shortLabel}</p>
+        <div className="flex items-center justify-center gap-0.5 flex-wrap">
+          {!stat.computedFrom && (
+            <span className="text-[9px] text-muted-foreground">Moy {avg}</span>
+          )}
+          {!neutral && matchesData.length >= 2 && !stat.computedFrom && (
+            <ProgressionBadge value={prog} />
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-3">
       {statCategories.map(cat => {
         const categoryStats = sportStats.filter(s => s.category === cat.key);
         if (categoryStats.length === 0) return null;
         const isGeneral = cat.key === "general";
+        const groups = groupStats(cat.key, categoryStats);
         return (
           <Card key={cat.key} className="border-border/60">
             <CardHeader className="py-2 px-3">
@@ -135,52 +203,32 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
                 {cat.label}
               </CardTitle>
             </CardHeader>
-            <CardContent className="px-2 pb-2 pt-0">
-              <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1.5">
-                {/* Inject scored / conceded tiles at start of "general" category */}
-                {isGeneral && scoreSummary && (
-                  <>
-                    <div className="p-1.5 rounded-md text-center space-y-0 border bg-emerald-500/10 border-emerald-500/30">
-                      <p className="text-base font-bold text-emerald-600 dark:text-emerald-400 leading-tight">{scoreSummary.scored}</p>
-                      <p className="text-[9px] text-muted-foreground leading-tight">Pts marqués</p>
-                    </div>
-                    <div className="p-1.5 rounded-md text-center space-y-0 border bg-destructive/10 border-destructive/30">
-                      <p className="text-base font-bold text-destructive leading-tight">{scoreSummary.conceded}</p>
-                      <p className="text-[9px] text-muted-foreground leading-tight">Pts encaissés</p>
-                    </div>
-                  </>
-                )}
-                {categoryStats.map(stat => {
-                  const val = teamTotals.totals[stat.key] || 0;
-                  const avg = teamTotals.matchCount > 0 ? Math.round((val / teamTotals.matchCount) * 10) / 10 : 0;
-                  const prog = teamProgression[stat.key] || 0;
-                  const neutral = isNeutralStat(stat.key);
-                  const lowerIsBetter = /turnover|missed|error|penalt(y|ies)_conceded|fault|loss|interception_conceded/i.test(stat.key);
-                  const effectiveProg = lowerIsBetter ? -prog : prog;
-                  let toneClass = "bg-muted/50 border-border/60";
-                  if (!neutral && matchesData.length >= 2 && !stat.computedFrom) {
-                    if (effectiveProg > 0) toneClass = "bg-emerald-500/10 border-emerald-500/30 dark:bg-emerald-500/15";
-                    else if (effectiveProg < 0) toneClass = "bg-destructive/10 border-destructive/30";
-                    else toneClass = "bg-amber-500/10 border-amber-500/30";
-                  }
-                  return (
-                    <div key={stat.key} className={`p-1.5 rounded-md text-center space-y-0 border ${toneClass}`}>
-                      <p className="text-base font-bold leading-tight">
-                        {stat.computedFrom ? `${val}%` : val}
-                      </p>
-                      <p className="text-[9px] text-muted-foreground leading-tight">{stat.shortLabel}</p>
-                      <div className="flex items-center justify-center gap-0.5 flex-wrap">
-                        {!stat.computedFrom && (
-                          <span className="text-[9px] text-muted-foreground">Moy {avg}</span>
-                        )}
-                        {!neutral && matchesData.length >= 2 && !stat.computedFrom && (
-                          <ProgressionBadge value={prog} />
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            <CardContent className="px-2 pb-2 pt-0 space-y-2">
+              {/* Inject scored / conceded tiles at start of "general" category */}
+              {isGeneral && scoreSummary && (
+                <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1.5">
+                  <div className="p-1.5 rounded-md text-center space-y-0 border bg-emerald-500/10 border-emerald-500/30">
+                    <p className="text-base font-bold text-emerald-600 dark:text-emerald-400 leading-tight">{scoreSummary.scored}</p>
+                    <p className="text-[9px] text-muted-foreground leading-tight">Pts marqués</p>
+                  </div>
+                  <div className="p-1.5 rounded-md text-center space-y-0 border bg-destructive/10 border-destructive/30">
+                    <p className="text-base font-bold text-destructive leading-tight">{scoreSummary.conceded}</p>
+                    <p className="text-[9px] text-muted-foreground leading-tight">Pts encaissés</p>
+                  </div>
+                </div>
+              )}
+              {groups.map(group => (
+                <div key={group.key} className={group.label ? "rounded-md border border-border/50 bg-muted/20 p-1.5 space-y-1" : ""}>
+                  {group.label && (
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-0.5">
+                      {group.label}
+                    </p>
+                  )}
+                  <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1.5">
+                    {group.items.map(renderStatTile)}
+                  </div>
+                </div>
+              ))}
             </CardContent>
           </Card>
         );
