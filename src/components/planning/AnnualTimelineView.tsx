@@ -55,6 +55,28 @@ function getIntensityColor(value: number) {
   return "#dc2626";
 }
 
+// Référentiel de couleurs 0→10 : vert clair → rouge foncé
+// Utilisé pour la barre de charge globale (moyenne des intensités sur l'intervalle)
+const LOAD_COLOR_SCALE: string[] = [
+  "#e5e7eb", // 0  - gris très clair (aucune charge)
+  "#bbf7d0", // 1  - vert très clair
+  "#86efac", // 2  - vert clair
+  "#4ade80", // 3  - vert
+  "#a3e635", // 4  - vert-jaune
+  "#facc15", // 5  - jaune
+  "#fbbf24", // 6  - jaune-orange
+  "#fb923c", // 7  - orange
+  "#f97316", // 8  - orange foncé
+  "#ef4444", // 9  - rouge
+  "#b91c1c", // 10 - rouge foncé
+];
+
+function getLoadColor(avg: number): string {
+  if (!isFinite(avg) || avg <= 0) return LOAD_COLOR_SCALE[0];
+  const idx = Math.max(0, Math.min(10, Math.round(avg)));
+  return LOAD_COLOR_SCALE[idx];
+}
+
 function IntensityDots({ value, max = 10 }: { value: number; max?: number }) {
   const displayDots = 5;
   const filled = Math.round((value / max) * displayDots);
