@@ -28,6 +28,9 @@ interface MatchScoreData {
   is_home: boolean;
   score_home: number | null;
   score_away: number | null;
+  effective_play_time?: number | null;
+  longest_play_sequence?: number | null;
+  average_play_sequence?: number | null;
 }
 
 interface TeamCumulativeStatsProps {
@@ -92,6 +95,31 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
       conceded += c;
     });
     return { scored, conceded, count: valid.length };
+  }, [matchesWithScores]);
+
+  // Aggregate effective play time / longest sequence / average sequence
+  const playTimeSummary = useMemo(() => {
+    const epts = matchesWithScores
+      .map(m => m.effective_play_time)
+      .filter((v): v is number => typeof v === "number" && v > 0);
+    const longs = matchesWithScores
+      .map(m => m.longest_play_sequence)
+      .filter((v): v is number => typeof v === "number" && v > 0);
+    const avgs = matchesWithScores
+      .map(m => m.average_play_sequence)
+      .filter((v): v is number => typeof v === "number" && v > 0);
+
+    if (epts.length === 0 && longs.length === 0 && avgs.length === 0) return null;
+
+    const avg = (arr: number[]) =>
+      arr.length > 0 ? Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10 : null;
+
+    return {
+      effectivePlayTime: avg(epts),
+      longestSequence: longs.length > 0 ? Math.max(...longs) : null,
+      averageSequence: avg(avgs),
+      count: matchesWithScores.length,
+    };
   }, [matchesWithScores]);
 
   const getCategoryIcon = (catKey: string) => {
@@ -186,6 +214,39 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
                   </div>
                 </div>
               )}
+              {/* Inject team play-time tiles (TJE / Séq. max / Séq. moy.) in "general" category */}
+              {isGeneral && playTimeSummary && (
+                <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1.5">
+                  {playTimeSummary.effectivePlayTime != null && (
+                    <div className="p-1.5 rounded-md text-center space-y-0 border bg-sky-500/10 border-sky-500/30">
+                      <p className="text-base font-bold text-sky-600 dark:text-sky-400 leading-tight">
+                        {playTimeSummary.effectivePlayTime}
+                      </p>
+                      <p className="text-[9px] text-muted-foreground leading-tight">Tps de jeu effectif (min)</p>
+                      <p className="text-[9px] text-muted-foreground leading-tight">Moy / match</p>
+                    </div>
+                  )}
+                  {playTimeSummary.longestSequence != null && (
+                    <div className="p-1.5 rounded-md text-center space-y-0 border bg-violet-500/10 border-violet-500/30">
+                      <p className="text-base font-bold text-violet-600 dark:text-violet-400 leading-tight">
+                        {playTimeSummary.longestSequence}
+                      </p>
+                      <p className="text-[9px] text-muted-foreground leading-tight">Séquence la + longue</p>
+                      <p className="text-[9px] text-muted-foreground leading-tight">Record équipe</p>
+                    </div>
+                  )}
+                  {playTimeSummary.averageSequence != null && (
+                    <div className="p-1.5 rounded-md text-center space-y-0 border bg-amber-500/10 border-amber-500/30">
+                      <p className="text-base font-bold text-amber-600 dark:text-amber-400 leading-tight">
+                        {playTimeSummary.averageSequence}
+                      </p>
+                      <p className="text-[9px] text-muted-foreground leading-tight">Séquence moyenne</p>
+                      <p className="text-[9px] text-muted-foreground leading-tight">Moy / match</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {(() => {
                 const labeledGroups = groups.filter(g => g.label);
                 const unlabeledGroups = groups.filter(g => !g.label);

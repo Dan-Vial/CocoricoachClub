@@ -47,6 +47,9 @@ interface MatchInfo {
   event_type?: string;
   score_home?: number | null;
   score_away?: number | null;
+  effective_play_time?: number | null;
+  longest_play_sequence?: number | null;
+  average_play_sequence?: number | null;
 }
 
 interface CumulativeStats {
@@ -83,7 +86,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
       if (uniqueMatchIds.length === 0) return [] as MatchInfo[];
       const { data, error } = await supabase
         .from("matches")
-        .select("id, match_date, opponent, is_home, location, match_time, competition, competition_stage, event_type, score_home, score_away")
+        .select("id, match_date, opponent, is_home, location, match_time, competition, competition_stage, event_type, score_home, score_away, effective_play_time, longest_play_sequence, average_play_sequence")
         .in("id", uniqueMatchIds)
         .order("match_date", { ascending: false });
       if (error) throw error;
@@ -1744,6 +1747,9 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
               is_home: m.is_home,
               score_home: m.score_home ?? null,
               score_away: m.score_away ?? null,
+              effective_play_time: m.effective_play_time ?? null,
+              longest_play_sequence: m.longest_play_sequence ?? null,
+              average_play_sequence: m.average_play_sequence ?? null,
             }))}
           />
         </div>
