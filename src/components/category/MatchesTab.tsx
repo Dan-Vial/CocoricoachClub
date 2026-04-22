@@ -8,7 +8,8 @@ import { PlayerCumulativeStats } from "./matches/PlayerCumulativeStats";
 import { BowlingCumulativeStats } from "@/components/bowling/BowlingCumulativeStats";
 
 import { CategoryPhotosTab } from "./photos/CategoryPhotosTab";
-import { startOfDay } from "date-fns";
+import { startOfDay, format } from "date-fns";
+import { fr } from "date-fns/locale";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
