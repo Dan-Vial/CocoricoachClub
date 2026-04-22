@@ -97,6 +97,31 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
     return { scored, conceded, count: valid.length };
   }, [matchesWithScores]);
 
+  // Aggregate effective play time / longest sequence / average sequence
+  const playTimeSummary = useMemo(() => {
+    const epts = matchesWithScores
+      .map(m => m.effective_play_time)
+      .filter((v): v is number => typeof v === "number" && v > 0);
+    const longs = matchesWithScores
+      .map(m => m.longest_play_sequence)
+      .filter((v): v is number => typeof v === "number" && v > 0);
+    const avgs = matchesWithScores
+      .map(m => m.average_play_sequence)
+      .filter((v): v is number => typeof v === "number" && v > 0);
+
+    if (epts.length === 0 && longs.length === 0 && avgs.length === 0) return null;
+
+    const avg = (arr: number[]) =>
+      arr.length > 0 ? Math.round((arr.reduce((s, v) => s + v, 0) / arr.length) * 10) / 10 : null;
+
+    return {
+      effectivePlayTime: avg(epts),
+      longestSequence: longs.length > 0 ? Math.max(...longs) : null,
+      averageSequence: avg(avgs),
+      count: matchesWithScores.length,
+    };
+  }, [matchesWithScores]);
+
   const getCategoryIcon = (catKey: string) => {
     switch (catKey) {
       case "scoring": return <Trophy className="h-4 w-4 text-primary" />;
