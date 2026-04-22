@@ -191,7 +191,7 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
                 const unlabeledGroups = groups.filter(g => !g.label);
                 return (
                   <>
-                    {/* Labeled sub-blocks rendered side-by-side */}
+                    {/* Labeled sub-blocks rendered side-by-side, color-coded by theme */}
                     {labeledGroups.length > 0 && (
                       <div
                         className="grid gap-2"
@@ -200,9 +200,9 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
                         {labeledGroups.map(group => (
                           <div
                             key={group.key}
-                            className="rounded-md border border-border/50 bg-muted/20 p-1.5 space-y-1"
+                            className={`rounded-md border p-1.5 space-y-1 ${group.color?.ring || "border-border/50"} ${group.color?.soft || "bg-muted/20"}`}
                           >
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-0.5">
+                            <p className={`text-[10px] font-semibold uppercase tracking-wide px-0.5 ${group.color?.accent || "text-muted-foreground"}`}>
                               {group.label}
                             </p>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
