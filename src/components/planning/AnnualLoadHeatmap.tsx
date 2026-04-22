@@ -238,19 +238,42 @@ export function AnnualLoadHeatmap({ year, categories, cycles, sessions }: Annual
           </div>
         </div>
 
-        {/* Legend */}
-        <div className="flex items-center gap-4 mt-3 px-3">
-          <span className="text-[10px] text-muted-foreground font-medium">Charge :</span>
-          <div className="flex items-center gap-1">
-            <span className="text-[9px] text-muted-foreground">Faible</span>
-            {[0.15, 0.35, 0.55, 0.75, 0.95].map((r, i) => (
-              <div
-                key={i}
-                className="w-4 h-3 rounded-sm"
-                style={{ backgroundColor: getHeatColor(r * 5, 5) }}
-              />
-            ))}
-            <span className="text-[9px] text-muted-foreground">Max</span>
+        {/* Legend — full 0 to 10 intensity scale */}
+        <div className="mt-4 px-3 space-y-2">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">
+              Échelle d'intensité
+            </span>
+            <span className="text-[10px] text-muted-foreground/70">
+              Charge prescrite par cycle (0 à 10)
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground w-3 text-right">0</span>
+            <div className="flex-1 flex h-4 rounded-md overflow-hidden border border-border/50">
+              {Array.from({ length: 11 }).map((_, i) => {
+                const [r, g, b] = intensityRgb(i);
+                return (
+                  <div
+                    key={i}
+                    className="flex-1 flex items-center justify-center text-[9px] font-bold"
+                    style={{
+                      backgroundColor: `rgb(${r}, ${g}, ${b})`,
+                      color: i >= 6 ? "#fff" : "#1e2333",
+                    }}
+                    title={`Intensité ${i}/10`}
+                  >
+                    {i}
+                  </div>
+                );
+              })}
+            </div>
+            <span className="text-[10px] text-muted-foreground w-5">10</span>
+          </div>
+          <div className="flex items-center justify-between text-[9px] text-muted-foreground/80 px-4">
+            <span>Faible · récupération</span>
+            <span>Modérée</span>
+            <span>Élevée · maximale</span>
           </div>
         </div>
       </div>
