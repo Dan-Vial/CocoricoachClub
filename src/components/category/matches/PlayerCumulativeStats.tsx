@@ -809,7 +809,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
 
                 doc.setFontSize(6.5);
                 doc.setTextColor(30, 41, 59);
-                const labelTxt = s.shortLabel.length > 18 ? s.shortLabel.substring(0, 18) : s.shortLabel;
+                const fullLabel = s.label || s.shortLabel;
+                const labelTxt = fullLabel.length > 30 ? fullLabel.substring(0, 28) + "…" : fullLabel;
                 doc.text(labelTxt, bx + 2, ry);
                 doc.text(s.computedFrom ? `${val}%` : String(val), cTotalX, ry, { align: "center" });
                 doc.text(avgVal || "—", cAvgX, ry, { align: "center" });
