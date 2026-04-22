@@ -885,12 +885,14 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                 doc.setTextColor(30, 41, 59);
                 doc.text(avgValTxt || (s.computedFrom ? `${totalVal}%` : "—"), cMoyX, ry, { align: "center" });
 
-                // +/-
+                // +/- (BOLD, color-coded)
                 if (matchesDataForCharts.length >= 2 && !s.computedFrom) {
+                  doc.setFont("helvetica", "bold");
                   if (prog > 0) doc.setTextColor(22, 163, 74);
                   else if (prog < 0) doc.setTextColor(220, 38, 38);
                   else doc.setTextColor(100, 116, 139);
                   doc.text(prog > 0 ? `+${prog}` : String(prog), cProgX, ry, { align: "center" });
+                  doc.setFont("helvetica", "normal");
                 } else {
                   doc.setTextColor(148, 163, 184);
                   doc.text("—", cProgX, ry, { align: "center" });
