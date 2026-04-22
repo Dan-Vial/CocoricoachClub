@@ -134,8 +134,35 @@ function drawVerticalText(
   maxLength: number,
 ) {
   if (!text) return;
-  const safe = text.length > maxLength ? text.slice(0, maxLength - 1) + "…" : text;
+  const safe = text.length > maxLength ? text.slice(0, Math.max(1, maxLength - 1)) + "…" : text;
   pdf.text(safe, x, y, { angle: 90 });
+}
+
+/**
+ * Auto-fit a font size so that `text` rendered vertically fits within `availableHeight` (mm).
+ * Returns the chosen font size and the (possibly truncated) text.
+ * - Starts from `maxFs`, shrinks down to `minFs`.
+ * - If even at `minFs` the text doesn't fit, it is truncated with an ellipsis.
+ */
+function fitVerticalText(
+  text: string,
+  availableHeight: number,
+  minFs: number,
+  maxFs: number,
+): { fontSize: number; text: string } {
+  if (!text) return { fontSize: minFs, text: "" };
+  const CHAR_RATIO = 0.55; // approximate char width / font size for helvetica
+  let fs = maxFs;
+  while (fs > minFs) {
+    const charsThatFit = Math.floor(availableHeight / (fs * CHAR_RATIO));
+    if (charsThatFit >= text.length) return { fontSize: fs, text };
+    fs -= 0.2;
+  }
+  // At minFs: truncate if needed
+  const charsAtMin = Math.max(1, Math.floor(availableHeight / (minFs * CHAR_RATIO)));
+  const finalText =
+    text.length > charsAtMin ? text.slice(0, Math.max(1, charsAtMin - 1)) + "…" : text;
+  return { fontSize: minFs, text: finalText };
 }
 
 // Draws a refined gold trophy/cup icon centered on (cx, cy)
