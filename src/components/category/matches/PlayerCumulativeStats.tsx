@@ -1216,6 +1216,84 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
         y += 10;
       });
 
+      // ===== Évolution & progression par stat (multi-compétitions) =====
+      if (matchesDataForCharts.length >= 2) {
+        const playerMatches = matchesDataForCharts.filter((m) => m.players[playerId]);
+        if (playerMatches.length >= 2) {
+          // New page for the evolution dossier (clean layout)
+          doc.addPage();
+          doc.setFillColor(hcR, hcG, hcB);
+          doc.rect(0, 0, pageW, 32, "F");
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(16);
+          doc.setFont("helvetica", "bold");
+          doc.text("Évolution & progression", 14, 14);
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "normal");
+          doc.text(`${player.playerName} • ${playerMatches.length} compétitions`, 14, 24);
+          doc.text(format(new Date(), "dd/MM/yyyy"), pageW - 14, 24, { align: "right" });
+          y = 40;
+
+          // Legend
+          doc.setFontSize(7);
+          doc.setTextColor(100, 116, 139);
+          doc.text(
+            "% calculé par rapport à la valeur précédente. Vert = progression, Rouge = régression.",
+            14,
+            y
+          );
+          y += 6;
+
+          // Build per-stat evolution data
+          const evoStats: StatEvolutionData[] = sportStats.map((s) => {
+            const points = playerMatches.map((m) => {
+              const psd = m.players[playerId]?.sportData || {};
+              let value = Number(psd[s.key] || 0);
+              if (s.computedFrom) {
+                const { successKey, totalKey, failureKey } = s.computedFrom;
+                const success = Number(psd[successKey] || 0);
+                const total = totalKey
+                  ? Number(psd[totalKey] || 0)
+                  : success + Number(psd[failureKey!] || 0);
+                value = total > 0 ? Math.round((success / total) * 100) : 0;
+              }
+              const matchInfo = allMatches.find((mm) => mm.id === m.matchId);
+              const compLabel = matchInfo?.competition || matchInfo?.opponent || m.matchLabel;
+              return {
+                matchId: m.matchId,
+                matchDate: m.matchDate,
+                matchLabel: compLabel,
+                value,
+              };
+            });
+            // Skip stats where all values are 0
+            const hasData = points.some((p) => p.value !== 0);
+            return {
+              statKey: s.key,
+              statLabel: s.label,
+              isPercent: !!s.computedFrom,
+              points: hasData ? points : [],
+            };
+          }).filter((s) => s.points.length > 0);
+
+          // Render: chart on left + table on right per stat
+          const halfW = (pageW - 28 - 6) / 2;
+          evoStats.forEach((evo) => {
+            const tableH = 14 + evo.points.length * 6 + 8;
+            const blockH = Math.max(45, tableH);
+            if (y + blockH > pageH - 10) {
+              doc.addPage();
+              y = 15;
+            }
+            // Chart on left
+            drawStatLineChart(doc, evo, 14, y, halfW, 42);
+            // Table on right
+            drawStatEvolutionTable(doc, evo, 14 + halfW + 6, y, halfW, pageH);
+            y += blockH + 4;
+          });
+        }
+      }
+
       // Kicking section for rugby
       if (isRugby && kickingByPlayerFinal[playerId]) {
         const k = kickingByPlayerFinal[playerId];
