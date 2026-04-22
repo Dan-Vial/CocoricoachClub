@@ -363,26 +363,57 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
       }
 
       if (cycle && cycle.name) {
-        const colHeight = 31 * dayRowH;
-        const colCenterX = xCol + subColW / 2;
-        const colBottom = gridTop + monthHeaderH + colHeight - 2;
+        // Restrict the text band to the days actually colored (cycle range within this month)
+        const cs = startOfDay(new Date(cycle.start_date));
+        const ce = startOfDay(new Date(cycle.end_date));
+        const monthStart = new Date(data.year, m, 1);
+        const monthEnd = new Date(data.year, m, daysInMonth);
+        const firstDay = cs < monthStart ? 1 : cs.getDate();
+        const lastDay = ce > monthEnd ? daysInMonth : ce.getDate();
+        const bandTop = gridTop + monthHeaderH + (firstDay - 1) * dayRowH;
+        const bandBottom = gridTop + monthHeaderH + lastDay * dayRowH;
+        const bandHeight = bandBottom - bandTop;
+
         const lum = luminance(colColor);
-        pdf.setTextColor(...(lum > 0.55 ? ([30, 35, 50] as [number, number, number]) : ([255, 255, 255] as [number, number, number])));
-        pdf.setFont("helvetica", "bold");
-        const fs = Math.max(5, Math.min(7.5, subColW * 0.85));
-        pdf.setFontSize(fs);
-        const maxChars = Math.floor((colHeight - 4) / (fs * 0.42));
-        // Build label with cycle type prefix (PG / PS / PC / Récup)
+        const lightOnDark = lum <= 0.55;
+
+        // Map cycle types to short codes
         const typeMap: Record<string, string> = {
           general_prep: "PG",
           specific_prep: "PS",
           competition: "PC",
-          recovery: "Récup",
-          transition: "Trans",
+          recovery: "RÉCUP",
+          transition: "TRANS",
         };
-        const typeLabel = cycle.cycle_type ? (typeMap[cycle.cycle_type] || cycle.cycle_type.toUpperCase()) : "";
-        const fullLabel = typeLabel ? `${typeLabel} • ${cycle.name}` : cycle.name;
-        drawVerticalText(pdf, fullLabel, colCenterX + fs * 0.35, colBottom, maxChars);
+        const typeLabel = cycle.cycle_type
+          ? (typeMap[cycle.cycle_type] || cycle.cycle_type.toUpperCase())
+          : "";
+
+        // ── Title (cycle name) — centered in the colored band ──
+        const titleFs = Math.max(5, Math.min(7.5, subColW * 0.85));
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(titleFs);
+        pdf.setTextColor(...(lightOnDark ? ([255, 255, 255] as [number, number, number]) : ([30, 35, 50] as [number, number, number])));
+        const titleMaxChars = Math.floor((bandHeight - 4) / (titleFs * 0.42));
+        const titleX = xCol + subColW / 2 + titleFs * 0.35;
+        const titleY = bandBottom - 2;
+        drawVerticalText(pdf, cycle.name, titleX, titleY, titleMaxChars);
+
+        // ── Type label (PG / PS / PC / RÉCUP) — on its own line, left side of column, accent color ──
+        if (typeLabel) {
+          const typeFs = Math.max(4.5, Math.min(6, subColW * 0.7));
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(typeFs);
+          // Accent color: gold on dark backgrounds, deep blue on light backgrounds
+          if (lightOnDark) {
+            pdf.setTextColor(255, 213, 79); // gold accent
+          } else {
+            pdf.setTextColor(30, 90, 180); // deep blue accent
+          }
+          const typeMaxChars = Math.floor((bandHeight - 4) / (typeFs * 0.42));
+          const typeX = xCol + typeFs * 0.9 + 0.6; // left side of column
+          drawVerticalText(pdf, typeLabel, typeX, titleY, typeMaxChars);
+        }
       }
     }
 
