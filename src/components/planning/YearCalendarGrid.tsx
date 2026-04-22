@@ -157,7 +157,12 @@ export function YearCalendarGrid({ year, cycles, sessions, matches, onDateRangeS
                     {(hasSession || matchInfo) && (
                       <div className="flex gap-px mt-px">
                         {hasSession && <div className="w-1 h-1 rounded-full bg-primary" />}
-                        {matchInfo && <div className="w-1 h-1 rounded-full bg-destructive" />}
+                        {matchInfo && (
+                          <div
+                            className="w-1 h-1 rounded-full"
+                            style={{ backgroundColor: "hsl(45 93% 50%)" }}
+                          />
+                        )}
                       </div>
                     )}
                     {activeCycles.length > 1 && (
