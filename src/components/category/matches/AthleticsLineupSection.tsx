@@ -63,7 +63,8 @@ export function AthleticsLineupSection({
       <p className="text-sm text-muted-foreground">
         Pour chaque athlète, coche une ou plusieurs épreuves sur lesquelles tu
         l'inscris dans cette compétition. L'ordre dans lequel tu coches définit
-        l'ordre de départ.
+        l'ordre de départ. Clique sur le badge numéroté pour mettre une épreuve
+        en premier.
       </p>
       {players.map((player) => {
         const playerEntries = entries.filter(
@@ -132,13 +133,26 @@ export function AthleticsLineupSection({
                         }
                       />
                       {isSelected && order != null && (
-                        <Badge
-                          variant="default"
-                          className="h-5 min-w-5 px-1.5 text-[10px] font-bold"
-                          title="Ordre de départ"
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onPromoteFirst?.(
+                              player.playerId,
+                              pair.discipline,
+                              pair.specialty,
+                            );
+                          }}
+                          title={
+                            order === 1
+                              ? "Première épreuve"
+                              : "Mettre cette épreuve en premier"
+                          }
+                          className="inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold hover:bg-primary/80 transition-colors"
                         >
                           {order}
-                        </Badge>
+                        </button>
                       )}
                       <span className="text-sm">
                         {specLabel ? (
