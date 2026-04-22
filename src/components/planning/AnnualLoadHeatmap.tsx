@@ -32,14 +32,33 @@ interface AnnualLoadHeatmapProps {
   sessions: { id: string; session_date: string }[];
 }
 
+// Shared green → yellow → red gradient (0..10 scale)
+// Mirrors the PDF "Moyenne de tous les cycles" gradient for visual consistency.
+function intensityRgb(value0to10: number): [number, number, number] {
+  const t = Math.max(0, Math.min(1, value0to10 / 10));
+  // 0 → green (76,175,80), 0.5 → amber (255,193,7), 1 → red (229,57,53)
+  if (t <= 0.5) {
+    const u = t / 0.5;
+    return [
+      Math.round(76 + (255 - 76) * u),
+      Math.round(175 + (193 - 175) * u),
+      Math.round(80 + (7 - 80) * u),
+    ];
+  }
+  const u = (t - 0.5) / 0.5;
+  return [
+    Math.round(255 + (229 - 255) * u),
+    Math.round(193 + (57 - 193) * u),
+    Math.round(7 + (53 - 7) * u),
+  ];
+}
+
 function getHeatColor(value: number, max: number): string {
   if (max === 0 || value === 0) return "transparent";
   const ratio = Math.min(value / max, 1);
-  // Green → Yellow → Orange → Red
-  if (ratio <= 0.25) return `rgba(34, 197, 94, ${0.15 + ratio * 2})`;
-  if (ratio <= 0.5) return `rgba(234, 179, 8, ${0.2 + ratio})`;
-  if (ratio <= 0.75) return `rgba(249, 115, 22, ${0.3 + ratio * 0.6})`;
-  return `rgba(239, 68, 68, ${0.4 + ratio * 0.5})`;
+  const [r, g, b] = intensityRgb(ratio * 10);
+  // Slight transparency so the underlying grid stays subtle
+  return `rgba(${r}, ${g}, ${b}, ${0.55 + ratio * 0.4})`;
 }
 
 export function AnnualLoadHeatmap({ year, categories, cycles, sessions }: AnnualLoadHeatmapProps) {
@@ -219,19 +238,42 @@ export function AnnualLoadHeatmap({ year, categories, cycles, sessions }: Annual
           </div>
         </div>
 
-        {/* Legend */}
-        <div className="flex items-center gap-4 mt-3 px-3">
-          <span className="text-[10px] text-muted-foreground font-medium">Charge :</span>
-          <div className="flex items-center gap-1">
-            <span className="text-[9px] text-muted-foreground">Faible</span>
-            {[0.15, 0.35, 0.55, 0.75, 0.95].map((r, i) => (
-              <div
-                key={i}
-                className="w-4 h-3 rounded-sm"
-                style={{ backgroundColor: getHeatColor(r * 5, 5) }}
-              />
-            ))}
-            <span className="text-[9px] text-muted-foreground">Max</span>
+        {/* Legend — full 0 to 10 intensity scale */}
+        <div className="mt-4 px-3 space-y-2">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">
+              Échelle d'intensité
+            </span>
+            <span className="text-[10px] text-muted-foreground/70">
+              Charge prescrite par cycle (0 à 10)
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground w-3 text-right">0</span>
+            <div className="flex-1 flex h-4 rounded-md overflow-hidden border border-border/50">
+              {Array.from({ length: 11 }).map((_, i) => {
+                const [r, g, b] = intensityRgb(i);
+                return (
+                  <div
+                    key={i}
+                    className="flex-1 flex items-center justify-center text-[9px] font-bold"
+                    style={{
+                      backgroundColor: `rgb(${r}, ${g}, ${b})`,
+                      color: i >= 6 ? "#fff" : "#1e2333",
+                    }}
+                    title={`Intensité ${i}/10`}
+                  >
+                    {i}
+                  </div>
+                );
+              })}
+            </div>
+            <span className="text-[10px] text-muted-foreground w-5">10</span>
+          </div>
+          <div className="flex items-center justify-between text-[9px] text-muted-foreground/80 px-4">
+            <span>Faible · récupération</span>
+            <span>Modérée</span>
+            <span>Élevée · maximale</span>
           </div>
         </div>
       </div>

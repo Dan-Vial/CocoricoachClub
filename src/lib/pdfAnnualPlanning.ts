@@ -241,8 +241,9 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
   const intensityRowH = 5.5;
   const intensityRows = data.categories.length + 1;
   const intensityBlockH = 8 + intensityRows * intensityRowH;
+  const intensityScaleH = 9; // 0→10 color scale legend
   const legendH = 8;
-  const footerH = legendH + intensityBlockH + competitionsBlockH + 4;
+  const footerH = legendH + intensityBlockH + intensityScaleH + competitionsBlockH + 4;
 
   const gridTop = 22;
   const gridBottom = pageH - footerH;
@@ -580,8 +581,63 @@ function renderCalendarPage(pdf: jsPDF, data: AnnualPlanningPdfData) {
   // Aggregate row uses a neutral gray label background; cell colors handled inside (green→red)
   drawIntensityRow(orderedCats.length, "Moyenne de tous les cycles", [90, 100, 120], null);
 
+  // ── Intensity color scale 0 → 10 (shared with planning Charge view) ──
+  const scaleTop = intRowsTop + intensityRows * intensityRowH + 2;
+  const scaleLabelW = intLabelW;
+  const scaleBarX = margin + scaleLabelW;
+  const scaleBarW = gridRight - scaleBarX;
+  const scaleBarH = 4.5;
+
+  // Label cell
+  pdf.setFillColor(240, 242, 246);
+  pdf.rect(margin, scaleTop, scaleLabelW, scaleBarH, "F");
+  pdf.setDrawColor(210, 213, 222);
+  pdf.setLineWidth(0.1);
+  pdf.rect(margin, scaleTop, scaleLabelW, scaleBarH, "S");
+  pdf.setTextColor(40, 45, 60);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(6.5);
+  pdf.text("Échelle 0 → 10", margin + 2, scaleTop + scaleBarH / 2 + 1.2);
+
+  // 11 colored cells (0..10)
+  const cellW = scaleBarW / 11;
+  for (let i = 0; i <= 10; i++) {
+    const t = i / 10;
+    let r: number, g: number, b: number;
+    if (t <= 0.5) {
+      const u = t / 0.5;
+      r = Math.round(76 + (255 - 76) * u);
+      g = Math.round(175 + (193 - 175) * u);
+      b = Math.round(80 + (7 - 80) * u);
+    } else {
+      const u = (t - 0.5) / 0.5;
+      r = Math.round(255 + (229 - 255) * u);
+      g = Math.round(193 + (57 - 193) * u);
+      b = Math.round(7 + (53 - 7) * u);
+    }
+    const x = scaleBarX + i * cellW;
+    pdf.setFillColor(r, g, b);
+    pdf.rect(x, scaleTop, cellW, scaleBarH, "F");
+    pdf.setDrawColor(255, 255, 255);
+    pdf.setLineWidth(0.15);
+    pdf.rect(x, scaleTop, cellW, scaleBarH, "S");
+    // Number inside
+    const useWhite = t > 0.55;
+    pdf.setTextColor(useWhite ? 255 : 30, useWhite ? 255 : 35, useWhite ? 255 : 50);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(6);
+    pdf.text(String(i), x + cellW / 2, scaleTop + scaleBarH / 2 + 1.1, { align: "center" });
+  }
+  // Sub-labels under the bar
+  pdf.setFont("helvetica", "italic");
+  pdf.setFontSize(5.8);
+  pdf.setTextColor(110, 115, 130);
+  pdf.text("Faible · récupération", scaleBarX + 1, scaleTop + scaleBarH + 3);
+  pdf.text("Modérée", scaleBarX + scaleBarW / 2, scaleTop + scaleBarH + 3, { align: "center" });
+  pdf.text("Élevée · maximale", scaleBarX + scaleBarW - 1, scaleTop + scaleBarH + 3, { align: "right" });
+
   // ── Competitions list ──
-  let competitionsTop = intRowsTop + intensityRows * intensityRowH + 4;
+  let competitionsTop = scaleTop + scaleBarH + 6;
   if (sortedMatches.length > 0) {
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(7.5);
