@@ -817,6 +817,138 @@ export function CompetitionRoundsDialog({
       toast.error(error?.message || "Erreur lors de l'enregistrement");
     },
   });
+  const addRound = (entryKey: string) => {
+    const player = playerRoundsData.find((p) => p.entryKey === entryKey);
+    const newRoundNumber = player && player.rounds.length > 0
+      ? Math.max(...player.rounds.map((r) => r.round_number)) + 1
+      : 1;
+
+    setPlayerRoundsData((prev) =>
+      prev.map((p) => {
+        if (p.entryKey === entryKey) {
+          return {
+            ...p,
+            rounds: [
+              ...p.rounds,
+              {
+                round_number: newRoundNumber,
+                opponent_name: "",
+                result: "",
+                notes: "",
+                stats: {},
+                phase: "",
+                isLocked: false,
+                bowlingFrames: undefined,
+              },
+            ],
+          };
+        }
+        return p;
+      }),
+    );
+  };
+
+  const removeRound = (entryKey: string, roundNumber: number) => {
+    setPlayerRoundsData(prev => prev.map(p => {
+      if (p.entryKey === entryKey) {
+        return {
+          ...p,
+          rounds: p.rounds.filter(r => r.round_number !== roundNumber),
+        };
+      }
+      return p;
+    }));
+  };
+
+  const updateRound = (entryKey: string, roundNumber: number, updates: Partial<Round>) => {
+    setPlayerRoundsData(prev => prev.map(p => {
+      if (p.entryKey === entryKey) {
+        return {
+          ...p,
+          rounds: p.rounds.map(r => 
+            r.round_number === roundNumber ? { ...r, ...updates } : r
+          ),
+        };
+      }
+      return p;
+    }));
+  };
+
+  const updateRoundStat = (entryKey: string, roundNumber: number, statKey: string, value: number) => {
+    setPlayerRoundsData(prev => prev.map(p => {
+      if (p.entryKey === entryKey) {
+        return {
+          ...p,
+          rounds: p.rounds.map(r => 
+            r.round_number === roundNumber 
+              ? { ...r, stats: { ...r.stats, [statKey]: value } } 
+              : r
+          ),
+        };
+      }
+      return p;
+    }));
+  };
+
+  // Format time from seconds to MM:SS.ms
+  const formatTime = (seconds: number | undefined): string => {
+    if (!seconds) return "";
+    const mins = Math.floor(seconds / 60);
+    const secs = (seconds % 60).toFixed(2);
+    return `${mins}:${secs.padStart(5, '0')}`;
+  };
+
+  // Parse time from MM:SS.ms to seconds
+  const parseTime = (timeStr: string): number | undefined => {
+    if (!timeStr) return undefined;
+    const parts = timeStr.split(':');
+    if (parts.length === 2) {
+      const mins = parseInt(parts[0]) || 0;
+      const secs = parseFloat(parts[1]) || 0;
+      return mins * 60 + secs;
+    }
+    return parseFloat(timeStr) || undefined;
+  };
+
+  const hasLineup = lineup && lineup.length > 0;
+  const selectedPlayer = playerRoundsData.find(p => p.entryKey === selectedPlayerId);
+
+  // Calculate aggregated stats for a player
+  const calculateAggregatedStats = (rounds: Round[]) => {
+    const aggregated: Record<string, number> = {};
+    const counts: Record<string, number> = {};
+    
+    rounds.forEach(round => {
+      Object.entries(round.stats).forEach(([key, value]) => {
+        if (aggregated[key] === undefined) {
+          aggregated[key] = 0;
+          counts[key] = 0;
+        }
+        aggregated[key] += value;
+        counts[key]++;
+      });
+    });
+
+    // Calculate wins/losses for result tracking
+    const wins = rounds.filter(r => r.result === "win").length;
+    const losses = rounds.filter(r => r.result === "loss").length;
+    const draws = rounds.filter(r => r.result === "draw").length;
+    
+    // Aviron: best time and average ranking
+    const timesWithValues = rounds.filter(r => r.final_time_seconds);
+    const bestTime = timesWithValues.length > 0 
+      ? Math.min(...timesWithValues.map(r => r.final_time_seconds!)) 
+      : undefined;
+    const rankingsWithValues = rounds.filter(r => r.ranking);
+    const avgRanking = rankingsWithValues.length > 0
+      ? rankingsWithValues.reduce((sum, r) => sum + r.ranking!, 0) / rankingsWithValues.length
+      : undefined;
+
+    return { aggregated, counts, wins, losses, draws, total: rounds.length, bestTime, avgRanking };
+  };
+
+
+  const selectedPlayer = playerRoundsData.find((p) => p.entryKey === selectedPlayerId);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
