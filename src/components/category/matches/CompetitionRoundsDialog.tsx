@@ -518,6 +518,8 @@ export function CompetitionRoundsDialog({
     }));
   };
 
+  const [keepOpenAfterSave, setKeepOpenAfterSave] = useState(false);
+
   const saveRounds = useMutation({
     mutationFn: async () => {
       // For each player, save their crew info and rounds
@@ -684,12 +686,20 @@ export function CompetitionRoundsDialog({
       queryClient.invalidateQueries({ queryKey: ["athletics_records_matrix", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["athletics_records_dialog", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["athletics_minimas_matrix", categoryId] });
-      toast.success("Données et charge match enregistrées");
-      onOpenChange(false);
+      if (keepOpenAfterSave) {
+        // Re-sync local state with freshly persisted rounds (so IDs / locked flags refresh)
+        setIsDataInitialized(false);
+        toast.success("Enregistré — tu peux sélectionner un autre athlète");
+        setKeepOpenAfterSave(false);
+      } else {
+        toast.success("Données et charge match enregistrées");
+        onOpenChange(false);
+      }
     },
     onError: (error) => {
       console.error("Error saving rounds:", error);
       toast.error("Erreur lors de l'enregistrement");
+      setKeepOpenAfterSave(false);
     },
   });
 
@@ -1755,12 +1765,28 @@ export function CompetitionRoundsDialog({
           </Tabs>
         )}
 
-        <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0 bg-background">
+        <div className="flex flex-wrap justify-end gap-2 pt-4 border-t flex-shrink-0 bg-background">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuler
           </Button>
-          <Button onClick={() => saveRounds.mutate()} disabled={saveRounds.isPending}>
-            {saveRounds.isPending ? "Enregistrement..." : "Enregistrer"}
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setKeepOpenAfterSave(true);
+              saveRounds.mutate();
+            }}
+            disabled={saveRounds.isPending}
+          >
+            {saveRounds.isPending && keepOpenAfterSave ? "Enregistrement..." : "Enregistrer et continuer"}
+          </Button>
+          <Button
+            onClick={() => {
+              setKeepOpenAfterSave(false);
+              saveRounds.mutate();
+            }}
+            disabled={saveRounds.isPending}
+          >
+            {saveRounds.isPending && !keepOpenAfterSave ? "Enregistrement..." : "Enregistrer et fermer"}
           </Button>
         </div>
       </DialogContent>
