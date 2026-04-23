@@ -29,6 +29,7 @@ import { useStatPreferences } from "@/hooks/use-stat-preferences";
 import { BowlingOilPatternSection } from "./BowlingOilPatternSection";
 import { BowlingScoreSheet, FrameData, BowlingStats } from "@/components/athlete-portal/BowlingScoreSheet";
 import { isAthletismeCategory } from "@/lib/constants/sportTypes";
+import { getDisciplineLabel as getAthleticsDisciplineLabel } from "@/lib/constants/athleticProfiles";
 import { syncAthleticsRecordsFromRounds } from "@/lib/athletics/syncRecordsFromCompetition";
 import { BowlingBlockManager, type BowlingBlock, type Round as BowlingRound, BOWLING_COMPETITION_CATEGORIES, BOWLING_PHASES } from "@/components/bowling/BowlingBlockManager";
 import { BowlingCompetitionSummary } from "@/components/bowling/BowlingCompetitionSummary";
@@ -964,36 +965,115 @@ export function CompetitionRoundsDialog({
         </DialogHeader>
 
         {/* Player selector */}
-        <div className="space-y-2 flex-shrink-0">
-          <Label className="text-sm font-medium">Sélectionner un athlète</Label>
-          <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Choisir un athlète..." />
-            </SelectTrigger>
-            <SelectContent className="z-[200]">
-              {playerRoundsData.map((player) => (
-                <SelectItem 
-                  key={player.entryKey} 
-                  value={player.entryKey}
-                  textValue={`${player.playerName}${player.specialty ? ` ${player.specialty}` : player.discipline ? ` ${player.discipline}` : ""}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span>{player.playerName}</span>
-                    {isAthletics && player.discipline && (
-                      <Badge variant="outline" className="text-xs">{player.specialty || player.discipline}</Badge>
-                    )}
-                    {isAviron && player.boat_type && (
-                      <Badge variant="outline" className="text-xs">{player.boat_type}</Badge>
-                    )}
-                    <Badge variant="secondary" className="text-xs">
-                      {player.rounds.length} {player.rounds.length === 1 ? roundLabel.toLowerCase() : roundLabelPlural.toLowerCase()}
-                    </Badge>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {isAthletics ? (
+          <div className="space-y-2 flex-shrink-0">
+            <Label className="text-sm font-medium">
+              Athlètes inscrits ({playerRoundsData.length})
+            </Label>
+            {playerRoundsData.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic px-1">
+                Aucun athlète inscrit. Ajoute des participants depuis la composition de la compétition.
+              </p>
+            ) : (
+              <ScrollArea className="max-h-[260px] pr-2">
+                <div className="space-y-3">
+                  {(() => {
+                    // Group athletes by discipline (then specialty)
+                    const groups = new Map<string, PlayerRounds[]>();
+                    playerRoundsData.forEach((p) => {
+                      const groupKey = p.discipline || "autre";
+                      if (!groups.has(groupKey)) groups.set(groupKey, []);
+                      groups.get(groupKey)!.push(p);
+                    });
+                    const orderedGroups = Array.from(groups.entries()).sort(([a], [b]) =>
+                      a.localeCompare(b),
+                    );
+                    return orderedGroups.map(([discKey, entries]) => {
+                      const discLabel =
+                        discKey === "autre" ? "Sans discipline" : getAthleticsDisciplineLabel(discKey);
+                      return (
+                        <div key={discKey} className="space-y-1.5">
+                          <div className="flex items-center gap-2 px-1">
+                            <Trophy className="h-3.5 w-3.5 text-primary" />
+                            <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                              {discLabel}
+                            </p>
+                            <span className="text-[10px] text-muted-foreground">
+                              ({entries.length} athlète{entries.length > 1 ? "s" : ""})
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {entries.map((player) => {
+                              const isSelected = player.entryKey === selectedPlayerId;
+                              return (
+                                <button
+                                  key={player.entryKey}
+                                  type="button"
+                                  onClick={() => setSelectedPlayerId(player.entryKey)}
+                                  className={`text-left rounded-xl border p-2.5 transition-all ${
+                                    isSelected
+                                      ? "border-primary bg-primary/10 shadow-sm ring-1 ring-primary/40"
+                                      : "border-border bg-card hover:bg-accent/40 hover:border-primary/30"
+                                  }`}
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-sm font-medium truncate">{player.playerName}</p>
+                                      {(player.specialty || player.discipline) && (
+                                        <Badge variant="outline" className="mt-1 text-[10px]">
+                                          {player.specialty || player.discipline}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <Badge
+                                      variant={player.rounds.length > 0 ? "default" : "secondary"}
+                                      className="text-[10px] shrink-0"
+                                    >
+                                      {player.rounds.length} {roundLabel.toLowerCase()}
+                                      {player.rounds.length > 1 ? "s" : ""}
+                                    </Badge>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-2 flex-shrink-0">
+            <Label className="text-sm font-medium">Sélectionner un athlète</Label>
+            <Select value={selectedPlayerId} onValueChange={setSelectedPlayerId}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Choisir un athlète..." />
+              </SelectTrigger>
+              <SelectContent className="z-[200]">
+                {playerRoundsData.map((player) => (
+                  <SelectItem 
+                    key={player.entryKey} 
+                    value={player.entryKey}
+                    textValue={`${player.playerName}${player.specialty ? ` ${player.specialty}` : player.discipline ? ` ${player.discipline}` : ""}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>{player.playerName}</span>
+                      {isAviron && player.boat_type && (
+                        <Badge variant="outline" className="text-xs">{player.boat_type}</Badge>
+                      )}
+                      <Badge variant="secondary" className="text-xs">
+                        {player.rounds.length} {player.rounds.length === 1 ? roundLabel.toLowerCase() : roundLabelPlural.toLowerCase()}
+                      </Badge>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {selectedPlayer && (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 min-h-0 flex flex-col overflow-hidden">
