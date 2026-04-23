@@ -548,6 +548,11 @@ export function CompetitionRoundsDialog({
           .eq("player_id", pid);
       }
 
+      // Counter to ensure unique round_number per player when an athlete is registered
+      // on multiple events (e.g. David on 110mH and 60mH share the same player_id but
+      // need distinct round_numbers because of the UNIQUE(match_id, player_id, round_number)).
+      const roundNumberCounters: Record<string, number> = {};
+
       // For each lineup entry, save crew info and insert rounds
       for (const playerData of playerRoundsData) {
         // Update crew info in match_lineups if Aviron
@@ -565,12 +570,16 @@ export function CompetitionRoundsDialog({
 
         // Insert new rounds
         for (const round of playerData.rounds) {
+          // Allocate a unique round_number per player_id across all entryKeys
+          const nextNumber = (roundNumberCounters[playerData.playerId] ?? 0) + 1;
+          roundNumberCounters[playerData.playerId] = nextNumber;
+
           const { data: roundData, error: roundError } = await supabase
             .from("competition_rounds")
             .insert({
               match_id: matchId,
               player_id: playerData.playerId,
-              round_number: round.round_number,
+              round_number: nextNumber,
               opponent_name: round.opponent_name || null,
               result: round.result || null,
               notes: round.notes || null,
@@ -603,6 +612,9 @@ export function CompetitionRoundsDialog({
             ...(round.ballData ? { ballData: round.ballData } : {}),
             ...(roundBlock?.debriefing ? { blockDebriefing: roundBlock.debriefing } : {}),
             ...(roundBlock ? { trackPockets: roundBlock.trackPockets } : {}),
+            // Tag round with its lineup discipline/specialty so we can re-group on reload
+            ...(playerData.discipline ? { _discipline: playerData.discipline } : {}),
+            ...(playerData.specialty ? { _specialty: playerData.specialty } : {}),
           };
           
           if (Object.keys(statDataToSave).length > 0) {
