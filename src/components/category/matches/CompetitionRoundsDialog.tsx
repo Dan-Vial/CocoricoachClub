@@ -143,7 +143,21 @@ export function CompetitionRoundsDialog({
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
   const [isDataInitialized, setIsDataInitialized] = useState(false);
   const [bowlingBlocks, setBowlingBlocks] = useState<Record<string, BowlingBlock[]>>({});
+  // Tracks how many attempts to show per round (athletics throws/jumps).
+  // Key: `${entryKey}|${round_number}`. Default 3, user can request more via "+1 essai".
+  const [extraAttempts, setExtraAttempts] = useState<Record<string, number>>({});
   const queryClient = useQueryClient();
+
+  const ATTEMPT_KEYS = ["attempt1", "attempt2", "attempt3", "attempt4", "attempt5", "attempt6"] as const;
+  const getAttemptVisibleCount = (entryKey: string, round: Round): number => {
+    const requested = extraAttempts[`${entryKey}|${round.round_number}`];
+    // Show at least 3, and as many as needed for any non-zero attempt already saved.
+    const filledMax = ATTEMPT_KEYS.reduce((max, k, i) => {
+      const v = round.stats?.[k];
+      return (v && v !== 0) ? Math.max(max, i + 1) : max;
+    }, 0);
+    return Math.min(6, Math.max(3, filledMax, requested ?? 0));
+  };
 
   const { stats: filteredSportStats, hasCustomPreferences } = useStatPreferences({ categoryId, sportType });
   const sportStats = hasCustomPreferences ? filteredSportStats : (filteredSportStats.length > 0 ? filteredSportStats : getStatsForSport(sportType));
@@ -1506,12 +1520,68 @@ export function CompetitionRoundsDialog({
                             return (
                             <div className="space-y-3">
                               {playerCats.map(cat => {
-                                const categoryStats = playerStats.filter(s => s.category === cat.key);
-                                if (categoryStats.length === 0) return null;
+                                const categoryStatsAll = playerStats.filter(s => s.category === cat.key);
+                                if (categoryStatsAll.length === 0) return null;
+
+                                // Athletics throws / jumps : on isole les essais (attempt1..attempt6)
+                                // pour les afficher dans un bloc dynamique (3 par défaut + bouton +1).
+                                const isAthleticsAttemptCat = isAthletics && categoryStatsAll.some(s => s.key.startsWith("attempt"));
+                                const attemptStats = isAthleticsAttemptCat
+                                  ? ATTEMPT_KEYS.map(k => categoryStatsAll.find(s => s.key === k)).filter(Boolean) as StatField[]
+                                  : [];
+                                const categoryStats = isAthleticsAttemptCat
+                                  ? categoryStatsAll.filter(s => !s.key.startsWith("attempt"))
+                                  : categoryStatsAll;
                                 const subGroups = groupStatsByTheme(cat.key, categoryStats);
+                                const visibleAttemptCount = isAthleticsAttemptCat
+                                  ? getAttemptVisibleCount(selectedPlayer.entryKey, round)
+                                  : 0;
+
                                 return (
                                   <div key={cat.key} className="space-y-2">
                                     <Label className="text-xs font-medium text-primary">{cat.label}</Label>
+                                    {/* Bloc essais athlétisme (lancers / sauts) */}
+                                    {isAthleticsAttemptCat && attemptStats.length > 0 && (
+                                      <div className="rounded-md border border-border/40 p-2 bg-muted/30">
+                                        <div className="flex items-center justify-between mb-1.5">
+                                          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                            Essais
+                                          </p>
+                                          {!round.isLocked && visibleAttemptCount < 6 && (
+                                            <Button
+                                              type="button"
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-6 gap-1 text-xs"
+                                              onClick={() =>
+                                                setExtraAttempts(prev => ({
+                                                  ...prev,
+                                                  [`${selectedPlayer.entryKey}|${round.round_number}`]: visibleAttemptCount + 1,
+                                                }))
+                                              }
+                                            >
+                                              <Plus className="h-3 w-3" /> Essai
+                                            </Button>
+                                          )}
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2">
+                                          {attemptStats.slice(0, visibleAttemptCount).map(stat => (
+                                            <div key={stat.key}>
+                                              <Label className="text-[10px] text-muted-foreground">{stat.shortLabel}</Label>
+                                              <Input
+                                                type="number"
+                                                value={round.stats[stat.key] || 0}
+                                                onChange={(e) => updateRoundStat(selectedPlayer.entryKey, round.round_number, stat.key, parseFloat(e.target.value) || 0)}
+                                                min={stat.min ?? 0}
+                                                max={stat.max}
+                                                className="h-7 text-sm"
+                                                disabled={round.isLocked}
+                                              />
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
                                     {subGroups.map(group => (
                                       <div
                                         key={group.key}
