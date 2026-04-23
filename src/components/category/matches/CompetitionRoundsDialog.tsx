@@ -618,30 +618,38 @@ export function CompetitionRoundsDialog({
           const nextNumber = (roundNumberCounters[playerData.playerId] ?? 0) + 1;
           roundNumberCounters[playerData.playerId] = nextNumber;
 
+          const roundPayload = {
+            match_id: matchId,
+            player_id: playerData.playerId,
+            round_number: nextNumber,
+            opponent_name: round.opponent_name || null,
+            result: round.result || null,
+            notes: round.notes || null,
+            phase: round.phase || null,
+            lane: round.lane || null,
+            wind_conditions: round.wind_conditions || null,
+            wind_direction: round.wind_direction || null,
+            current_conditions: round.current_conditions || null,
+            temperature_celsius: round.temperature_celsius || null,
+            final_time_seconds: round.final_time_seconds ?? null,
+            ranking: round.ranking ?? null,
+            gap_to_first: round.gap_to_first || null,
+            is_personal_record: !!round.is_personal_record,
+          };
+          console.log(
+            "[CompetitionRoundsDialog] INSERT round",
+            { entry: playerData.entryKey, payload: roundPayload },
+          );
           const { data: roundData, error: roundError } = await supabase
             .from("competition_rounds")
-            .insert({
-              match_id: matchId,
-              player_id: playerData.playerId,
-              round_number: nextNumber,
-              opponent_name: round.opponent_name || null,
-              result: round.result || null,
-              notes: round.notes || null,
-              phase: round.phase || null,
-              lane: round.lane || null,
-              wind_conditions: round.wind_conditions || null,
-              wind_direction: round.wind_direction || null,
-              current_conditions: round.current_conditions || null,
-              temperature_celsius: round.temperature_celsius || null,
-              final_time_seconds: round.final_time_seconds || null,
-              ranking: round.ranking || null,
-              gap_to_first: round.gap_to_first || null,
-              is_personal_record: !!round.is_personal_record,
-            } as any)
+            .insert(roundPayload as any)
             .select()
             .single();
 
-          if (roundError) throw roundError;
+          if (roundError) {
+            console.error("[CompetitionRoundsDialog] INSERT round ERROR", roundError, roundPayload);
+            throw roundError;
+          }
 
           // Insert stats for this round (include bowling frames, ballData, blockId if present)
           // Find block debriefing for this round
@@ -660,16 +668,34 @@ export function CompetitionRoundsDialog({
             ...(playerData.discipline ? { _discipline: playerData.discipline } : {}),
             ...(playerData.specialty ? { _specialty: playerData.specialty } : {}),
           };
-          
-          if (Object.keys(statDataToSave).length > 0) {
+
+          // Always insert stat_data for athletics so the discipline tag is preserved,
+          // even when the user only filled time/ranking on the round header (no per-stat values).
+          const shouldInsertStats =
+            Object.keys(statDataToSave).length > 0 ||
+            !!playerData.discipline ||
+            !!playerData.specialty;
+
+          if (shouldInsertStats) {
             const insertData = {
               round_id: roundData.id,
               stat_data: JSON.parse(JSON.stringify(statDataToSave)),
             };
+            console.log(
+              "[CompetitionRoundsDialog] INSERT stat_data",
+              { round_id: roundData.id, stat_data: insertData.stat_data },
+            );
             const { error: statsError } = await supabase
               .from("competition_round_stats")
               .insert(insertData);
-            if (statsError) throw statsError;
+            if (statsError) {
+              console.error(
+                "[CompetitionRoundsDialog] INSERT stat_data ERROR",
+                statsError,
+                insertData,
+              );
+              throw statsError;
+            }
           }
         }
       }
