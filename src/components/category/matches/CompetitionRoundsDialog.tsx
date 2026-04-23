@@ -948,6 +948,410 @@ export function CompetitionRoundsDialog({
     return { aggregated, counts, wins, losses, draws, total: rounds.length, bestTime, avgRanking };
   };
 
+  const renderAthleticsRoundsInline = (player: PlayerRounds) => {
+    if (player.rounds.length === 0) {
+      return (
+        <div className="text-center py-6 text-muted-foreground space-y-4">
+          <p>Aucune épreuve enregistrée</p>
+          <p className="text-sm">Cliquez sur le bouton ci-dessous pour commencer.</p>
+          <Button
+            size="sm"
+            onClick={() => addRound(player.entryKey)}
+            className="w-full gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+          >
+            <Plus className="h-4 w-4" />
+            Ajouter une épreuve
+          </Button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4 pb-1">
+        {player.rounds.map((round) => (
+          <div key={round.round_number} className="space-y-4">
+            <Card className={`relative ${round.isLocked ? "opacity-80" : ""}`}>
+              {round.isLocked && (
+                <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs gap-1"
+                    onClick={() => unlockBowlingRound(player.playerId, round.round_number)}
+                  >
+                    <Lock className="h-3 w-3" />
+                    Modifier
+                  </Button>
+                </div>
+              )}
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Circle className="h-4 w-4" />
+                    Épreuve {round.round_number}
+                    {round.phase && (
+                      <Badge variant="outline" className="ml-1">
+                        {phases.find((p) => p.value === round.phase)?.label || round.phase}
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  {!round.isLocked && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => removeRound(player.entryKey, round.round_number)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="col-span-2">
+                    <Label className="text-xs">Date & heure de l'épreuve</Label>
+                    <Input
+                      type="datetime-local"
+                      value={round.roundDate || (matchData?.match_date ? `${matchData.match_date.split("T")[0]}T10:00` : "")}
+                      onChange={(e) => updateRound(player.entryKey, round.round_number, { roundDate: e.target.value })}
+                      className="h-8"
+                      disabled={round.isLocked}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Classement</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      onWheel={blurOnWheel}
+                      value={round.ranking || ""}
+                      onChange={(e) => updateRound(player.entryKey, round.round_number, { ranking: parseInt(e.target.value) || undefined })}
+                      placeholder="1"
+                      className="h-8"
+                      disabled={round.isLocked}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Temps / Perf</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      onWheel={blurOnWheel}
+                      value={round.final_time_seconds ?? ""}
+                      onChange={(e) => {
+                        const v = parseFloat(e.target.value);
+                        updateRound(player.entryKey, round.round_number, {
+                          final_time_seconds: Number.isFinite(v) ? v : undefined,
+                        });
+                      }}
+                      placeholder="ex: 11.42"
+                      className="h-8"
+                      disabled={round.isLocked}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Résultat</Label>
+                    <Select
+                      value={round.result}
+                      onValueChange={(value) => updateRound(player.entryKey, round.round_number, { result: value })}
+                      disabled={round.isLocked}
+                    >
+                      <SelectTrigger className="h-8">
+                        <SelectValue placeholder="Qualification ?" />
+                      </SelectTrigger>
+                      <SelectContent className="z-[200]">
+                        <SelectItem value="qualified">Qualifié(e)</SelectItem>
+                        <SelectItem value="eliminated">Éliminé(e)</SelectItem>
+                        <SelectItem value="dns">DNS</SelectItem>
+                        <SelectItem value="dnf">DNF</SelectItem>
+                        <SelectItem value="dq">DQ</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div>
+                    <Label className="text-xs">Vent (m/s)</Label>
+                    <Input
+                      value={round.wind_conditions || ""}
+                      onChange={(e) => updateRound(player.entryKey, round.round_number, { wind_conditions: e.target.value })}
+                      placeholder="+1.2"
+                      className="h-8"
+                      disabled={round.isLocked}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Sens du vent</Label>
+                    <Select
+                      value={(round as any).wind_direction || ""}
+                      onValueChange={(value) => updateRound(player.entryKey, round.round_number, { wind_direction: value } as any)}
+                      disabled={round.isLocked}
+                    >
+                      <SelectTrigger className="h-8">
+                        <SelectValue placeholder="Choisir..." />
+                      </SelectTrigger>
+                      <SelectContent className="z-[200]">
+                        <SelectItem value="face">Vent de face</SelectItem>
+                        <SelectItem value="dos">Vent de dos</SelectItem>
+                        <SelectItem value="lateral_gauche">Latéral gauche</SelectItem>
+                        <SelectItem value="lateral_droit">Latéral droit</SelectItem>
+                        <SelectItem value="nul">Vent nul</SelectItem>
+                        <SelectItem value="variable">Variable</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Température (°C)</Label>
+                    <Input
+                      type="number"
+                      onWheel={blurOnWheel}
+                      value={round.temperature_celsius || ""}
+                      onChange={(e) => updateRound(player.entryKey, round.round_number, { temperature_celsius: parseFloat(e.target.value) || undefined })}
+                      placeholder="20"
+                      className="h-8"
+                      disabled={round.isLocked}
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <Label className="text-xs">Record personnel</Label>
+                    <Button
+                      type="button"
+                      variant={(round as any).is_personal_record ? "default" : "outline"}
+                      size="sm"
+                      className="h-8 gap-1"
+                      onClick={() => updateRound(player.entryKey, round.round_number, { is_personal_record: !(round as any).is_personal_record } as any)}
+                      disabled={round.isLocked}
+                    >
+                      <Trophy className="h-3.5 w-3.5" />
+                      {(round as any).is_personal_record ? "RP ✓" : "RP"}
+                    </Button>
+                  </div>
+                </div>
+
+                {player.discipline && (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-xs">
+                      {player.specialty || player.discipline}
+                    </Badge>
+                  </div>
+                )}
+
+                {(() => {
+                  const playerStats = getPlayerStats(player);
+                  const playerCats = getPlayerStatCategories(player);
+                  return (
+                    <div className="space-y-3">
+                      {playerCats.map((cat) => {
+                        const categoryStatsAll = playerStats.filter((s) => s.category === cat.key);
+                        if (categoryStatsAll.length === 0) return null;
+
+                        const isAthleticsAttemptCat = categoryStatsAll.some((s) => s.key.startsWith("attempt"));
+                        const attemptStats = isAthleticsAttemptCat
+                          ? ATTEMPT_KEYS.map((k) => categoryStatsAll.find((s) => s.key === k)).filter(Boolean) as StatField[]
+                          : [];
+                        const categoryStats = isAthleticsAttemptCat
+                          ? categoryStatsAll.filter((s) => !s.key.startsWith("attempt"))
+                          : categoryStatsAll;
+                        const subGroups = groupStatsByTheme(cat.key, categoryStats);
+                        const visibleAttemptCount = isAthleticsAttemptCat
+                          ? getAttemptVisibleCount(player.entryKey, round)
+                          : 0;
+
+                        return (
+                          <div key={cat.key} className="space-y-2">
+                            <Label className="text-xs font-medium text-primary">{cat.label}</Label>
+                            {isAthleticsAttemptCat && attemptStats.length > 0 && (
+                              <div className="rounded-md border border-border/40 p-2 bg-muted/30">
+                                <div className="flex items-center justify-between mb-1.5">
+                                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                    Essais
+                                  </p>
+                                  {!round.isLocked && visibleAttemptCount < 6 && (
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 gap-1 text-xs"
+                                      onClick={() =>
+                                        setExtraAttempts((prev) => ({
+                                          ...prev,
+                                          [`${player.entryKey}|${round.round_number}`]: visibleAttemptCount + 1,
+                                        }))
+                                      }
+                                    >
+                                      <Plus className="h-3 w-3" /> Essai
+                                    </Button>
+                                  )}
+                                </div>
+                                <div className="grid grid-cols-3 gap-2">
+                                  {attemptStats.slice(0, visibleAttemptCount).map((stat) => (
+                                    <div key={stat.key}>
+                                      <Label className="text-[10px] text-muted-foreground">{stat.shortLabel}</Label>
+                                      <Input
+                                        type="number"
+                                        value={round.stats[stat.key] || 0}
+                                        onChange={(e) => updateRoundStat(player.entryKey, round.round_number, stat.key, parseFloat(e.target.value) || 0)}
+                                        min={stat.min ?? 0}
+                                        max={stat.max}
+                                        className="h-7 text-sm"
+                                        disabled={round.isLocked}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {subGroups.map((group) => (
+                              <div
+                                key={group.key}
+                                className={`rounded-md ${group.label ? `border p-2 ${group.color?.ring || "border-border/40"} ${group.color?.soft || ""}` : ""}`}
+                              >
+                                {group.label && (
+                                  <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1.5 ${group.color?.accent || "text-muted-foreground"}`}>
+                                    {group.label}
+                                  </p>
+                                )}
+                                <div className="grid grid-cols-3 gap-2">
+                                  {group.items.map((stat) => (
+                                    <div key={stat.key}>
+                                      <Label className="text-[10px] text-muted-foreground">{stat.shortLabel}</Label>
+                                      <Input
+                                        type="number"
+                                        value={round.stats[stat.key] || 0}
+                                        onChange={(e) => updateRoundStat(player.entryKey, round.round_number, stat.key, parseFloat(e.target.value) || 0)}
+                                        min={stat.min ?? 0}
+                                        max={stat.max}
+                                        className="h-7 text-sm"
+                                        disabled={round.isLocked}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
+                <div>
+                  <Label className="text-xs">Notes</Label>
+                  <Input
+                    value={round.notes}
+                    onChange={(e) => updateRound(player.entryKey, round.round_number, { notes: e.target.value })}
+                    placeholder="Notes sur cette épreuve"
+                    className="h-8"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+            <Button
+              size="sm"
+              onClick={() => addRound(player.entryKey)}
+              className="w-full gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              <Plus className="h-4 w-4" />
+              Ajouter une épreuve
+            </Button>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderAthleticsSummaryInline = (player: PlayerRounds) => {
+    const { total, aggregated } = calculateAggregatedStats(player.rounds);
+    const bestRanking = player.rounds.filter((r) => r.ranking).map((r) => r.ranking!);
+    const qualified = player.rounds.filter((r) => r.result === "qualified").length;
+    const pStats = getPlayerStats(player);
+    const pCats = getPlayerStatCategories(player);
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Résumé - {player.playerName}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {player.rounds.length === 0 ? (
+            <p className="text-center text-muted-foreground py-4">Aucune épreuve enregistrée</p>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                <div className="p-3 rounded-lg border bg-card">
+                  <p className="text-2xl font-bold">{total}</p>
+                  <p className="text-xs text-muted-foreground">Épreuves</p>
+                </div>
+                {bestRanking.length > 0 && (
+                  <div className="p-3 rounded-lg border border-primary/20 bg-primary/5">
+                    <p className="text-2xl font-bold">{Math.min(...bestRanking)}e</p>
+                    <p className="text-xs text-muted-foreground">Meilleur classement</p>
+                  </div>
+                )}
+                <div className="p-3 rounded-lg border bg-muted/30">
+                  <p className="text-2xl font-bold">{qualified}/{total}</p>
+                  <p className="text-xs text-muted-foreground">Qualifications</p>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                {player.rounds.map((round) => (
+                  <div key={round.round_number} className="flex items-center justify-between p-2 rounded border text-sm">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">
+                        {phases.find((p) => p.value === round.phase)?.label || `Épreuve ${round.round_number}`}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {round.ranking && (
+                        <Badge variant={round.ranking <= 3 ? "default" : "secondary"}>
+                          {round.ranking === 1 ? "🥇" : round.ranking === 2 ? "🥈" : round.ranking === 3 ? "🥉" : `${round.ranking}e`}
+                        </Badge>
+                      )}
+                      {round.result && (
+                        <Badge variant={round.result === "qualified" ? "default" : "destructive"}>
+                          {round.result === "qualified" ? "Q" : round.result === "eliminated" ? "Élim." : round.result.toUpperCase()}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {Object.keys(aggregated).length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="font-medium">Statistiques cumulées</h4>
+                  {pCats.map((cat) => {
+                    const categoryStats = pStats.filter((s) => s.category === cat.key && aggregated[s.key] !== undefined);
+                    if (categoryStats.length === 0) return null;
+                    return (
+                      <div key={cat.key}>
+                        <p className="text-sm font-medium text-primary mb-2">{cat.label}</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {categoryStats.map((stat) => (
+                            <div key={stat.key} className="p-2 rounded border text-center">
+                              <p className="text-lg font-bold">{aggregated[stat.key]}</p>
+                              <p className="text-xs text-muted-foreground">{stat.shortLabel}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -982,12 +1386,11 @@ export function CompetitionRoundsDialog({
             ) : (
               <ScrollArea
                 className={`pr-2 rounded-md border bg-muted/20 transition-all ${
-                  selectedPlayerId ? "h-[120px]" : "h-[220px]"
+                  selectedPlayerId ? "h-[430px]" : "h-[220px]"
                 }`}
               >
                 <div className="space-y-3 p-2">
                   {(() => {
-                    // Group athletes by discipline (then specialty)
                     const groups = new Map<string, PlayerRounds[]>();
                     playerRoundsData.forEach((p) => {
                       const groupKey = p.discipline || "autre";
@@ -998,9 +1401,6 @@ export function CompetitionRoundsDialog({
                       a.localeCompare(b),
                     );
 
-                    // Helper: format name as "Prénom NOM"
-                    // - If 2+ parts: first part capitalized + rest in UPPERCASE
-                    // - If only 1 part: assume it's the last name and uppercase it
                     const formatName = (full: string) => {
                       const parts = full.trim().split(/\s+/).filter(Boolean);
                       if (parts.length === 0) return full;
@@ -1030,43 +1430,63 @@ export function CompetitionRoundsDialog({
                               const isSelected = player.entryKey === selectedPlayerId;
                               const handleOpen = () => {
                                 setSelectedPlayerId(player.entryKey);
-                                // Scroll to the tabs / round content for quick access
-                                setTimeout(() => {
-                                  document
-                                    .getElementById(`athletics-rounds-anchor-${matchId}`)
-                                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                                }, 50);
                               };
                               return (
-                                <button
+                                <div
                                   key={player.entryKey}
-                                  type="button"
-                                  onClick={handleOpen}
-                                  onDoubleClick={handleOpen}
-                                  className={`text-left rounded-xl border p-2.5 transition-all ${
+                                  className={`rounded-xl border p-2.5 transition-all ${
                                     isSelected
                                       ? "border-primary bg-primary/10 shadow-sm ring-1 ring-primary/40"
                                       : "border-border bg-card hover:bg-accent/40 hover:border-primary/30"
                                   }`}
                                 >
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="min-w-0 flex-1">
-                                      <p className="text-sm font-medium truncate">{formatName(player.playerName)}</p>
-                                      {(player.specialty || player.discipline) && (
-                                        <Badge variant="outline" className="mt-1 text-[10px]">
-                                          {player.specialty || player.discipline}
-                                        </Badge>
-                                      )}
+                                  <button
+                                    type="button"
+                                    onClick={handleOpen}
+                                    onDoubleClick={handleOpen}
+                                    className="w-full text-left"
+                                  >
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-medium truncate">{formatName(player.playerName)}</p>
+                                        {(player.specialty || player.discipline) && (
+                                          <Badge variant="outline" className="mt-1 text-[10px]">
+                                            {player.specialty || player.discipline}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <Badge
+                                        variant={player.rounds.length > 0 ? "default" : "secondary"}
+                                        className="text-[10px] shrink-0"
+                                      >
+                                        {player.rounds.length} résultat{player.rounds.length > 1 ? "s" : ""}
+                                      </Badge>
                                     </div>
-                                    <Badge
-                                      variant={player.rounds.length > 0 ? "default" : "secondary"}
-                                      className="text-[10px] shrink-0"
-                                    >
-                                      {player.rounds.length} {roundLabel.toLowerCase()}
-                                      {player.rounds.length > 1 ? "s" : ""}
-                                    </Badge>
-                                  </div>
-                                </button>
+                                  </button>
+
+                                  {isSelected && (
+                                    <div className="mt-3 border-t pt-3">
+                                      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
+                                        <TabsList className="grid w-full grid-cols-2">
+                                          <TabsTrigger value="rounds" className="gap-2">
+                                            <Target className="h-4 w-4" />
+                                            Épreuves
+                                          </TabsTrigger>
+                                          <TabsTrigger value="summary" className="gap-2">
+                                            <BarChart3 className="h-4 w-4" />
+                                            Résumé
+                                          </TabsTrigger>
+                                        </TabsList>
+                                        <TabsContent value="rounds" className="mt-0">
+                                          {renderAthleticsRoundsInline(player)}
+                                        </TabsContent>
+                                        <TabsContent value="summary" className="mt-0">
+                                          {renderAthleticsSummaryInline(player)}
+                                        </TabsContent>
+                                      </Tabs>
+                                    </div>
+                                  )}
+                                </div>
                               );
                             })}
                           </div>
@@ -1110,7 +1530,7 @@ export function CompetitionRoundsDialog({
           </div>
         )}
 
-        {selectedPlayer && (
+        {selectedPlayer && !isAthletics && (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 min-h-0 flex flex-col overflow-hidden">
             <TabsList className={`grid w-full flex-shrink-0 ${isAviron ? 'grid-cols-3' : isBowling ? 'grid-cols-3' : 'grid-cols-2'}`}>
               {isAviron && (
