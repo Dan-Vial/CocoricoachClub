@@ -519,7 +519,9 @@ export function CompetitionRoundsDialog({
   };
 
   const saveRounds = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (opts?: { keepOpen?: boolean }) => {
+      // attach intent on the mutation so onSuccess can read it
+      (saveRounds as any)._keepOpen = !!opts?.keepOpen;
       // For each player, save their crew info and rounds
       for (const playerData of playerRoundsData) {
         // Update crew info in match_lineups if Aviron
