@@ -549,16 +549,47 @@ export function CompetitionRoundsDialog({
 
   const saveRounds = useMutation({
     mutationFn: async () => {
+      console.log("[CompetitionRoundsDialog] SAVE start", {
+        matchId,
+        entries: playerRoundsData.map((p) => ({
+          entryKey: p.entryKey,
+          playerId: p.playerId,
+          discipline: p.discipline,
+          specialty: p.specialty,
+          roundsCount: p.rounds.length,
+          rounds: p.rounds.map((r) => ({
+            n: r.round_number,
+            time: r.final_time_seconds,
+            ranking: r.ranking,
+            phase: r.phase,
+            result: r.result,
+            statsKeys: Object.keys(r.stats || {}),
+          })),
+        })),
+      });
+
       // BUG FIX: when several lineup entries share the same player_id (e.g. an athlete
       // registered on multiple events like 110mH + 60mH), we must DELETE only ONCE per
       // player, otherwise the second pass wipes the rounds we just inserted in the first.
-      const uniquePlayerIds = Array.from(new Set(playerRoundsData.map((p) => p.playerId)));
-      for (const pid of uniquePlayerIds) {
-        await supabase
+      // We also only delete for player_ids that have at least one entry with rounds —
+      // otherwise an empty entry can wipe rounds saved earlier in another event.
+      const playerIdsWithRounds = Array.from(
+        new Set(
+          playerRoundsData
+            .filter((p) => p.rounds.length > 0)
+            .map((p) => p.playerId),
+        ),
+      );
+      for (const pid of playerIdsWithRounds) {
+        const { error: delError } = await supabase
           .from("competition_rounds")
           .delete()
           .eq("match_id", matchId)
           .eq("player_id", pid);
+        if (delError) {
+          console.error("[CompetitionRoundsDialog] DELETE error for player", pid, delError);
+          throw delError;
+        }
       }
 
       // Counter to ensure unique round_number per player when an athlete is registered
@@ -587,30 +618,38 @@ export function CompetitionRoundsDialog({
           const nextNumber = (roundNumberCounters[playerData.playerId] ?? 0) + 1;
           roundNumberCounters[playerData.playerId] = nextNumber;
 
+          const roundPayload = {
+            match_id: matchId,
+            player_id: playerData.playerId,
+            round_number: nextNumber,
+            opponent_name: round.opponent_name || null,
+            result: round.result || null,
+            notes: round.notes || null,
+            phase: round.phase || null,
+            lane: round.lane || null,
+            wind_conditions: round.wind_conditions || null,
+            wind_direction: round.wind_direction || null,
+            current_conditions: round.current_conditions || null,
+            temperature_celsius: round.temperature_celsius || null,
+            final_time_seconds: round.final_time_seconds ?? null,
+            ranking: round.ranking ?? null,
+            gap_to_first: round.gap_to_first || null,
+            is_personal_record: !!round.is_personal_record,
+          };
+          console.log(
+            "[CompetitionRoundsDialog] INSERT round",
+            { entry: playerData.entryKey, payload: roundPayload },
+          );
           const { data: roundData, error: roundError } = await supabase
             .from("competition_rounds")
-            .insert({
-              match_id: matchId,
-              player_id: playerData.playerId,
-              round_number: nextNumber,
-              opponent_name: round.opponent_name || null,
-              result: round.result || null,
-              notes: round.notes || null,
-              phase: round.phase || null,
-              lane: round.lane || null,
-              wind_conditions: round.wind_conditions || null,
-              wind_direction: round.wind_direction || null,
-              current_conditions: round.current_conditions || null,
-              temperature_celsius: round.temperature_celsius || null,
-              final_time_seconds: round.final_time_seconds || null,
-              ranking: round.ranking || null,
-              gap_to_first: round.gap_to_first || null,
-              is_personal_record: !!round.is_personal_record,
-            } as any)
+            .insert(roundPayload as any)
             .select()
             .single();
 
-          if (roundError) throw roundError;
+          if (roundError) {
+            console.error("[CompetitionRoundsDialog] INSERT round ERROR", roundError, roundPayload);
+            throw roundError;
+          }
 
           // Insert stats for this round (include bowling frames, ballData, blockId if present)
           // Find block debriefing for this round
@@ -629,16 +668,34 @@ export function CompetitionRoundsDialog({
             ...(playerData.discipline ? { _discipline: playerData.discipline } : {}),
             ...(playerData.specialty ? { _specialty: playerData.specialty } : {}),
           };
-          
-          if (Object.keys(statDataToSave).length > 0) {
+
+          // Always insert stat_data for athletics so the discipline tag is preserved,
+          // even when the user only filled time/ranking on the round header (no per-stat values).
+          const shouldInsertStats =
+            Object.keys(statDataToSave).length > 0 ||
+            !!playerData.discipline ||
+            !!playerData.specialty;
+
+          if (shouldInsertStats) {
             const insertData = {
               round_id: roundData.id,
               stat_data: JSON.parse(JSON.stringify(statDataToSave)),
             };
+            console.log(
+              "[CompetitionRoundsDialog] INSERT stat_data",
+              { round_id: roundData.id, stat_data: insertData.stat_data },
+            );
             const { error: statsError } = await supabase
               .from("competition_round_stats")
               .insert(insertData);
-            if (statsError) throw statsError;
+            if (statsError) {
+              console.error(
+                "[CompetitionRoundsDialog] INSERT stat_data ERROR",
+                statsError,
+                insertData,
+              );
+              throw statsError;
+            }
           }
         }
       }
@@ -740,170 +797,20 @@ export function CompetitionRoundsDialog({
       queryClient.invalidateQueries({ queryKey: ["match-distinct-round-phases", matchId] });
       queryClient.invalidateQueries({ queryKey: ["distinct-round-phases", matchId] });
       if (keepOpenAfterSave) {
-        // Re-sync local state with freshly persisted rounds (so IDs / locked flags refresh)
-        setIsDataInitialized(false);
-        toast.success("Enregistré — tu peux sélectionner un autre athlète");
-        setKeepOpenAfterSave(false);
+        (async () => {
+          try {
+            await queryClient.refetchQueries({ queryKey: ["competition_rounds", matchId] });
+          } catch (e) {
+            console.error("[CompetitionRoundsDialog] refetch error", e);
+          }
+          setIsDataInitialized(false);
+          toast.success("Enregistré — tu peux sélectionner un autre athlète");
+          setKeepOpenAfterSave(false);
+        })();
       } else {
         toast.success("Données et charge match enregistrées");
         onOpenChange(false);
       }
-    },
-    onError: (error) => {
-      console.error("Error saving rounds:", error);
-      toast.error("Erreur lors de l'enregistrement");
-      setKeepOpenAfterSave(false);
-    },
-  });
-
-  const addRound = (entryKey: string) => {
-    const player = playerRoundsData.find((p) => p.entryKey === entryKey);
-    const newRoundNumber = player && player.rounds.length > 0
-      ? Math.max(...player.rounds.map((r) => r.round_number)) + 1
-      : 1;
-
-    setPlayerRoundsData((prev) =>
-      prev.map((p) => {
-        if (p.entryKey === entryKey) {
-          return {
-            ...p,
-            rounds: [
-              ...p.rounds,
-              {
-                round_number: newRoundNumber,
-                opponent_name: "",
-                result: "",
-                notes: "",
-                stats: {},
-                phase: "",
-                isLocked: false,
-                bowlingFrames: undefined,
-              },
-            ],
-          };
-        }
-        return p;
-      }),
-    );
-  };
-
-  const removeRound = (entryKey: string, roundNumber: number) => {
-    setPlayerRoundsData(prev => prev.map(p => {
-      if (p.entryKey === entryKey) {
-        return {
-          ...p,
-          rounds: p.rounds.filter(r => r.round_number !== roundNumber),
-        };
-      }
-      return p;
-    }));
-  };
-
-  const updateRound = (entryKey: string, roundNumber: number, updates: Partial<Round>) => {
-    setPlayerRoundsData(prev => prev.map(p => {
-      if (p.entryKey === entryKey) {
-        return {
-          ...p,
-          rounds: p.rounds.map(r => 
-            r.round_number === roundNumber ? { ...r, ...updates } : r
-          ),
-        };
-      }
-      return p;
-    }));
-  };
-
-  const updateRoundStat = (entryKey: string, roundNumber: number, statKey: string, value: number) => {
-    setPlayerRoundsData(prev => prev.map(p => {
-      if (p.entryKey === entryKey) {
-        return {
-          ...p,
-          rounds: p.rounds.map(r => 
-            r.round_number === roundNumber 
-              ? { ...r, stats: { ...r.stats, [statKey]: value } } 
-              : r
-          ),
-        };
-      }
-      return p;
-    }));
-  };
-
-  // Format time from seconds to MM:SS.ms
-  const formatTime = (seconds: number | undefined): string => {
-    if (!seconds) return "";
-    const mins = Math.floor(seconds / 60);
-    const secs = (seconds % 60).toFixed(2);
-    return `${mins}:${secs.padStart(5, '0')}`;
-  };
-
-  // Parse time from MM:SS.ms to seconds
-  const parseTime = (timeStr: string): number | undefined => {
-    if (!timeStr) return undefined;
-    const parts = timeStr.split(':');
-    if (parts.length === 2) {
-      const mins = parseInt(parts[0]) || 0;
-      const secs = parseFloat(parts[1]) || 0;
-      return mins * 60 + secs;
-    }
-    return parseFloat(timeStr) || undefined;
-  };
-
-  const hasLineup = lineup && lineup.length > 0;
-  const selectedPlayer = playerRoundsData.find(p => p.entryKey === selectedPlayerId);
-
-  // Calculate aggregated stats for a player
-  const calculateAggregatedStats = (rounds: Round[]) => {
-    const aggregated: Record<string, number> = {};
-    const counts: Record<string, number> = {};
-    
-    rounds.forEach(round => {
-      Object.entries(round.stats).forEach(([key, value]) => {
-        if (aggregated[key] === undefined) {
-          aggregated[key] = 0;
-          counts[key] = 0;
-        }
-        aggregated[key] += value;
-        counts[key]++;
-      });
-    });
-
-    // Calculate wins/losses for result tracking
-    const wins = rounds.filter(r => r.result === "win").length;
-    const losses = rounds.filter(r => r.result === "loss").length;
-    const draws = rounds.filter(r => r.result === "draw").length;
-    
-    // Aviron: best time and average ranking
-    const timesWithValues = rounds.filter(r => r.final_time_seconds);
-    const bestTime = timesWithValues.length > 0 
-      ? Math.min(...timesWithValues.map(r => r.final_time_seconds!)) 
-      : undefined;
-    const rankingsWithValues = rounds.filter(r => r.ranking);
-    const avgRanking = rankingsWithValues.length > 0
-      ? rankingsWithValues.reduce((sum, r) => sum + r.ranking!, 0) / rankingsWithValues.length
-      : undefined;
-
-    return { aggregated, counts, wins, losses, draws, total: rounds.length, bestTime, avgRanking };
-  };
-
-  if (!hasLineup) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {isAviron ? <Ship className="h-5 w-5" /> : isJudo ? <Swords className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
-            {roundLabelPlural}
-          </DialogTitle>
-          </DialogHeader>
-          <p className="text-muted-foreground text-center py-8">
-            Ajoutez d'abord des participants à la composition pour gérer leurs {roundLabelPlural.toLowerCase()}.
-          </p>
-          <Button onClick={() => onOpenChange(false)}>Fermer</Button>
-        </DialogContent>
-      </Dialog>
-    );
-  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
