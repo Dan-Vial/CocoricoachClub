@@ -972,7 +972,7 @@ export function CompetitionRoundsDialog({
                 Athlètes inscrits ({playerRoundsData.length})
               </Label>
               <p className="text-[10px] text-muted-foreground italic">
-                Double-cliquez sur un athlète pour saisir ses résultats
+                Cliquez sur un athlète pour saisir ses résultats
               </p>
             </div>
             {playerRoundsData.length === 0 ? (
@@ -999,9 +999,12 @@ export function CompetitionRoundsDialog({
                     );
 
                     // Helper: format name as "Prénom NOM"
+                    // - If 2+ parts: first part capitalized + rest in UPPERCASE
+                    // - If only 1 part: assume it's the last name and uppercase it
                     const formatName = (full: string) => {
-                      const parts = full.trim().split(/\s+/);
-                      if (parts.length < 2) return full;
+                      const parts = full.trim().split(/\s+/).filter(Boolean);
+                      if (parts.length === 0) return full;
+                      if (parts.length === 1) return parts[0].toUpperCase();
                       const first = parts[0];
                       const last = parts.slice(1).join(" ").toUpperCase();
                       const firstCap = first.charAt(0).toUpperCase() + first.slice(1).toLowerCase();
@@ -1038,7 +1041,7 @@ export function CompetitionRoundsDialog({
                                 <button
                                   key={player.entryKey}
                                   type="button"
-                                  onClick={() => setSelectedPlayerId(player.entryKey)}
+                                  onClick={handleOpen}
                                   onDoubleClick={handleOpen}
                                   className={`text-left rounded-xl border p-2.5 transition-all ${
                                     isSelected
