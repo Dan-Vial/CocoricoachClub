@@ -398,7 +398,20 @@ export function CompetitionRoundsDialog({
         // Fallback to the player's primary discipline/specialty for backward compat.
         const effectiveDiscipline = l.discipline || player?.discipline || undefined;
         const effectiveSpecialty = l.specialty || player?.specialty || undefined;
-        const playerRounds = existingRounds?.filter(r => r.player_id === l.player_id) || [];
+        // Filter rounds for this lineup entry: match by player_id + discipline + specialty
+        // (stored in stat_data._discipline / _specialty). Fallback to all player rounds
+        // when no discipline tag is present (backward compat with legacy data).
+        const allPlayerRounds = existingRounds?.filter(r => r.player_id === l.player_id) || [];
+        const playerRounds = allPlayerRounds.filter((r: any) => {
+          const sd = r.competition_round_stats?.[0]?.stat_data as Record<string, any> | undefined;
+          const rDiscipline = sd?._discipline ?? null;
+          const rSpecialty = sd?._specialty ?? null;
+          // If round has no discipline tag, only attach it to entries whose lineup also has none
+          if (!rDiscipline && !rSpecialty) {
+            return !l.discipline && !l.specialty;
+          }
+          return rDiscipline === (l.discipline || null) && rSpecialty === (l.specialty || null);
+        });
         
         // For bowling: reconstruct blocks from existing rounds
         if (isBowling && playerRounds.length > 0) {
@@ -483,7 +496,7 @@ export function CompetitionRoundsDialog({
             const bowlingFrames = statData.bowlingFrames as FrameData[] | undefined;
             const bowlingCategory = statData.bowlingCategory as string | undefined;
             const roundDate = statData.roundDate as string | undefined;
-            const { bowlingFrames: _, bowlingCategory: _bc, roundDate: _rd, ...cleanStats } = statData;
+            const { bowlingFrames: _, bowlingCategory: _bc, roundDate: _rd, _discipline: _d, _specialty: _sp, ...cleanStats } = statData;
             
             return {
               id: r.id,
@@ -536,7 +549,24 @@ export function CompetitionRoundsDialog({
 
   const saveRounds = useMutation({
     mutationFn: async () => {
-      // For each player, save their crew info and rounds
+      // BUG FIX: when several lineup entries share the same player_id (e.g. an athlete
+      // registered on multiple events like 110mH + 60mH), we must DELETE only ONCE per
+      // player, otherwise the second pass wipes the rounds we just inserted in the first.
+      const uniquePlayerIds = Array.from(new Set(playerRoundsData.map((p) => p.playerId)));
+      for (const pid of uniquePlayerIds) {
+        await supabase
+          .from("competition_rounds")
+          .delete()
+          .eq("match_id", matchId)
+          .eq("player_id", pid);
+      }
+
+      // Counter to ensure unique round_number per player when an athlete is registered
+      // on multiple events (e.g. David on 110mH and 60mH share the same player_id but
+      // need distinct round_numbers because of the UNIQUE(match_id, player_id, round_number)).
+      const roundNumberCounters: Record<string, number> = {};
+
+      // For each lineup entry, save crew info and insert rounds
       for (const playerData of playerRoundsData) {
         // Update crew info in match_lineups if Aviron
         if (isAviron) {
@@ -551,21 +581,18 @@ export function CompetitionRoundsDialog({
             .eq("player_id", playerData.playerId);
         }
 
-        // Delete existing rounds for this player in this match
-        await supabase
-          .from("competition_rounds")
-          .delete()
-          .eq("match_id", matchId)
-          .eq("player_id", playerData.playerId);
-
         // Insert new rounds
         for (const round of playerData.rounds) {
+          // Allocate a unique round_number per player_id across all entryKeys
+          const nextNumber = (roundNumberCounters[playerData.playerId] ?? 0) + 1;
+          roundNumberCounters[playerData.playerId] = nextNumber;
+
           const { data: roundData, error: roundError } = await supabase
             .from("competition_rounds")
             .insert({
               match_id: matchId,
               player_id: playerData.playerId,
-              round_number: round.round_number,
+              round_number: nextNumber,
               opponent_name: round.opponent_name || null,
               result: round.result || null,
               notes: round.notes || null,
@@ -598,6 +625,9 @@ export function CompetitionRoundsDialog({
             ...(round.ballData ? { ballData: round.ballData } : {}),
             ...(roundBlock?.debriefing ? { blockDebriefing: roundBlock.debriefing } : {}),
             ...(roundBlock ? { trackPockets: roundBlock.trackPockets } : {}),
+            // Tag round with its lineup discipline/specialty so we can re-group on reload
+            ...(playerData.discipline ? { _discipline: playerData.discipline } : {}),
+            ...(playerData.specialty ? { _specialty: playerData.specialty } : {}),
           };
           
           if (Object.keys(statDataToSave).length > 0) {
