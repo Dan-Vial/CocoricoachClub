@@ -730,6 +730,15 @@ export function CompetitionRoundsDialog({
       queryClient.invalidateQueries({ queryKey: ["athletics_records_matrix", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["athletics_records_dialog", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["athletics_minimas_matrix", categoryId] });
+      // Refresh "Stats compétition" (cumulative) pour que les résultats partiels apparaissent
+      // au fur et à mesure, même quand la compétition n'est pas terminée.
+      queryClient.invalidateQueries({ queryKey: ["matches-list-cumulative", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["cumulative_player_stats", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["kicking-from-match-stats", categoryId] });
+      queryClient.invalidateQueries({ queryKey: ["kicking-attempts-cumulative", categoryId] });
+      // Refresh distinct phases on the match card
+      queryClient.invalidateQueries({ queryKey: ["match-distinct-round-phases", matchId] });
+      queryClient.invalidateQueries({ queryKey: ["distinct-round-phases", matchId] });
       if (keepOpenAfterSave) {
         // Re-sync local state with freshly persisted rounds (so IDs / locked flags refresh)
         setIsDataInitialized(false);
