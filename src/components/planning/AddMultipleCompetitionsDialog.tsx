@@ -435,21 +435,24 @@ export function AddMultipleCompetitionsDialog({
                       </div>
                     )}
 
-                    <div className="space-y-2">
-                      <Label>Phase de compétition</Label>
-                      <Select value={d.competitionStage} onValueChange={(v) => updateDraft(d.uid, { competitionStage: v })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner une phase (optionnel)" />
-                        </SelectTrigger>
-                        <SelectContent className="z-[200]">
-                          {COMPETITION_STAGES.map((stage) => (
-                            <SelectItem key={stage.value} value={stage.value || "none"}>
-                              {stage.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {/* Phase de compétition — masquée pour les sports individuels (saisie par épreuve/tour) */}
+                    {!isIndividual && (
+                      <div className="space-y-2">
+                        <Label>Phase de compétition</Label>
+                        <Select value={d.competitionStage} onValueChange={(v) => updateDraft(d.uid, { competitionStage: v })}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner une phase (optionnel)" />
+                          </SelectTrigger>
+                          <SelectContent className="z-[200]">
+                            {COMPETITION_STAGES.map((stage) => (
+                              <SelectItem key={stage.value} value={stage.value || "none"}>
+                                {stage.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
 
                     {isIndividual && (
                       <div className="space-y-2">

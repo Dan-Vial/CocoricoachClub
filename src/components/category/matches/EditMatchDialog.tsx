@@ -299,21 +299,24 @@ export function EditMatchDialog({
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="competitionStage">Phase de compétition</Label>
-            <Select value={competitionStage} onValueChange={setCompetitionStage}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner une phase (optionnel)" />
-              </SelectTrigger>
-              <SelectContent className="z-[200]">
-                {getStagesForSport(sportType).map((stage) => (
-                  <SelectItem key={stage.value} value={stage.value || "none"}>
-                    {stage.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Phase de compétition — masquée pour les sports individuels (saisie par épreuve/tour) */}
+          {!isIndividual && (
+            <div className="space-y-2">
+              <Label htmlFor="competitionStage">Phase de compétition</Label>
+              <Select value={competitionStage} onValueChange={setCompetitionStage}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner une phase (optionnel)" />
+                </SelectTrigger>
+                <SelectContent className="z-[200]">
+                  {getStagesForSport(sportType).map((stage) => (
+                    <SelectItem key={stage.value} value={stage.value || "none"}>
+                      {stage.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {isIndividual && (
             <div className="space-y-2">
