@@ -607,6 +607,7 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                     {sportType.toLowerCase().includes("judo") ? `Combats (${roundsCount || 0})` : 
                      sportType.toLowerCase().includes("bowling") ? `Parties (${roundsCount || 0})` : 
                      sportType.toLowerCase().includes("aviron") ? `Courses (${roundsCount || 0})` : 
+                     (sportType.toLowerCase().includes("athletisme") || sportType.toLowerCase().includes("athlétisme")) ? `Ajouter résultats (${roundsCount || 0})` :
                      `Épreuves (${roundsCount || 0})`}
                   </Button>
                 )}
