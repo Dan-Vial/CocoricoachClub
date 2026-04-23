@@ -150,15 +150,22 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
   });
 
   // Fetch competition rounds count for Judo/Bowling/Aviron/Athletics
+  // On ne compte que les rounds qui ont effectivement des stats saisies (ou un résultat
+  // / temps / classement) — un round vide ne doit pas être présenté comme un résultat.
   const { data: roundsCount } = useQuery({
     queryKey: ["competition_rounds_count", match.id],
     queryFn: async () => {
-      const { count, error } = await supabase
+      const { data, error } = await supabase
         .from("competition_rounds")
-        .select("*", { count: "exact", head: true })
+        .select("id, result, final_time_seconds, ranking, competition_round_stats(id)")
         .eq("match_id", match.id);
       if (error) throw error;
-      return count || 0;
+      const meaningful = (data || []).filter((r: any) => {
+        const hasStats = Array.isArray(r.competition_round_stats) && r.competition_round_stats.length > 0;
+        const hasResult = !!r.result || r.final_time_seconds != null || r.ranking != null;
+        return hasStats || hasResult;
+      });
+      return meaningful.length;
     },
   });
 
@@ -425,11 +432,10 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                   )}
                 </p>
               )}
-              {/* Show stage(s) for individual sports.
-                  Si des manches ont été saisies, on affiche les phases réellement
-                  présentes (chaque athlète peut avoir son propre parcours).
-                  Sinon, on retombe sur la phase prévue au niveau du match. */}
-              {isIndividual && distinctRoundPhases && distinctRoundPhases.length > 0 ? (
+              {/* Show stage(s) for individual sports — only when actually saved per round.
+                  La phase prévue au niveau du match a été supprimée pour les sports
+                  individuels : chaque épreuve/tour porte désormais sa propre phase. */}
+              {isIndividual && distinctRoundPhases && distinctRoundPhases.length > 0 && (
                 <p className="flex items-center gap-1 flex-wrap">
                   <Trophy className="h-3 w-3" />
                   {distinctRoundPhases.map((p) => (
@@ -442,22 +448,6 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                     </Badge>
                   ))}
                 </p>
-              ) : (
-                isIndividual &&
-                match.competition_stage && (
-                  <p className="flex items-center gap-1">
-                    <Trophy className="h-3 w-3" />
-                    <Badge
-                      variant="outline"
-                      className="text-xs py-0 px-1.5"
-                    >
-                      {getCompetitionStageLabel(match.competition_stage)}
-                    </Badge>
-                    <span className="text-[10px] text-muted-foreground italic">
-                      (prévu)
-                    </span>
-                  </p>
-                )
               )}
               {match.location && (
                 <p className="flex items-center gap-1">
@@ -503,12 +493,22 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                     {lineupCount} {isIndividual ? "participant(s)" : "joueur(s)"}
                   </Badge>
                 )}
-                {hasRoundBasedStats && roundsCount !== undefined && roundsCount > 0 && (
-                  <Badge variant="outline" className="text-[10px] gap-1 py-0">
-                    <BarChart3 className="h-2.5 w-2.5" />
-                    {roundsCount} partie(s)
-                  </Badge>
-                )}
+                {hasRoundBasedStats && roundsCount !== undefined && roundsCount > 0 && (() => {
+                  const st = sportType.toLowerCase();
+                  const unitLabel = st.includes("judo")
+                    ? "combat"
+                    : st.includes("aviron")
+                    ? "course"
+                    : st.includes("athletisme") || st.includes("athlétisme")
+                    ? "résultat"
+                    : "partie";
+                  return (
+                    <Badge variant="outline" className="text-[10px] gap-1 py-0">
+                      <BarChart3 className="h-2.5 w-2.5" />
+                      {roundsCount} {unitLabel}{roundsCount > 1 ? "s" : ""}
+                    </Badge>
+                  );
+                })()}
                 {match.notes && (
                   <Badge variant="outline" className="text-[10px] gap-1 py-0 text-muted-foreground">
                     📝 Note

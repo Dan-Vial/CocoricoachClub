@@ -975,8 +975,8 @@ export function CompetitionRoundsDialog({
                 Aucun athlète inscrit. Ajoute des participants depuis la composition de la compétition.
               </p>
             ) : (
-              <ScrollArea className="max-h-[260px] pr-2">
-                <div className="space-y-3">
+              <ScrollArea className="h-[200px] pr-2 rounded-md border bg-muted/20">
+                <div className="space-y-3 p-2">
                   {(() => {
                     // Group athletes by discipline (then specialty)
                     const groups = new Map<string, PlayerRounds[]>();
@@ -1179,8 +1179,8 @@ export function CompetitionRoundsDialog({
               </TabsContent>
             )}
 
-            <TabsContent value="rounds" className="flex-1 min-h-0 mt-0 overflow-hidden">
-              <ScrollArea className="h-[calc(95vh-200px)] pr-4">
+            <TabsContent value="rounds" className="flex-1 min-h-0 mt-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
+              <ScrollArea className="flex-1 min-h-0 h-full pr-4">
                 {/* Bowling: use block manager */}
                 {isBowling ? (
                   <BowlingBlockManager
