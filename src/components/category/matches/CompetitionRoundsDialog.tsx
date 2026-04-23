@@ -143,7 +143,21 @@ export function CompetitionRoundsDialog({
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
   const [isDataInitialized, setIsDataInitialized] = useState(false);
   const [bowlingBlocks, setBowlingBlocks] = useState<Record<string, BowlingBlock[]>>({});
+  // Tracks how many attempts to show per round (athletics throws/jumps).
+  // Key: `${entryKey}|${round_number}`. Default 3, user can request more via "+1 essai".
+  const [extraAttempts, setExtraAttempts] = useState<Record<string, number>>({});
   const queryClient = useQueryClient();
+
+  const ATTEMPT_KEYS = ["attempt1", "attempt2", "attempt3", "attempt4", "attempt5", "attempt6"] as const;
+  const getAttemptVisibleCount = (entryKey: string, round: Round): number => {
+    const requested = extraAttempts[`${entryKey}|${round.round_number}`];
+    // Show at least 3, and as many as needed for any non-zero attempt already saved.
+    const filledMax = ATTEMPT_KEYS.reduce((max, k, i) => {
+      const v = round.stats?.[k];
+      return (v && v !== 0) ? Math.max(max, i + 1) : max;
+    }, 0);
+    return Math.min(6, Math.max(3, filledMax, requested ?? 0));
+  };
 
   const { stats: filteredSportStats, hasCustomPreferences } = useStatPreferences({ categoryId, sportType });
   const sportStats = hasCustomPreferences ? filteredSportStats : (filteredSportStats.length > 0 ? filteredSportStats : getStatsForSport(sportType));
