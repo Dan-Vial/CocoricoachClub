@@ -818,6 +818,8 @@ export function CompetitionRoundsDialog({
     },
   });
 
+  const selectedPlayer = playerRoundsData.find((p) => p.entryKey === selectedPlayerId);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[900px] max-h-[90vh] flex flex-col overflow-hidden relative">
