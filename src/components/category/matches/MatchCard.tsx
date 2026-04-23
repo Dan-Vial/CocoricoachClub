@@ -150,15 +150,22 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
   });
 
   // Fetch competition rounds count for Judo/Bowling/Aviron/Athletics
+  // On ne compte que les rounds qui ont effectivement des stats saisies (ou un résultat
+  // / temps / classement) — un round vide ne doit pas être présenté comme un résultat.
   const { data: roundsCount } = useQuery({
     queryKey: ["competition_rounds_count", match.id],
     queryFn: async () => {
-      const { count, error } = await supabase
+      const { data, error } = await supabase
         .from("competition_rounds")
-        .select("*", { count: "exact", head: true })
+        .select("id, result, final_time_seconds, ranking, competition_round_stats(id)")
         .eq("match_id", match.id);
       if (error) throw error;
-      return count || 0;
+      const meaningful = (data || []).filter((r: any) => {
+        const hasStats = Array.isArray(r.competition_round_stats) && r.competition_round_stats.length > 0;
+        const hasResult = !!r.result || r.final_time_seconds != null || r.ranking != null;
+        return hasStats || hasResult;
+      });
+      return meaningful.length;
     },
   });
 
