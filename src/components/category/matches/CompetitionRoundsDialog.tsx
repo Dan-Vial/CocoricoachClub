@@ -747,7 +747,7 @@ export function CompetitionRoundsDialog({
               player_id: p.playerId,
               final_time_seconds: r.final_time_seconds ?? null,
               stats: r.stats ?? null,
-              round_date: r.roundDate ?? null,
+              round_date: r.roundDate ? r.roundDate.split("T")[0] : null,
             })),
           );
           // Pour le multi-épreuves : on s'appuie strictement sur la discipline/spécialité
@@ -1347,11 +1347,11 @@ export function CompetitionRoundsDialog({
                           {/* Athletics-specific round info */}
                           {isAthletics && (
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                              <div>
-                                <Label className="text-xs">Date de l'épreuve</Label>
+                              <div className="col-span-2">
+                                <Label className="text-xs">Date & heure de l'épreuve</Label>
                                 <Input
-                                  type="date"
-                                  value={round.roundDate || matchData?.match_date?.split("T")[0] || ""}
+                                  type="datetime-local"
+                                  value={round.roundDate || (matchData?.match_date ? `${matchData.match_date.split("T")[0]}T10:00` : "")}
                                   onChange={(e) => updateRound(selectedPlayer.entryKey, round.round_number, { roundDate: e.target.value })}
                                   className="h-8"
                                   disabled={round.isLocked}

@@ -367,22 +367,24 @@ export function AddMatchCalendarDialog({
             </div>
           )}
 
-          {/* Phase finale dropdown */}
-          <div className="space-y-2">
-            <Label htmlFor="competitionStage">Phase de compétition</Label>
-            <Select value={competitionStage} onValueChange={setCompetitionStage}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner une phase (optionnel)" />
-              </SelectTrigger>
-              <SelectContent className="z-[200]">
-                {COMPETITION_STAGES.map((stage) => (
-                  <SelectItem key={stage.value} value={stage.value || "none"}>
-                    {stage.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Phase finale dropdown — masqué pour les sports individuels (saisi par épreuve/tour) */}
+          {!isIndividual && (
+            <div className="space-y-2">
+              <Label htmlFor="competitionStage">Phase de compétition</Label>
+              <Select value={competitionStage} onValueChange={setCompetitionStage}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner une phase (optionnel)" />
+                </SelectTrigger>
+                <SelectContent className="z-[200]">
+                  {COMPETITION_STAGES.map((stage) => (
+                    <SelectItem key={stage.value} value={stage.value || "none"}>
+                      {stage.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {isIndividual && (
             <div className="space-y-2">
