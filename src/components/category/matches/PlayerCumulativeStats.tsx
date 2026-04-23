@@ -70,21 +70,45 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
   const [exportPlayerId, setExportPlayerId] = useState<string>("");
   const isSinglePlayerMode = !!fixedPlayerId;
   const isRugby = isRugbyType(sportType);
+  // Individual sports store match data in competition_rounds + competition_round_stats,
+  // not in player_match_stats. We pull both sources and aggregate them together.
+  const isIndividualCompetitionSport = (() => {
+    const t = (sportType || "").toLowerCase();
+    return t.includes("athl") || t.includes("judo") || t.includes("aviron") || t.includes("natation") || t.includes("ski") || t.includes("snow") || t.includes("triathlon") || t.includes("surf") || t.includes("tennis") || t.includes("padel");
+  })();
+  // Keys for which "best" means MIN (times, gaps, places). Others are aggregated as MAX.
+  const LOWER_IS_BETTER_KEYS = new Set([
+    "time", "finalTime", "final_time_seconds", "runTime", "splitTime",
+    "split50", "split100", "turnTime", "reactionTime",
+    "gapToFirst", "finalRanking", "ranking", "categoryRanking", "avgPace",
+  ]);
 
   const { stats: sportStats, isLoading: loadingPrefs } = useStatPreferences({ categoryId, sportType });
   const statCategories = getStatCategories(sportType);
 
   const { data: allMatches = [] } = useQuery({
-    queryKey: ["matches-list-cumulative", categoryId],
+    queryKey: ["matches-list-cumulative", categoryId, isIndividualCompetitionSport],
     queryFn: async () => {
+      // Match IDs that have data in player_match_stats (collective sports path)
+      const { data: catMatchIds } = await supabase.from("matches").select("id").eq("category_id", categoryId);
+      const allCatIds = catMatchIds?.map(m => m.id) || [];
       const { data: statsMatchIds, error: statsError } = await supabase
         .from("player_match_stats")
         .select("match_id")
-        .in("match_id",
-          (await supabase.from("matches").select("id").eq("category_id", categoryId)).data?.map(m => m.id) || []
-        );
+        .in("match_id", allCatIds);
       if (statsError) throw statsError;
-      const uniqueMatchIds = [...new Set((statsMatchIds || []).map(s => s.match_id))];
+      const idSet = new Set<string>((statsMatchIds || []).map(s => s.match_id));
+
+      // For individual sports also include matches with competition_rounds entries
+      if (isIndividualCompetitionSport && allCatIds.length > 0) {
+        const { data: roundMatchIds } = await supabase
+          .from("competition_rounds")
+          .select("match_id")
+          .in("match_id", allCatIds);
+        (roundMatchIds || []).forEach(r => idSet.add(r.match_id));
+      }
+
+      const uniqueMatchIds = [...idSet];
       if (uniqueMatchIds.length === 0) return [] as MatchInfo[];
       const { data, error } = await supabase
         .from("matches")
@@ -102,7 +126,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
   }, [selectedMatchIds, allMatches]);
 
   const { data: stats, isLoading } = useQuery({
-    queryKey: ["cumulative_player_stats", categoryId, sportType, activeMatchIds],
+    queryKey: ["cumulative_player_stats", categoryId, sportType, activeMatchIds, isIndividualCompetitionSport],
     queryFn: async () => {
       if (activeMatchIds.length === 0) return [];
       const { data: playerStats, error: statsError } = await supabase
@@ -110,10 +134,9 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
         .select(`*, players(id, name, first_name, avatar_url, position)`)
         .in("match_id", activeMatchIds);
       if (statsError) throw statsError;
-      if (!playerStats) return [];
 
       const aggregated: Record<string, CumulativeStats> = {};
-      playerStats.forEach((stat) => {
+      (playerStats || []).forEach((stat) => {
         const player = stat.players as { id: string; name: string; first_name?: string; avatar_url?: string; position?: string } | null;
         const playerId = stat.player_id;
         const playerName = player ? [player.first_name, player.name].filter(Boolean).join(" ") : "Athlète inconnu";
@@ -130,6 +153,91 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
           p.sportData[statField.key] += Number(value) || 0;
         });
       });
+
+      // Individual sports: also pull competition_rounds + competition_round_stats and merge
+      if (isIndividualCompetitionSport) {
+        const { data: rounds, error: roundsError } = await supabase
+          .from("competition_rounds")
+          .select("player_id, final_time_seconds, ranking, is_personal_record, competition_round_stats(stat_data), players(id, name, first_name, avatar_url, position)")
+          .in("match_id", activeMatchIds);
+        if (roundsError) throw roundsError;
+
+        // Track which (player, match) pairs already counted matchesPlayed via player_match_stats
+        const matchesSeenByPlayer: Record<string, Set<string>> = {};
+        (playerStats || []).forEach((s: any) => {
+          if (!matchesSeenByPlayer[s.player_id]) matchesSeenByPlayer[s.player_id] = new Set();
+          matchesSeenByPlayer[s.player_id].add(s.match_id);
+        });
+
+        // Group rounds per (player, match) so each unique match counts once
+        const roundsByPlayer: Record<string, { player: any; matches: Set<string>; rounds: any[] }> = {};
+        (rounds || []).forEach((r: any) => {
+          if (!roundsByPlayer[r.player_id]) roundsByPlayer[r.player_id] = { player: r.players, matches: new Set(), rounds: [] };
+          roundsByPlayer[r.player_id].rounds.push(r);
+        });
+
+        // We need match_id per round to count distinct matches — re-fetch with match_id
+        const { data: roundsWithMatch } = await supabase
+          .from("competition_rounds")
+          .select("player_id, match_id")
+          .in("match_id", activeMatchIds);
+        (roundsWithMatch || []).forEach((r: any) => {
+          if (roundsByPlayer[r.player_id]) roundsByPlayer[r.player_id].matches.add(r.match_id);
+        });
+
+        const mergeBest = (
+          target: Record<string, number>,
+          key: string,
+          value: number,
+        ) => {
+          if (!Number.isFinite(value)) return;
+          const lowerBetter = LOWER_IS_BETTER_KEYS.has(key);
+          if (target[key] === undefined || target[key] === 0) {
+            target[key] = value;
+          } else {
+            target[key] = lowerBetter
+              ? Math.min(target[key], value)
+              : Math.max(target[key], value);
+          }
+        };
+
+        Object.entries(roundsByPlayer).forEach(([playerId, info]) => {
+          const player = info.player as { id: string; name: string; first_name?: string; avatar_url?: string; position?: string } | null;
+          const playerName = player ? [player.first_name, player.name].filter(Boolean).join(" ") : "Athlète inconnu";
+          if (!aggregated[playerId]) {
+            aggregated[playerId] = { playerId, playerName, matchesPlayed: 0, sportData: {}, avatarUrl: player?.avatar_url || undefined, position: player?.position || undefined };
+          }
+          const p = aggregated[playerId];
+          // Add new matches that weren't already counted via player_match_stats
+          const seen = matchesSeenByPlayer[playerId] || new Set<string>();
+          const newMatches = [...info.matches].filter(mid => !seen.has(mid));
+          p.matchesPlayed += newMatches.length;
+
+          info.rounds.forEach((round: any) => {
+            // final_time_seconds → expose under "time" / "finalTime" / "final_time_seconds"
+            const time = Number(round.final_time_seconds);
+            if (Number.isFinite(time) && time > 0) {
+              mergeBest(p.sportData, "final_time_seconds", time);
+              mergeBest(p.sportData, "time", time);
+              mergeBest(p.sportData, "finalTime", time);
+              mergeBest(p.sportData, "runTime", time);
+            }
+            const rank = Number(round.ranking);
+            if (Number.isFinite(rank) && rank > 0) {
+              mergeBest(p.sportData, "finalRanking", rank);
+              mergeBest(p.sportData, "ranking", rank);
+            }
+            const statData = round.competition_round_stats?.[0]?.stat_data as Record<string, any> || {};
+            Object.entries(statData).forEach(([k, v]) => {
+              // Skip non-numeric / internal payloads
+              if (k === "bowlingFrames" || k === "bowlingCategory" || k === "roundDate" || k === "blockId" || k === "ballData" || k === "blockDebriefing" || k === "trackPockets") return;
+              const num = Number(v);
+              if (!Number.isFinite(num)) return;
+              mergeBest(p.sportData, k, num);
+            });
+          });
+        });
+      }
 
       Object.values(aggregated).forEach(p => {
         sportStats.forEach(statField => {
