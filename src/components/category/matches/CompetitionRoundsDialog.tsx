@@ -549,16 +549,47 @@ export function CompetitionRoundsDialog({
 
   const saveRounds = useMutation({
     mutationFn: async () => {
+      console.log("[CompetitionRoundsDialog] SAVE start", {
+        matchId,
+        entries: playerRoundsData.map((p) => ({
+          entryKey: p.entryKey,
+          playerId: p.playerId,
+          discipline: p.discipline,
+          specialty: p.specialty,
+          roundsCount: p.rounds.length,
+          rounds: p.rounds.map((r) => ({
+            n: r.round_number,
+            time: r.final_time_seconds,
+            ranking: r.ranking,
+            phase: r.phase,
+            result: r.result,
+            statsKeys: Object.keys(r.stats || {}),
+          })),
+        })),
+      });
+
       // BUG FIX: when several lineup entries share the same player_id (e.g. an athlete
       // registered on multiple events like 110mH + 60mH), we must DELETE only ONCE per
       // player, otherwise the second pass wipes the rounds we just inserted in the first.
-      const uniquePlayerIds = Array.from(new Set(playerRoundsData.map((p) => p.playerId)));
-      for (const pid of uniquePlayerIds) {
-        await supabase
+      // We also only delete for player_ids that have at least one entry with rounds —
+      // otherwise an empty entry can wipe rounds saved earlier in another event.
+      const playerIdsWithRounds = Array.from(
+        new Set(
+          playerRoundsData
+            .filter((p) => p.rounds.length > 0)
+            .map((p) => p.playerId),
+        ),
+      );
+      for (const pid of playerIdsWithRounds) {
+        const { error: delError } = await supabase
           .from("competition_rounds")
           .delete()
           .eq("match_id", matchId)
           .eq("player_id", pid);
+        if (delError) {
+          console.error("[CompetitionRoundsDialog] DELETE error for player", pid, delError);
+          throw delError;
+        }
       }
 
       // Counter to ensure unique round_number per player when an athlete is registered
