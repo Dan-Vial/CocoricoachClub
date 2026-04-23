@@ -1765,12 +1765,28 @@ export function CompetitionRoundsDialog({
           </Tabs>
         )}
 
-        <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0 bg-background">
+        <div className="flex flex-wrap justify-end gap-2 pt-4 border-t flex-shrink-0 bg-background">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuler
           </Button>
-          <Button onClick={() => saveRounds.mutate()} disabled={saveRounds.isPending}>
-            {saveRounds.isPending ? "Enregistrement..." : "Enregistrer"}
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setKeepOpenAfterSave(true);
+              saveRounds.mutate();
+            }}
+            disabled={saveRounds.isPending}
+          >
+            {saveRounds.isPending && keepOpenAfterSave ? "Enregistrement..." : "Enregistrer et continuer"}
+          </Button>
+          <Button
+            onClick={() => {
+              setKeepOpenAfterSave(false);
+              saveRounds.mutate();
+            }}
+            disabled={saveRounds.isPending}
+          >
+            {saveRounds.isPending && !keepOpenAfterSave ? "Enregistrement..." : "Enregistrer et fermer"}
           </Button>
         </div>
       </DialogContent>
