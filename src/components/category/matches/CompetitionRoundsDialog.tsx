@@ -1386,12 +1386,11 @@ export function CompetitionRoundsDialog({
             ) : (
               <ScrollArea
                 className={`pr-2 rounded-md border bg-muted/20 transition-all ${
-                  selectedPlayerId ? "h-[120px]" : "h-[220px]"
+                  selectedPlayerId ? "h-[430px]" : "h-[220px]"
                 }`}
               >
                 <div className="space-y-3 p-2">
                   {(() => {
-                    // Group athletes by discipline (then specialty)
                     const groups = new Map<string, PlayerRounds[]>();
                     playerRoundsData.forEach((p) => {
                       const groupKey = p.discipline || "autre";
@@ -1402,9 +1401,6 @@ export function CompetitionRoundsDialog({
                       a.localeCompare(b),
                     );
 
-                    // Helper: format name as "Prénom NOM"
-                    // - If 2+ parts: first part capitalized + rest in UPPERCASE
-                    // - If only 1 part: assume it's the last name and uppercase it
                     const formatName = (full: string) => {
                       const parts = full.trim().split(/\s+/).filter(Boolean);
                       if (parts.length === 0) return full;
@@ -1434,43 +1430,63 @@ export function CompetitionRoundsDialog({
                               const isSelected = player.entryKey === selectedPlayerId;
                               const handleOpen = () => {
                                 setSelectedPlayerId(player.entryKey);
-                                // Scroll to the tabs / round content for quick access
-                                setTimeout(() => {
-                                  document
-                                    .getElementById(`athletics-rounds-anchor-${matchId}`)
-                                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                                }, 50);
                               };
                               return (
-                                <button
+                                <div
                                   key={player.entryKey}
-                                  type="button"
-                                  onClick={handleOpen}
-                                  onDoubleClick={handleOpen}
-                                  className={`text-left rounded-xl border p-2.5 transition-all ${
+                                  className={`rounded-xl border p-2.5 transition-all ${
                                     isSelected
                                       ? "border-primary bg-primary/10 shadow-sm ring-1 ring-primary/40"
                                       : "border-border bg-card hover:bg-accent/40 hover:border-primary/30"
                                   }`}
                                 >
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="min-w-0 flex-1">
-                                      <p className="text-sm font-medium truncate">{formatName(player.playerName)}</p>
-                                      {(player.specialty || player.discipline) && (
-                                        <Badge variant="outline" className="mt-1 text-[10px]">
-                                          {player.specialty || player.discipline}
-                                        </Badge>
-                                      )}
+                                  <button
+                                    type="button"
+                                    onClick={handleOpen}
+                                    onDoubleClick={handleOpen}
+                                    className="w-full text-left"
+                                  >
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-medium truncate">{formatName(player.playerName)}</p>
+                                        {(player.specialty || player.discipline) && (
+                                          <Badge variant="outline" className="mt-1 text-[10px]">
+                                            {player.specialty || player.discipline}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <Badge
+                                        variant={player.rounds.length > 0 ? "default" : "secondary"}
+                                        className="text-[10px] shrink-0"
+                                      >
+                                        {player.rounds.length} résultat{player.rounds.length > 1 ? "s" : ""}
+                                      </Badge>
                                     </div>
-                                    <Badge
-                                      variant={player.rounds.length > 0 ? "default" : "secondary"}
-                                      className="text-[10px] shrink-0"
-                                    >
-                                      {player.rounds.length} {roundLabel.toLowerCase()}
-                                      {player.rounds.length > 1 ? "s" : ""}
-                                    </Badge>
-                                  </div>
-                                </button>
+                                  </button>
+
+                                  {isSelected && (
+                                    <div className="mt-3 border-t pt-3">
+                                      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
+                                        <TabsList className="grid w-full grid-cols-2">
+                                          <TabsTrigger value="rounds" className="gap-2">
+                                            <Target className="h-4 w-4" />
+                                            Épreuves
+                                          </TabsTrigger>
+                                          <TabsTrigger value="summary" className="gap-2">
+                                            <BarChart3 className="h-4 w-4" />
+                                            Résumé
+                                          </TabsTrigger>
+                                        </TabsList>
+                                        <TabsContent value="rounds" className="mt-0">
+                                          {renderAthleticsRoundsInline(player)}
+                                        </TabsContent>
+                                        <TabsContent value="summary" className="mt-0">
+                                          {renderAthleticsSummaryInline(player)}
+                                        </TabsContent>
+                                      </Tabs>
+                                    </div>
+                                  )}
+                                </div>
                               );
                             })}
                           </div>
