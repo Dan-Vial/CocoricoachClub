@@ -398,7 +398,20 @@ export function CompetitionRoundsDialog({
         // Fallback to the player's primary discipline/specialty for backward compat.
         const effectiveDiscipline = l.discipline || player?.discipline || undefined;
         const effectiveSpecialty = l.specialty || player?.specialty || undefined;
-        const playerRounds = existingRounds?.filter(r => r.player_id === l.player_id) || [];
+        // Filter rounds for this lineup entry: match by player_id + discipline + specialty
+        // (stored in stat_data._discipline / _specialty). Fallback to all player rounds
+        // when no discipline tag is present (backward compat with legacy data).
+        const allPlayerRounds = existingRounds?.filter(r => r.player_id === l.player_id) || [];
+        const playerRounds = allPlayerRounds.filter((r: any) => {
+          const sd = r.competition_round_stats?.[0]?.stat_data as Record<string, any> | undefined;
+          const rDiscipline = sd?._discipline ?? null;
+          const rSpecialty = sd?._specialty ?? null;
+          // If round has no discipline tag, only attach it to entries whose lineup also has none
+          if (!rDiscipline && !rSpecialty) {
+            return !l.discipline && !l.specialty;
+          }
+          return rDiscipline === (l.discipline || null) && rSpecialty === (l.specialty || null);
+        });
         
         // For bowling: reconstruct blocks from existing rounds
         if (isBowling && playerRounds.length > 0) {
