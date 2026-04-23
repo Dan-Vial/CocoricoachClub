@@ -1179,8 +1179,8 @@ export function CompetitionRoundsDialog({
               </TabsContent>
             )}
 
-            <TabsContent value="rounds" className="flex-1 min-h-0 mt-0 overflow-hidden">
-              <ScrollArea className="h-[calc(95vh-200px)] pr-4">
+            <TabsContent value="rounds" className="flex-1 min-h-0 mt-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
+              <ScrollArea className="flex-1 min-h-0 h-full pr-4">
                 {/* Bowling: use block manager */}
                 {isBowling ? (
                   <BowlingBlockManager
