@@ -1530,7 +1530,7 @@ export function CompetitionRoundsDialog({
           </div>
         )}
 
-        {selectedPlayer && (
+        {selectedPlayer && !isAthletics && (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 min-h-0 flex flex-col overflow-hidden">
             <TabsList className={`grid w-full flex-shrink-0 ${isAviron ? 'grid-cols-3' : isBowling ? 'grid-cols-3' : 'grid-cols-2'}`}>
               {isAviron && (
