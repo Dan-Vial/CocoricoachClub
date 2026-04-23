@@ -999,9 +999,12 @@ export function CompetitionRoundsDialog({
                     );
 
                     // Helper: format name as "Prénom NOM"
+                    // - If 2+ parts: first part capitalized + rest in UPPERCASE
+                    // - If only 1 part: assume it's the last name and uppercase it
                     const formatName = (full: string) => {
-                      const parts = full.trim().split(/\s+/);
-                      if (parts.length < 2) return full;
+                      const parts = full.trim().split(/\s+/).filter(Boolean);
+                      if (parts.length === 0) return full;
+                      if (parts.length === 1) return parts[0].toUpperCase();
                       const first = parts[0];
                       const last = parts.slice(1).join(" ").toUpperCase();
                       const firstCap = first.charAt(0).toUpperCase() + first.slice(1).toLowerCase();
