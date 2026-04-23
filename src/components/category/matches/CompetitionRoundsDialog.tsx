@@ -1041,7 +1041,7 @@ export function CompetitionRoundsDialog({
                                 <button
                                   key={player.entryKey}
                                   type="button"
-                                  onClick={() => setSelectedPlayerId(player.entryKey)}
+                                  onClick={handleOpen}
                                   onDoubleClick={handleOpen}
                                   className={`text-left rounded-xl border p-2.5 transition-all ${
                                     isSelected
