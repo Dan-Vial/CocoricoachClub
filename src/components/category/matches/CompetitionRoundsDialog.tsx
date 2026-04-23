@@ -811,6 +811,12 @@ export function CompetitionRoundsDialog({
         toast.success("Données et charge match enregistrées");
         onOpenChange(false);
       }
+    },
+    onError: (error: any) => {
+      console.error("[CompetitionRoundsDialog] save error", error);
+      toast.error(error?.message || "Erreur lors de l'enregistrement");
+    },
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
