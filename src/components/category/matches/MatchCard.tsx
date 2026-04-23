@@ -162,6 +162,26 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
     },
   });
 
+  // For individual sports: distinct phases actually saved across all athletes' rounds.
+  // En athlétisme, chaque athlète peut avoir son propre parcours (séries, demi, finale...)
+  // donc on agrège ici les phases distinctes pour les afficher en badges dynamiques.
+  const { data: distinctRoundPhases } = useQuery({
+    queryKey: ["competition_rounds_phases", match.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("competition_rounds")
+        .select("phase")
+        .eq("match_id", match.id)
+        .not("phase", "is", null);
+      if (error) throw error;
+      const set = new Set<string>();
+      (data || []).forEach((r: any) => {
+        if (r.phase) set.add(r.phase);
+      });
+      return Array.from(set);
+    },
+  });
+
   // Fetch sub-matches for this match (only if not already a sub-match)
   const { data: subMatches } = useQuery({
     queryKey: ["sub_matches", match.id],
