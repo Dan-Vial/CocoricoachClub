@@ -425,14 +425,39 @@ export function MatchCard({ match, categoryId, isSubMatch = false }: MatchCardPr
                   )}
                 </p>
               )}
-              {/* Show stage for individual sports too if set */}
-              {isIndividual && match.competition_stage && (
-                <p className="flex items-center gap-1">
+              {/* Show stage(s) for individual sports.
+                  Si des manches ont été saisies, on affiche les phases réellement
+                  présentes (chaque athlète peut avoir son propre parcours).
+                  Sinon, on retombe sur la phase prévue au niveau du match. */}
+              {isIndividual && distinctRoundPhases && distinctRoundPhases.length > 0 ? (
+                <p className="flex items-center gap-1 flex-wrap">
                   <Trophy className="h-3 w-3" />
-                  <Badge variant="outline" className="text-xs py-0 px-1.5">
-                    {getCompetitionStageLabel(match.competition_stage)}
-                  </Badge>
+                  {distinctRoundPhases.map((p) => (
+                    <Badge
+                      key={p}
+                      variant="outline"
+                      className="text-xs py-0 px-1.5"
+                    >
+                      {getCompetitionStageLabel(p)}
+                    </Badge>
+                  ))}
                 </p>
+              ) : (
+                isIndividual &&
+                match.competition_stage && (
+                  <p className="flex items-center gap-1">
+                    <Trophy className="h-3 w-3" />
+                    <Badge
+                      variant="outline"
+                      className="text-xs py-0 px-1.5"
+                    >
+                      {getCompetitionStageLabel(match.competition_stage)}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground italic">
+                      (prévu)
+                    </span>
+                  </p>
+                )
               )}
               {match.location && (
                 <p className="flex items-center gap-1">
