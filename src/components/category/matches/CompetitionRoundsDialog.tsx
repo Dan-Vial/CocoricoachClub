@@ -967,15 +967,24 @@ export function CompetitionRoundsDialog({
         {/* Player selector */}
         {isAthletics ? (
           <div className="space-y-2 flex-shrink-0">
-            <Label className="text-sm font-medium">
-              Athlètes inscrits ({playerRoundsData.length})
-            </Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label className="text-sm font-medium">
+                Athlètes inscrits ({playerRoundsData.length})
+              </Label>
+              <p className="text-[10px] text-muted-foreground italic">
+                Double-cliquez sur un athlète pour saisir ses résultats
+              </p>
+            </div>
             {playerRoundsData.length === 0 ? (
               <p className="text-xs text-muted-foreground italic px-1">
                 Aucun athlète inscrit. Ajoute des participants depuis la composition de la compétition.
               </p>
             ) : (
-              <ScrollArea className="h-[200px] pr-2 rounded-md border bg-muted/20">
+              <ScrollArea
+                className={`pr-2 rounded-md border bg-muted/20 transition-all ${
+                  selectedPlayerId ? "h-[120px]" : "h-[220px]"
+                }`}
+              >
                 <div className="space-y-3 p-2">
                   {(() => {
                     // Group athletes by discipline (then specialty)
@@ -988,6 +997,17 @@ export function CompetitionRoundsDialog({
                     const orderedGroups = Array.from(groups.entries()).sort(([a], [b]) =>
                       a.localeCompare(b),
                     );
+
+                    // Helper: format name as "Prénom NOM"
+                    const formatName = (full: string) => {
+                      const parts = full.trim().split(/\s+/);
+                      if (parts.length < 2) return full;
+                      const first = parts[0];
+                      const last = parts.slice(1).join(" ").toUpperCase();
+                      const firstCap = first.charAt(0).toUpperCase() + first.slice(1).toLowerCase();
+                      return `${firstCap} ${last}`;
+                    };
+
                     return orderedGroups.map(([discKey, entries]) => {
                       const discLabel =
                         discKey === "autre" ? "Sans discipline" : getAthleticsDisciplineLabel(discKey);
@@ -1005,11 +1025,21 @@ export function CompetitionRoundsDialog({
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {entries.map((player) => {
                               const isSelected = player.entryKey === selectedPlayerId;
+                              const handleOpen = () => {
+                                setSelectedPlayerId(player.entryKey);
+                                // Scroll to the tabs / round content for quick access
+                                setTimeout(() => {
+                                  document
+                                    .getElementById(`athletics-rounds-anchor-${matchId}`)
+                                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                }, 50);
+                              };
                               return (
                                 <button
                                   key={player.entryKey}
                                   type="button"
                                   onClick={() => setSelectedPlayerId(player.entryKey)}
+                                  onDoubleClick={handleOpen}
                                   className={`text-left rounded-xl border p-2.5 transition-all ${
                                     isSelected
                                       ? "border-primary bg-primary/10 shadow-sm ring-1 ring-primary/40"
@@ -1018,7 +1048,7 @@ export function CompetitionRoundsDialog({
                                 >
                                   <div className="flex items-start justify-between gap-2">
                                     <div className="min-w-0 flex-1">
-                                      <p className="text-sm font-medium truncate">{player.playerName}</p>
+                                      <p className="text-sm font-medium truncate">{formatName(player.playerName)}</p>
                                       {(player.specialty || player.discipline) && (
                                         <Badge variant="outline" className="mt-1 text-[10px]">
                                           {player.specialty || player.discipline}
@@ -1044,6 +1074,8 @@ export function CompetitionRoundsDialog({
                 </div>
               </ScrollArea>
             )}
+            {/* Anchor for double-click scroll */}
+            <div id={`athletics-rounds-anchor-${matchId}`} />
           </div>
         ) : (
           <div className="space-y-2 flex-shrink-0">
