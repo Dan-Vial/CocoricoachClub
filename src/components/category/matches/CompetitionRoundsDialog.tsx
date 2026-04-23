@@ -536,7 +536,19 @@ export function CompetitionRoundsDialog({
 
   const saveRounds = useMutation({
     mutationFn: async () => {
-      // For each player, save their crew info and rounds
+      // BUG FIX: when several lineup entries share the same player_id (e.g. an athlete
+      // registered on multiple events like 110mH + 60mH), we must DELETE only ONCE per
+      // player, otherwise the second pass wipes the rounds we just inserted in the first.
+      const uniquePlayerIds = Array.from(new Set(playerRoundsData.map((p) => p.playerId)));
+      for (const pid of uniquePlayerIds) {
+        await supabase
+          .from("competition_rounds")
+          .delete()
+          .eq("match_id", matchId)
+          .eq("player_id", pid);
+      }
+
+      // For each lineup entry, save crew info and insert rounds
       for (const playerData of playerRoundsData) {
         // Update crew info in match_lineups if Aviron
         if (isAviron) {
@@ -550,13 +562,6 @@ export function CompetitionRoundsDialog({
             .eq("match_id", matchId)
             .eq("player_id", playerData.playerId);
         }
-
-        // Delete existing rounds for this player in this match
-        await supabase
-          .from("competition_rounds")
-          .delete()
-          .eq("match_id", matchId)
-          .eq("player_id", playerData.playerId);
 
         // Insert new rounds
         for (const round of playerData.rounds) {
