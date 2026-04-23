@@ -472,7 +472,7 @@ export function CompetitionRoundsDialog({
           return {
             entryKey: buildEntryKey(l.player_id, effectiveDiscipline, effectiveSpecialty),
             playerId: l.player_id,
-            playerName: [player?.first_name, player?.name ? String(player.name).toUpperCase() : null].filter(Boolean).join(" ") || "Athlète",
+            playerName: [player?.first_name, player?.name].filter(Boolean).join(" ") || "Athlète",
             discipline: effectiveDiscipline,
             specialty: effectiveSpecialty,
             boat_type: l.boat_type || undefined,
@@ -486,7 +486,7 @@ export function CompetitionRoundsDialog({
         return {
           entryKey: buildEntryKey(l.player_id, effectiveDiscipline, effectiveSpecialty),
           playerId: l.player_id,
-          playerName: [player?.first_name, player?.name ? String(player.name).toUpperCase() : null].filter(Boolean).join(" ") || "Athlète",
+          playerName: [player?.first_name, player?.name].filter(Boolean).join(" ") || "Athlète",
           discipline: effectiveDiscipline,
           specialty: effectiveSpecialty,
           boat_type: l.boat_type || undefined,
