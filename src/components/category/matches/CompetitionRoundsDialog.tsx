@@ -686,12 +686,20 @@ export function CompetitionRoundsDialog({
       queryClient.invalidateQueries({ queryKey: ["athletics_records_matrix", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["athletics_records_dialog", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["athletics_minimas_matrix", categoryId] });
-      toast.success("Données et charge match enregistrées");
-      onOpenChange(false);
+      if (keepOpenAfterSave) {
+        // Re-sync local state with freshly persisted rounds (so IDs / locked flags refresh)
+        setIsDataInitialized(false);
+        toast.success("Enregistré — tu peux sélectionner un autre athlète");
+        setKeepOpenAfterSave(false);
+      } else {
+        toast.success("Données et charge match enregistrées");
+        onOpenChange(false);
+      }
     },
     onError: (error) => {
       console.error("Error saving rounds:", error);
       toast.error("Erreur lors de l'enregistrement");
+      setKeepOpenAfterSave(false);
     },
   });
 
