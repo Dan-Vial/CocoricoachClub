@@ -496,7 +496,7 @@ export function CompetitionRoundsDialog({
             const bowlingFrames = statData.bowlingFrames as FrameData[] | undefined;
             const bowlingCategory = statData.bowlingCategory as string | undefined;
             const roundDate = statData.roundDate as string | undefined;
-            const { bowlingFrames: _, bowlingCategory: _bc, roundDate: _rd, ...cleanStats } = statData;
+            const { bowlingFrames: _, bowlingCategory: _bc, roundDate: _rd, _discipline: _d, _specialty: _sp, ...cleanStats } = statData;
             
             return {
               id: r.id,
