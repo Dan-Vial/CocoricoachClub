@@ -975,8 +975,8 @@ export function CompetitionRoundsDialog({
                 Aucun athlète inscrit. Ajoute des participants depuis la composition de la compétition.
               </p>
             ) : (
-              <ScrollArea className="max-h-[260px] pr-2">
-                <div className="space-y-3">
+              <ScrollArea className="h-[200px] pr-2 rounded-md border bg-muted/20">
+                <div className="space-y-3 p-2">
                   {(() => {
                     // Group athletes by discipline (then specialty)
                     const groups = new Map<string, PlayerRounds[]>();
