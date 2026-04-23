@@ -972,7 +972,7 @@ export function CompetitionRoundsDialog({
                 Athlètes inscrits ({playerRoundsData.length})
               </Label>
               <p className="text-[10px] text-muted-foreground italic">
-                Double-cliquez sur un athlète pour saisir ses résultats
+                Cliquez sur un athlète pour saisir ses résultats
               </p>
             </div>
             {playerRoundsData.length === 0 ? (
