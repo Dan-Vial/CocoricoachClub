@@ -50,19 +50,48 @@ interface TeamCumulativeStatsProps {
   matchesWithScores?: MatchScoreData[];
   /** Optional override for displayed categories — used to hide athletics disciplines no athlete competes in. */
   statCategoriesOverride?: { key: string; label: string }[];
+  /** Athletics only: map playerId → set of stat-category keys (ath_lancers, ath_haies…) the player is registered in. */
+  playerCategoryMap?: Record<string, Set<string>>;
 }
 
-export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType, matchesWithScores = [], statCategoriesOverride }: TeamCumulativeStatsProps) {
+// Lower-is-better keys (rankings, times). For these, "team value" = best (MIN) and "Moy" = mean of player values.
+const LOWER_IS_BETTER_TEAM_KEYS = new Set([
+  "finalRanking", "ranking", "categoryRanking", "placement",
+  "time", "finalTime", "final_time_seconds", "runTime", "splitTime",
+  "split50", "split100", "turnTime", "reactionTime", "gapToFirst", "avgPace",
+]);
+
+export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType, matchesWithScores = [], statCategoriesOverride, playerCategoryMap }: TeamCumulativeStatsProps) {
   const statCategories = statCategoriesOverride ?? getStatCategories(sportType);
 
-  // Aggregate team totals across all players
-  const teamTotals = useMemo(() => {
+  const isAthletics = (sportType || "").toLowerCase().includes("athl");
+
+  // Helper: returns the subset of players relevant for a given category key.
+  // Athletics: filter by playerCategoryMap (only athletes registered in that discipline).
+  // Other sports: full team.
+  const getScopedStats = (catKey: string): CumulativeStats[] => {
+    if (!isAthletics || !playerCategoryMap || catKey === "ath_general") return stats;
+    return stats.filter(p => playerCategoryMap[p.playerId]?.has(catKey));
+  };
+
+  // Compute totals for a scoped subset of players (per-category for athletics).
+  const computeCategoryTotals = (scoped: CumulativeStats[]) => {
     const totals: Record<string, number> = {};
-    const matchCount = Math.max(...stats.map(s => s.matchesPlayed), 1);
+    const means: Record<string, number> = {}; // mean of player values (for Moy on rank-type stats)
+    const matchCount = Math.max(...scoped.map(s => s.matchesPlayed), 1);
 
     sportStats.forEach(stat => {
       if (stat.computedFrom) return;
-      totals[stat.key] = stats.reduce((sum, p) => sum + (p.sportData[stat.key] || 0), 0);
+      if (LOWER_IS_BETTER_TEAM_KEYS.has(stat.key)) {
+        // Headline = best (MIN) of player values > 0; Moy = mean of player values > 0
+        const vals = scoped.map(p => p.sportData[stat.key] || 0).filter(v => v > 0);
+        totals[stat.key] = vals.length > 0 ? Math.min(...vals) : 0;
+        means[stat.key] = vals.length > 0
+          ? Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 10) / 10
+          : 0;
+      } else {
+        totals[stat.key] = scoped.reduce((sum, p) => sum + (p.sportData[stat.key] || 0), 0);
+      }
     });
 
     sportStats.forEach(stat => {
@@ -76,8 +105,8 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
       }
     });
 
-    return { totals, matchCount };
-  }, [stats, sportStats]);
+    return { totals, means, matchCount };
+  };
 
   // Team progression: first match team total vs last match team total
   const teamProgression = useMemo(() => {
@@ -170,13 +199,20 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
   // Use shared sub-group helper (same logic as PlayerCumulativeStats and stats input)
   const groupStats = (catKey: string, statsList: StatField[]) => groupStatsByTheme(catKey, statsList);
 
-  const renderStatTile = (stat: StatField, opts?: { large?: boolean }) => {
+  const renderStatTile = (
+    stat: StatField,
+    catTotals: { totals: Record<string, number>; means: Record<string, number>; matchCount: number },
+    opts?: { large?: boolean },
+  ) => {
     const large = opts?.large;
-    const val = teamTotals.totals[stat.key] || 0;
-    const avg = teamTotals.matchCount > 0 ? Math.round((val / teamTotals.matchCount) * 10) / 10 : 0;
+    const val = catTotals.totals[stat.key] || 0;
+    const isLowerBetter = LOWER_IS_BETTER_TEAM_KEYS.has(stat.key);
+    const avg = isLowerBetter
+      ? (catTotals.means[stat.key] || 0)
+      : (catTotals.matchCount > 0 ? Math.round((val / catTotals.matchCount) * 10) / 10 : 0);
     const prog = teamProgression[stat.key] || 0;
     const neutral = isNeutralStat(stat.key);
-    const lowerIsBetter = /turnover|missed|error|penalt(y|ies)_conceded|fault|loss|interception_conceded/i.test(stat.key);
+    const lowerIsBetter = isLowerBetter || /turnover|missed|error|penalt(y|ies)_conceded|fault|loss|interception_conceded/i.test(stat.key);
     const effectiveProg = lowerIsBetter ? -prog : prog;
     let toneClass = "bg-muted/50 border-border/60";
     if (!neutral && matchesData.length >= 2 && !stat.computedFrom) {
@@ -184,6 +220,7 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
       else if (effectiveProg < 0) toneClass = "bg-destructive/10 border-destructive/30";
       else toneClass = "bg-amber-500/10 border-amber-500/30";
     }
+    const displayVal = stat.computedFrom ? `${val}%` : (val === 0 && isLowerBetter ? "—" : val);
     return (
       <Tooltip key={stat.key}>
         <TooltipTrigger asChild>
@@ -191,12 +228,14 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
             className={`${large ? "p-2.5" : "p-1.5"} rounded-md text-center space-y-0 border ${toneClass}`}
           >
             <p className={`${large ? "text-xl" : "text-base"} font-bold leading-tight`}>
-              {stat.computedFrom ? `${val}%` : val}
+              {displayVal}
             </p>
             <p className={`${large ? "text-[11px]" : "text-[9px]"} text-muted-foreground leading-tight`}>{stat.shortLabel}</p>
             <div className="flex items-center justify-center gap-0.5 flex-wrap">
               {!stat.computedFrom && (
-                <span className={`${large ? "text-[10px]" : "text-[9px]"} text-muted-foreground`}>Moy {avg}</span>
+                <span className={`${large ? "text-[10px]" : "text-[9px]"} text-muted-foreground`}>
+                  Moy {avg === 0 && isLowerBetter ? "—" : avg}
+                </span>
               )}
               {!neutral && matchesData.length >= 2 && !stat.computedFrom && (
                 <ProgressionBadge value={prog} />
@@ -218,6 +257,8 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
         if (categoryStats.length === 0) return null;
         const isGeneral = cat.key === "general";
         const groups = groupStats(cat.key, categoryStats);
+        const scoped = getScopedStats(cat.key);
+        const catTotals = computeCategoryTotals(scoped);
         return (
           <Card key={cat.key} className="border-border/60">
             <CardHeader className="py-2 px-3">
@@ -293,7 +334,7 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
                               {group.label}
                             </p>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                              {group.items.map(s => renderStatTile(s, { large: true }))}
+                              {group.items.map(s => renderStatTile(s, catTotals, { large: true }))}
                             </div>
                           </div>
                         ))}
@@ -303,7 +344,7 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
                     {unlabeledGroups.map(group => (
                       <div key={group.key}>
                         <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1.5">
-                          {group.items.map(s => renderStatTile(s))}
+                          {group.items.map(s => renderStatTile(s, catTotals))}
                         </div>
                       </div>
                     ))}
