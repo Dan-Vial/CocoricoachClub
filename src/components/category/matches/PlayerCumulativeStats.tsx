@@ -138,21 +138,48 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
     queryKey: ["athletics-player-disciplines", categoryId, activeMatchIds, isAthletics],
     queryFn: async () => {
       if (!isAthletics || activeMatchIds.length === 0) return {} as Record<string, Set<string>>;
-      const { data, error } = await supabase
+      const map: Record<string, Set<string>> = {};
+      const addFor = (playerId: string, discipline?: string | null, specialty?: string | null) => {
+        if (!playerId) return;
+        if (!map[playerId]) map[playerId] = new Set<string>();
+        // Always include "ath_general" so generic stats stay visible.
+        map[playerId].add("ath_general");
+        const fromSpec = getAthletismeCategoryKeyForDiscipline(specialty);
+        const fromDisc = getAthletismeCategoryKeyForDiscipline(discipline);
+        if (fromSpec) map[playerId].add(fromSpec);
+        else if (fromDisc) map[playerId].add(fromDisc);
+      };
+
+      // 1) match_lineups (per-event inscriptions)
+      const { data: lineups } = await supabase
         .from("match_lineups")
         .select("player_id, discipline, specialty")
         .in("match_id", activeMatchIds);
-      if (error) throw error;
-      const map: Record<string, Set<string>> = {};
-      (data || []).forEach((row: any) => {
-        if (!map[row.player_id]) map[row.player_id] = new Set<string>();
-        // Always include "ath_general" so generic stats stay visible.
-        map[row.player_id].add("ath_general");
-        const fromSpec = getAthletismeCategoryKeyForDiscipline(row.specialty);
-        const fromDisc = getAthletismeCategoryKeyForDiscipline(row.discipline);
-        if (fromSpec) map[row.player_id].add(fromSpec);
-        else if (fromDisc) map[row.player_id].add(fromDisc);
+      (lineups || []).forEach((row: any) => addFor(row.player_id, row.discipline, row.specialty));
+
+      // 2) competition_rounds → stat_data._discipline / _specialty (fallback when no lineup)
+      const { data: rounds } = await supabase
+        .from("competition_rounds")
+        .select("player_id, competition_round_stats(stat_data)")
+        .in("match_id", activeMatchIds);
+      (rounds || []).forEach((r: any) => {
+        const sd = r.competition_round_stats?.[0]?.stat_data || {};
+        addFor(r.player_id, sd?._discipline ?? null, sd?._specialty ?? null);
       });
+
+      // 3) players table primary discipline/specialty (last fallback)
+      const playerIds = [...new Set([...(lineups || []).map((l: any) => l.player_id), ...(rounds || []).map((r: any) => r.player_id)])];
+      if (playerIds.length > 0) {
+        const { data: players } = await supabase
+          .from("players")
+          .select("id, discipline, specialty")
+          .in("id", playerIds);
+        (players || []).forEach((p: any) => {
+          // Only use as fallback if nothing concrete was added
+          if (map[p.id] && map[p.id].size === 1) addFor(p.id, p.discipline, p.specialty);
+        });
+      }
+
       return map;
     },
     enabled: isAthletics && activeMatchIds.length > 0,
