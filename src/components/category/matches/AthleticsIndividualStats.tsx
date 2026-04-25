@@ -350,9 +350,26 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
       });
     });
 
+    // Logical phase order: qualifs → séries → demi → finale → autre
+    const phaseOrder = (phase: string | null): number => {
+      if (!phase) return 99;
+      const p = phase.toLowerCase();
+      if (p.includes("qualif")) return 1;
+      if (p.includes("serie") || p.includes("série")) return 2;
+      if (p.includes("repechage") || p.includes("repêchage")) return 3;
+      if (p.includes("quart")) return 4;
+      if (p.includes("demi")) return 5;
+      if (p.includes("finale") || p === "final") return 6;
+      return 50;
+    };
+
     return points.sort((a, b) => {
       const d = a.matchDate.localeCompare(b.matchDate);
       if (d !== 0) return d;
+      const c = a.competition.localeCompare(b.competition);
+      if (c !== 0) return c;
+      const ph = phaseOrder(a.phase) - phaseOrder(b.phase);
+      if (ph !== 0) return ph;
       return a.roundId.localeCompare(b.roundId);
     });
   }, [selectedAthleteId, activePair, rounds, matches, disciplinePairs.length]);
