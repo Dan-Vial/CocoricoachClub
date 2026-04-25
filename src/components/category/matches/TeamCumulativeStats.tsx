@@ -50,9 +50,18 @@ interface TeamCumulativeStatsProps {
   matchesWithScores?: MatchScoreData[];
   /** Optional override for displayed categories — used to hide athletics disciplines no athlete competes in. */
   statCategoriesOverride?: { key: string; label: string }[];
+  /** Athletics only: map playerId → set of stat-category keys (ath_lancers, ath_haies…) the player is registered in. */
+  playerCategoryMap?: Record<string, Set<string>>;
 }
 
-export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType, matchesWithScores = [], statCategoriesOverride }: TeamCumulativeStatsProps) {
+// Lower-is-better keys (rankings, times). For these, "team value" = best (MIN) and "Moy" = mean of player values.
+const LOWER_IS_BETTER_TEAM_KEYS = new Set([
+  "finalRanking", "ranking", "categoryRanking", "placement",
+  "time", "finalTime", "final_time_seconds", "runTime", "splitTime",
+  "split50", "split100", "turnTime", "reactionTime", "gapToFirst", "avgPace",
+]);
+
+export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType, matchesWithScores = [], statCategoriesOverride, playerCategoryMap }: TeamCumulativeStatsProps) {
   const statCategories = statCategoriesOverride ?? getStatCategories(sportType);
 
   // Aggregate team totals across all players
