@@ -30,6 +30,10 @@ interface CumulativeStatsChartsProps {
   sportStats: StatField[];
   selectedMatchIds: string[];
   sportType?: string;
+  /** Optional: only used for athletics. Maps a playerId to the list of category keys (disciplines)
+   * the athlete is registered in. When provided, the comparison/evolution/progression charts only
+   * include athletes whose disciplines match the currently selected stat category. */
+  playerDisciplineMap?: Record<string, string[]>;
 }
 
 const getCategoryIcon = (catKey: string) => {
