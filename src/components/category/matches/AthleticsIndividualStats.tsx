@@ -771,7 +771,11 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
                 icon={<Target className="h-4 w-4" />}
                 label="Classement moyen"
                 value={summary.avgRank != null ? summary.avgRank.toFixed(1) : "—"}
-                hint={summary.bestRank != null ? `Meilleur : ${summary.bestRank}ᵉ` : undefined}
+                hint={
+                  summary.bestRank != null
+                    ? `Meilleur : ${summary.bestRank}ᵉ • ${summary.rankCount ?? 0} compét.`
+                    : "Phase la plus avancée saisie"
+                }
               />
               <KpiCard
                 icon={summary.evolutionPct == null ? <Minus className="h-4 w-4" /> : (summary.lowerIsBetter ? (summary.evolutionPct < 0 ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />) : (summary.evolutionPct > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />))}
