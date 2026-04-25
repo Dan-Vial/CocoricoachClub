@@ -845,72 +845,99 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {performancePoints.map(p => {
-                          // For sprints/hurdles, IAAF wind regulation: > +2.0 m/s = wind-aided (not record-eligible)
-                          const isTimedDisc = p.unit === "sec";
-                          const windAided = isTimedDisc && p.windSpeed != null && p.windSpeed > 2;
-                          const headWind = isTimedDisc && p.windSpeed != null && p.windSpeed < -1;
-                          return (
-                            <TableRow key={p.roundId}>
-                              <TableCell className="text-xs text-muted-foreground">
-                                {p.matchDate ? format(parseISO(p.matchDate), "dd/MM/yy", { locale: fr }) : "—"}
-                              </TableCell>
-                              <TableCell className="font-medium">{p.competition}</TableCell>
-                              <TableCell className="text-xs">
-                                {p.phase ? <Badge variant="outline" className="font-normal">{p.phase}</Badge> : <span className="text-muted-foreground">—</span>}
-                              </TableCell>
-                              <TableCell className="text-center">
-                                {p.ranking != null ? (
-                                  <Badge variant={p.ranking <= 3 ? "default" : "outline"} className="font-mono">
-                                    {p.ranking}ᵉ
-                                  </Badge>
-                                ) : (
-                                  <span className="text-muted-foreground">—</span>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-right font-mono">
-                                {formatResult(p.result, p.unit)}
-                              </TableCell>
-                              <TableCell className="text-center font-mono text-xs">
-                                {p.windSpeed != null ? (
-                                  <span
-                                    className={
-                                      windAided
-                                        ? "text-amber-600 dark:text-amber-400 font-semibold"
-                                        : headWind
-                                          ? "text-blue-600 dark:text-blue-400 font-semibold"
-                                          : ""
-                                    }
-                                    title={
-                                      windAided
-                                        ? "Vent favorable > +2 m/s (perf. non homologable comme RP officiel)"
-                                        : headWind
-                                          ? "Vent contraire — perf. dégradée"
-                                          : undefined
-                                    }
-                                  >
-                                    {p.windSpeed > 0 ? "+" : ""}{p.windSpeed.toFixed(1)} m/s
-                                    {p.windDirection && (
-                                      <span className="ml-1 text-muted-foreground">({p.windDirection})</span>
-                                    )}
-                                  </span>
-                                ) : p.windDirection ? (
-                                  <span className="text-muted-foreground">{p.windDirection}</span>
-                                ) : (
-                                  <span className="text-muted-foreground">—</span>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-center font-mono text-xs">
-                                {p.temperature != null ? `${p.temperature}°C` : <span className="text-muted-foreground">—</span>}
-                              </TableCell>
-                              <TableCell className="text-center">
-                                {p.isPersonalRecord && (
-                                  <Badge variant="default" className="bg-amber-500 hover:bg-amber-500 text-white">RP</Badge>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
+                        {(() => {
+                          // Build group index per competition+date so each group gets an alternating pale colour band
+                          const groupColors = [
+                            "bg-blue-50/60 dark:bg-blue-950/20",
+                            "bg-amber-50/60 dark:bg-amber-950/20",
+                            "bg-emerald-50/60 dark:bg-emerald-950/20",
+                            "bg-purple-50/60 dark:bg-purple-950/20",
+                            "bg-rose-50/60 dark:bg-rose-950/20",
+                            "bg-cyan-50/60 dark:bg-cyan-950/20",
+                          ];
+                          const groupIndexByKey = new Map<string, number>();
+                          performancePoints.forEach((p) => {
+                            const key = `${p.matchDate}__${p.competition}`;
+                            if (!groupIndexByKey.has(key)) {
+                              groupIndexByKey.set(key, groupIndexByKey.size);
+                            }
+                          });
+
+                          return performancePoints.map((p, idx) => {
+                            const isTimedDisc = p.unit === "sec";
+                            const windAided = isTimedDisc && p.windSpeed != null && p.windSpeed > 2;
+                            const headWind = isTimedDisc && p.windSpeed != null && p.windSpeed < -1;
+                            const groupKey = `${p.matchDate}__${p.competition}`;
+                            const groupIdx = groupIndexByKey.get(groupKey) ?? 0;
+                            const bandClass = groupColors[groupIdx % groupColors.length];
+                            const prev = performancePoints[idx - 1];
+                            const isFirstOfGroup =
+                              !prev || `${prev.matchDate}__${prev.competition}` !== groupKey;
+                            return (
+                              <TableRow
+                                key={p.roundId}
+                                className={`${bandClass} ${isFirstOfGroup ? "border-t-2 border-t-border" : ""}`}
+                              >
+                                <TableCell className="text-xs text-muted-foreground">
+                                  {p.matchDate ? format(parseISO(p.matchDate), "dd/MM/yy", { locale: fr }) : "—"}
+                                </TableCell>
+                                <TableCell className="font-medium">{p.competition}</TableCell>
+                                <TableCell className="text-xs">
+                                  {p.phase ? <Badge variant="outline" className="font-normal">{p.phase}</Badge> : <span className="text-muted-foreground">—</span>}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {p.ranking != null ? (
+                                    <Badge variant={p.ranking <= 3 ? "default" : "outline"} className="font-mono">
+                                      {p.ranking}ᵉ
+                                    </Badge>
+                                  ) : (
+                                    <span className="text-muted-foreground">—</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-right font-mono">
+                                  {formatResult(p.result, p.unit)}
+                                </TableCell>
+                                <TableCell className="text-center font-mono text-xs">
+                                  {p.windSpeed != null ? (
+                                    <span
+                                      className={
+                                        windAided
+                                          ? "text-amber-600 dark:text-amber-400 font-semibold"
+                                          : headWind
+                                            ? "text-blue-600 dark:text-blue-400 font-semibold"
+                                            : ""
+                                      }
+                                      title={
+                                        windAided
+                                          ? "Vent favorable > +2 m/s (perf. non homologable comme RP officiel)"
+                                          : headWind
+                                            ? "Vent contraire — perf. dégradée"
+                                            : undefined
+                                      }
+                                    >
+                                      {p.windSpeed > 0 ? "+" : ""}{p.windSpeed.toFixed(1)} m/s
+                                      {p.windDirection && (
+                                        <span className="ml-1 text-muted-foreground">({p.windDirection})</span>
+                                      )}
+                                    </span>
+                                  ) : p.windDirection ? (
+                                    <span className="text-muted-foreground">{p.windDirection}</span>
+                                  ) : (
+                                    <span className="text-muted-foreground">—</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-center font-mono text-xs">
+                                  {p.temperature != null ? `${p.temperature}°C` : <span className="text-muted-foreground">—</span>}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  {p.isPersonalRecord && (
+                                    <Badge variant="default" className="bg-amber-500 hover:bg-amber-500 text-white">RP</Badge>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          });
+                        })()}
                       </TableBody>
                     </Table>
                   </div>
