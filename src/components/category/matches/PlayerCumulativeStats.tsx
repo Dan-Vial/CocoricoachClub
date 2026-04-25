@@ -76,6 +76,10 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
     const t = (sportType || "").toLowerCase();
     return t.includes("athl") || t.includes("judo") || t.includes("aviron") || t.includes("natation") || t.includes("ski") || t.includes("snow") || t.includes("triathlon") || t.includes("surf") || t.includes("tennis") || t.includes("padel");
   })();
+  // Terminology: collective sports use "match", individual sports use "compétition/épreuve"
+  const eventLabel = isIndividualCompetitionSport ? "compétition" : "match";
+  const eventLabelPlural = isIndividualCompetitionSport ? "compétitions" : "matchs";
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   // Keys for which "best" means MIN (times, gaps, places). Others are aggregated as MAX.
   const LOWER_IS_BETTER_KEYS = new Set([
     "time", "finalTime", "final_time_seconds", "runTime", "splitTime",
