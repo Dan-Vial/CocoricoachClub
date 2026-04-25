@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
-import { Activity, Trophy, Timer, Target, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Activity, Trophy, Timer, Target, TrendingUp, TrendingDown, Minus, Wind, Thermometer } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getDefaultUnitForDiscipline } from "@/lib/athletics/recordsHelpers";
