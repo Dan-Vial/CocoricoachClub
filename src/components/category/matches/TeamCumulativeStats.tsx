@@ -334,7 +334,7 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
                               {group.label}
                             </p>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                              {group.items.map(s => renderStatTile(s, { large: true }))}
+                              {group.items.map(s => renderStatTile(s, catTotals, { large: true }))}
                             </div>
                           </div>
                         ))}
