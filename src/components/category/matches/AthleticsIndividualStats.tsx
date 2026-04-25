@@ -661,9 +661,31 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
               {activePair.specialty && (
                 <Badge variant="secondary">{activePair.specialty}</Badge>
               )}
-              <span className="text-xs text-muted-foreground ml-auto">
-                {performancePoints.length} compétition{performancePoints.length > 1 ? "s" : ""}
+              <span className="text-xs text-muted-foreground">
+                {performancePoints.length} course{performancePoints.length > 1 ? "s" : ""} / essai{performancePoints.length > 1 ? "s" : ""}
               </span>
+              <div className="ml-auto flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={handleExportExcel}
+                  disabled={performancePoints.length === 0}
+                >
+                  <FileSpreadsheet className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Excel</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={handleExportPdf}
+                  disabled={performancePoints.length === 0}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">PDF</span>
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
