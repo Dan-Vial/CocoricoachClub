@@ -2381,9 +2381,12 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                   </div>
                 </div>
 
-                <Tabs defaultValue={statCategories[0]?.key || "general"} className="w-full">
+                {(() => {
+                  const playerStatCategories = getCategoriesForPlayer(player.playerId);
+                  return (
+                <Tabs defaultValue={playerStatCategories[0]?.key || "general"} className="w-full">
                   <TabsList className="flex w-full flex-wrap h-auto gap-1 justify-start">
-                    {statCategories.map(cat => (
+                    {playerStatCategories.map(cat => (
                       <TabsTrigger key={cat.key} value={cat.key} className="gap-1 text-xs">
                         {getCategoryIcon(cat.key)}
                         <span className="hidden sm:inline">{cat.label}</span>
@@ -2391,7 +2394,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                     ))}
                   </TabsList>
 
-                  {statCategories.map(cat => {
+                  {playerStatCategories.map(cat => {
                     const categoryStats = sportStats.filter(s => s.category === cat.key);
                     const groups = groupStatsByTheme(cat.key, categoryStats);
 
