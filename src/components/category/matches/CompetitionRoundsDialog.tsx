@@ -1762,7 +1762,7 @@ export function CompetitionRoundsDialog({
                               variant="outline"
                               size="sm"
                               className="h-7 text-xs gap-1"
-                              onClick={() => unlockBowlingRound(selectedPlayer.playerId, round.round_number)}
+                              onClick={() => unlockBowlingRound(selectedPlayer.entryKey, round.round_number)}
                             >
                               <Lock className="h-3 w-3" />
                               Modifier
