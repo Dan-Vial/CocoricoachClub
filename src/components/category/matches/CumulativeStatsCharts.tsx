@@ -230,23 +230,29 @@ export function CumulativeStatsCharts({ stats, matchesData, sportStats, selected
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={top5} layout="vertical" margin={{ left: 10, right: 30 }}>
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                      <XAxis type="number" />
-                      <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 11 }} />
-                      <Tooltip 
-                        formatter={(value: number, name: string) => [value, name === "value" ? "Total" : "Moy/match"]}
-                        labelFormatter={(label) => top5.find(t => t.name === label)?.fullName || label}
-                        contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
-                      />
-                      <Legend />
-                      <Bar dataKey="value" name="Total" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
-                      <Bar dataKey="avg" name="Moy/match" fill="hsl(var(--primary) / 0.4)" radius={[0, 4, 4, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                {top5.length === 0 ? (
+                  <div className="py-8 text-center text-sm text-muted-foreground">
+                    Aucun athlète inscrit dans cette discipline.
+                  </div>
+                ) : (
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={top5} layout="vertical" margin={{ left: 10, right: 30 }}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                        <XAxis type="number" />
+                        <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 11 }} />
+                        <Tooltip 
+                          formatter={(value: number, name: string) => [value, name === "value" ? "Total" : "Moy/match"]}
+                          labelFormatter={(label) => top5.find(t => t.name === label)?.fullName || label}
+                          contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
+                        />
+                        <Legend />
+                        <Bar dataKey="value" name="Total" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                        <Bar dataKey="avg" name="Moy/match" fill="hsl(var(--primary) / 0.4)" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
