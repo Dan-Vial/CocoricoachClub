@@ -2129,7 +2129,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
                 <Filter className="h-4 w-4" />
-                Filtrer les matchs
+                Filtrer {isIndividualCompetitionSport ? "les compétitions" : "les matchs"}
                 <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1.5">
                   {selectedCount}/{allMatches.length}
                 </Badge>
@@ -2137,7 +2137,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
             </PopoverTrigger>
             <PopoverContent className="w-[360px] p-0" align="start">
               <div className="p-3 border-b">
-                <p className="text-sm font-medium">Sélectionner les matchs</p>
+                <p className="text-sm font-medium">Sélectionner {isIndividualCompetitionSport ? "les compétitions" : "les matchs"}</p>
                 <div className="flex gap-2 mt-2">
                   <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setSelectedMatchIds([])}>
                     <CheckSquare className="h-3 w-3 mr-1" />Tous
@@ -2148,12 +2148,21 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                 <div className="p-2 space-y-1">
                   {allMatches.map(match => {
                     const isSelected = selectedMatchIds.length === 0 || selectedMatchIds.includes(match.id);
+                    const primaryLabel = isIndividualCompetitionSport
+                      ? (match.competition || match.opponent || "Compétition")
+                      : `vs ${match.opponent || "Adversaire inconnu"}`;
+                    const secondaryLabel = isIndividualCompetitionSport && match.opponent && match.competition
+                      ? match.opponent
+                      : null;
                     return (
                       <button key={match.id} onClick={() => toggleMatch(match.id)}
                         className={`w-full flex items-center gap-3 p-2 rounded-md text-left transition-colors hover:bg-muted ${isSelected ? 'bg-primary/5' : 'opacity-50'}`}>
                         <Checkbox checked={isSelected} className="pointer-events-none" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">vs {match.opponent || "Adversaire inconnu"}</p>
+                          <p className="text-sm font-medium truncate">{primaryLabel}</p>
+                          {secondaryLabel && (
+                            <p className="text-xs text-muted-foreground truncate">{secondaryLabel}</p>
+                          )}
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Calendar className="h-3 w-3" />
                             {format(new Date(match.match_date), "dd MMM yyyy", { locale: fr })}
@@ -2168,11 +2177,11 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
           </Popover>
 
           {selectedMatchIds.length === 0 && allMatches.length > 0 && (
-            <Badge variant="secondary" className="gap-1">Tous les matchs ({allMatches.length})</Badge>
+            <Badge variant="secondary" className="gap-1">{isIndividualCompetitionSport ? "Toutes les compétitions" : "Tous les matchs"} ({allMatches.length})</Badge>
           )}
           {selectedMatchIds.length > 0 && (
             <Badge variant="outline" className="gap-1">
-              <Trophy className="h-3 w-3" />{selectedMatchIds.length} match{selectedMatchIds.length > 1 ? 's' : ''}
+              <Trophy className="h-3 w-3" />{selectedMatchIds.length} {isIndividualCompetitionSport ? (selectedMatchIds.length > 1 ? "compétitions" : "compétition") : `match${selectedMatchIds.length > 1 ? 's' : ''}`}
             </Badge>
           )}
         </div>
