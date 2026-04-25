@@ -1247,12 +1247,24 @@ export function CompetitionRoundsDialog({
                     className="h-8"
                   />
                 </div>
+
+                {!round.isLocked && (
+                  <Button
+                    size="sm"
+                    onClick={() => lockBowlingRound(player.playerId, round.round_number)}
+                    className="w-full gap-2"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Valider l'épreuve
+                  </Button>
+                )}
               </CardContent>
             </Card>
             <Button
               size="sm"
+              variant="outline"
               onClick={() => addRound(player.entryKey)}
-              className="w-full gap-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              className="w-full gap-2 border-dashed"
             >
               <Plus className="h-4 w-4" />
               Ajouter une épreuve
