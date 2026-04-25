@@ -46,7 +46,7 @@ const getCategoryIcon = (catKey: string) => {
   }
 };
 
-export function CumulativeStatsCharts({ stats, matchesData, sportStats, selectedMatchIds, sportType = "XV" }: CumulativeStatsChartsProps) {
+export function CumulativeStatsCharts({ stats, matchesData, sportStats, selectedMatchIds, sportType = "XV", playerDisciplineMap }: CumulativeStatsChartsProps) {
   const statCategories = getStatCategories(sportType);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedStat, setSelectedStat] = useState<string>("");
