@@ -290,7 +290,7 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
       const bl = `${disciplineLabel(b.discipline)} ${b.specialty || ""}`;
       return al.localeCompare(bl);
     });
-  }, [selectedAthleteId, rounds, lineups]);
+  }, [selectedAthleteId, rounds, lineups, athleteRecords]);
 
   const totalRaces = sections.reduce((s, sec) => s + sec.races.length, 0);
 
