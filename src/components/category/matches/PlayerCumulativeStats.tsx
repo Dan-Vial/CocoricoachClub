@@ -669,7 +669,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
     } catch (e) {
       toast.error("Erreur lors de l'export Excel");
     }
-  }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, playerProgressions]);
+  }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, playerProgressions, getCategoriesForPlayer]);
 
   // Export PDF
   const handleExportPdf = useCallback(async (mode: "all" | "team" | "individual" | "single" = "all", singlePlayerId?: string) => {
