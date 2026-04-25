@@ -62,6 +62,7 @@ interface RaceRow {
   result: number | null;
   unit: string;
   isPR: boolean;
+  isSB: boolean;
   windSpeed: number | null;
   windDirection: string | null;
   temperature: number | null;
@@ -150,6 +151,20 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
     enabled: allPlayerIds.length > 0,
   });
 
+  // Athletics records (PB/SB) for the selected athlete — used to mark SB matches in the PDF/UI.
+  const { data: athleteRecords = [] } = useQuery({
+    queryKey: ["athl-comp-records", selectedAthleteId],
+    queryFn: async () => {
+      if (!selectedAthleteId) return [] as Array<{ discipline: string | null; specialty: string | null; season_best: number | null; personal_best: number | null }>;
+      const { data } = await supabase
+        .from("athletics_records")
+        .select("discipline, specialty, season_best, personal_best")
+        .eq("player_id", selectedAthleteId);
+      return (data || []) as Array<{ discipline: string | null; specialty: string | null; season_best: number | null; personal_best: number | null }>;
+    },
+    enabled: !!selectedAthleteId,
+  });
+
   const sortedPlayers = useMemo(() => {
     return [...players].sort((a, b) => {
       const an = `${a.first_name || ""} ${a.name}`;
@@ -212,11 +227,18 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
         b.specialty || undefined
       );
 
+      // SB lookup for this discipline/specialty
+      const rec = athleteRecords.find(
+        a => (a.discipline || null) === (b.discipline || null) && (a.specialty || null) === (b.specialty || null)
+      );
+      const sbVal = rec?.season_best ?? null;
+
       const races: RaceRow[] = b.rounds.map(r => {
         const { value, unit } = extractResult(r, lowerIsBetter);
         const finalUnit = unit || defaultUnit;
         const windRaw = r.wind_conditions ?? null;
         const windNum = windRaw != null ? Number(String(windRaw).replace(",", ".")) : NaN;
+        const isSB = value != null && sbVal != null && Math.abs(value - sbVal) < 0.001;
         return {
           roundId: r.id,
           phase: r.phase || null,
@@ -224,6 +246,7 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
           result: value,
           unit: finalUnit,
           isPR: !!r.is_personal_record,
+          isSB,
           windSpeed: Number.isFinite(windNum) ? windNum : null,
           windDirection: r.wind_direction || null,
           temperature: r.temperature_celsius ?? null,
@@ -267,7 +290,7 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
       const bl = `${disciplineLabel(b.discipline)} ${b.specialty || ""}`;
       return al.localeCompare(bl);
     });
-  }, [selectedAthleteId, rounds, lineups]);
+  }, [selectedAthleteId, rounds, lineups, athleteRecords]);
 
   const totalRaces = sections.reduce((s, sec) => s + sec.races.length, 0);
 
@@ -313,7 +336,7 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
           "Vent (m/s)": r.windSpeed != null ? r.windSpeed : "",
           "Direction vent": r.windDirection || "",
           "Température (°C)": r.temperature != null ? r.temperature : "",
-          "Record perso": r.isPR ? "Oui" : "",
+          "Record": r.isPR ? "RP" : (r.isSB ? "SB" : ""),
         }));
         // Ligne de récap
         rows.push({} as any);
@@ -397,9 +420,9 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
           return;
         }
 
-        // Table header
-        const headers = ["#", "Phase", "Class.", "Résultat", "Vent", "Temp.", "RP"];
-        const colW = [10, 45, 18, 35, 30, 18, 12];
+        // Table header — séparation Vent (vitesse) + Sens
+        const headers = ["#", "Phase", "Class.", "Résultat", "Vent (m/s)", "Sens", "Temp.", "Record"];
+        const colW = [8, 36, 16, 32, 22, 18, 16, 20];
         doc.setFillColor(30, 41, 59);
         doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
@@ -414,26 +437,57 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
         doc.setTextColor(0, 0, 0);
         doc.setFont("helvetica", "normal");
 
+        // Compute worst result for color highlighting (only when ≥ 2 valid results)
+        const validVals = sec.races.map(r => r.result).filter((v): v is number => v != null);
+        const worstResult = validVals.length >= 2
+          ? (sec.lowerIsBetter ? Math.max(...validVals) : Math.min(...validVals))
+          : null;
+
         sec.races.forEach((r, idx) => {
           ensureSpace(8);
           if (idx % 2 === 0) {
             doc.setFillColor(248, 250, 252);
             doc.rect(margin, y, colW.reduce((a, b) => a + b, 0), 5.5, "F");
           }
+          const recordTag = r.isPR ? "RP" : (r.isSB ? "SB" : "");
+          const resultStr = formatResult(r.result, r.unit);
+          const isBest = r.result != null && sec.bestResult != null && Math.abs(r.result - sec.bestResult) < 0.001 && validVals.length >= 2;
+          const isWorst = r.result != null && worstResult != null && Math.abs(r.result - worstResult) < 0.001 && !isBest;
+
           const cells = [
             String(idx + 1),
             r.phase || "—",
             r.ranking != null ? `${r.ranking}` : "—",
-            formatResult(r.result, r.unit),
-            r.windSpeed != null ? `${r.windSpeed > 0 ? "+" : ""}${r.windSpeed.toFixed(1)} m/s` : (r.windDirection || "—"),
+            resultStr,
+            r.windSpeed != null ? `${r.windSpeed > 0 ? "+" : ""}${r.windSpeed.toFixed(1)}` : "—",
+            r.windDirection || "—",
             r.temperature != null ? `${r.temperature}°C` : "—",
-            r.isPR ? "✓" : "",
+            recordTag,
           ];
           let cx = margin;
           cells.forEach((c, cidx) => {
+            // Color the result cell (idx 3) and the record tag (idx 7)
+            if (cidx === 3 && isBest) {
+              doc.setTextColor(22, 163, 74); // green-600
+              doc.setFont("helvetica", "bold");
+            } else if (cidx === 3 && isWorst) {
+              doc.setTextColor(220, 38, 38); // red-600
+              doc.setFont("helvetica", "bold");
+            } else if (cidx === 7 && recordTag === "RP") {
+              doc.setTextColor(217, 119, 6); // amber-600
+              doc.setFont("helvetica", "bold");
+            } else if (cidx === 7 && recordTag === "SB") {
+              doc.setTextColor(37, 99, 235); // blue-600
+              doc.setFont("helvetica", "bold");
+            } else {
+              doc.setTextColor(0, 0, 0);
+              doc.setFont("helvetica", "normal");
+            }
             doc.text(String(c), cx + 1.5, y + 4);
             cx += colW[cidx];
           });
+          doc.setTextColor(0, 0, 0);
+          doc.setFont("helvetica", "normal");
           y += 5.5;
         });
 
@@ -587,7 +641,7 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
                             <TableHead className="text-center">
                               <span className="inline-flex items-center gap-1"><Thermometer className="h-3.5 w-3.5" />Temp.</span>
                             </TableHead>
-                            <TableHead className="text-center">RP</TableHead>
+                            <TableHead className="text-center">Record</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -595,6 +649,12 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
                             const isTimedDisc = r.unit === "sec";
                             const windAided = isTimedDisc && r.windSpeed != null && r.windSpeed > 2;
                             const headWind = isTimedDisc && r.windSpeed != null && r.windSpeed < -1;
+                            const validVals = sec.races.map(x => x.result).filter((v): v is number => v != null);
+                            const worstResult = validVals.length >= 2
+                              ? (sec.lowerIsBetter ? Math.max(...validVals) : Math.min(...validVals))
+                              : null;
+                            const isBest = r.result != null && sec.bestResult != null && Math.abs(r.result - sec.bestResult) < 0.001 && validVals.length >= 2;
+                            const isWorst = r.result != null && worstResult != null && Math.abs(r.result - worstResult) < 0.001 && !isBest;
                             return (
                               <TableRow key={r.roundId}>
                                 <TableCell className="text-center font-mono text-xs text-muted-foreground">{idx + 1}</TableCell>
@@ -608,14 +668,21 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
                                     <span className="text-muted-foreground">—</span>
                                   )}
                                 </TableCell>
-                                <TableCell className="text-right font-mono">{formatResult(r.result, r.unit)}</TableCell>
+                                <TableCell className={`text-right font-mono ${isBest ? "text-emerald-600 dark:text-emerald-400 font-bold" : isWorst ? "text-red-600 dark:text-red-400 font-bold" : ""}`}>
+                                  {formatResult(r.result, r.unit)}
+                                </TableCell>
                                 <TableCell className="text-center font-mono text-xs">
-                                  {r.windSpeed != null ? (
-                                    <span className={windAided ? "text-amber-600 dark:text-amber-400 font-semibold" : headWind ? "text-blue-600 dark:text-blue-400 font-semibold" : ""}>
-                                      {r.windSpeed > 0 ? "+" : ""}{r.windSpeed.toFixed(1)} m/s
-                                    </span>
-                                  ) : r.windDirection ? (
-                                    <span className="text-muted-foreground">{r.windDirection}</span>
+                                  {r.windSpeed != null || r.windDirection ? (
+                                    <div className="flex flex-col items-center leading-tight">
+                                      {r.windSpeed != null && (
+                                        <span className={windAided ? "text-amber-600 dark:text-amber-400 font-semibold" : headWind ? "text-blue-600 dark:text-blue-400 font-semibold" : ""}>
+                                          {r.windSpeed > 0 ? "+" : ""}{r.windSpeed.toFixed(1)} m/s
+                                        </span>
+                                      )}
+                                      {r.windDirection && (
+                                        <span className="text-[10px] text-muted-foreground">{r.windDirection}</span>
+                                      )}
+                                    </div>
                                   ) : (
                                     <span className="text-muted-foreground">—</span>
                                   )}
@@ -624,7 +691,11 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
                                   {r.temperature != null ? `${r.temperature}°C` : <span className="text-muted-foreground">—</span>}
                                 </TableCell>
                                 <TableCell className="text-center">
-                                  {r.isPR && <Badge variant="default" className="bg-amber-500 hover:bg-amber-500 text-white">RP</Badge>}
+                                  {r.isPR ? (
+                                    <Badge variant="default" className="bg-amber-500 hover:bg-amber-500 text-white">RP</Badge>
+                                  ) : r.isSB ? (
+                                    <Badge variant="default" className="bg-blue-500 hover:bg-blue-500 text-white">SB</Badge>
+                                  ) : null}
                                 </TableCell>
                               </TableRow>
                             );
