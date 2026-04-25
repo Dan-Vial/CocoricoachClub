@@ -336,7 +336,7 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
           "Vent (m/s)": r.windSpeed != null ? r.windSpeed : "",
           "Direction vent": r.windDirection || "",
           "Température (°C)": r.temperature != null ? r.temperature : "",
-          "Record perso": r.isPR ? "Oui" : "",
+          "Record": r.isPR ? "RP" : (r.isSB ? "SB" : ""),
         }));
         // Ligne de récap
         rows.push({} as any);
