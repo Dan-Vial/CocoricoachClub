@@ -338,10 +338,39 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
     });
   }, [selectedAthleteId, activePair, rounds, matches, disciplinePairs.length]);
 
+  // Hiérarchie des phases (de la moins à la plus avancée) — utilisée pour ne retenir
+  // que le classement de la phase la plus avancée saisie par compétition.
+  const phaseRank = (phase: string | null | undefined): number => {
+    if (!phase) return 0;
+    const p = phase.toLowerCase();
+    if (p.includes("final") && !p.includes("demi") && !p.includes("quart") && !p.includes("petite")) return 100;
+    if (p.includes("petite")) return 90;
+    if (p.includes("demi")) return 80;
+    if (p.includes("quart")) return 70;
+    if (p.includes("huiti") || p.includes("8e")) return 60;
+    if (p.includes("repechage") || p.includes("repêch")) return 30;
+    if (p.includes("série") || p.includes("serie") || p.includes("qualif")) return 20;
+    return 10;
+  };
+
+  // Pour chaque compétition, on conserve uniquement le classement issu de la phase
+  // la plus avancée saisie (ex : finale > demi > série). Tant que seule la série est
+  // renseignée, c'est ce classement-là qui apparaît, étiqueté avec sa phase.
+  const finalRankByMatch = useMemo(() => {
+    const map: Record<string, { ranking: number; phase: string | null }> = {};
+    performancePoints.forEach(p => {
+      if (p.ranking == null) return;
+      const cur = map[p.matchId];
+      if (!cur || phaseRank(p.phase) > phaseRank(cur.phase)) {
+        map[p.matchId] = { ranking: p.ranking, phase: p.phase ?? null };
+      }
+    });
+    return map;
+  }, [performancePoints]);
+
   const summary = useMemo(() => {
     if (performancePoints.length === 0) return null;
     const valid = performancePoints.filter(p => p.result != null) as Array<PerfPoint & { result: number }>;
-    const validRanks = performancePoints.filter(p => p.ranking != null) as Array<PerfPoint & { ranking: number }>;
     const lowerIsBetter = performancePoints[0].lowerIsBetter;
     const unit = performancePoints[0].unit;
 
@@ -357,13 +386,15 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
       ? ((lastResult - firstResult) / firstResult) * 100
       : null;
 
-    const avgRank = validRanks.length > 0
-      ? validRanks.reduce((s, p) => s + p.ranking, 0) / validRanks.length
+    // Classement = uniquement la phase la plus avancée par compétition
+    const finalRanks = Object.values(finalRankByMatch).map(r => r.ranking);
+    const avgRank = finalRanks.length > 0
+      ? finalRanks.reduce((s, r) => s + r, 0) / finalRanks.length
       : null;
-    const bestRank = validRanks.length > 0 ? Math.min(...validRanks.map(p => p.ranking)) : null;
+    const bestRank = finalRanks.length > 0 ? Math.min(...finalRanks) : null;
 
-    return { avgResult, bestResult, lastResult, evolutionPct, avgRank, bestRank, unit, lowerIsBetter, count: valid.length };
-  }, [performancePoints]);
+    return { avgResult, bestResult, lastResult, evolutionPct, avgRank, bestRank, unit, lowerIsBetter, count: valid.length, rankCount: finalRanks.length };
+  }, [performancePoints, finalRankByMatch]);
 
   const chartData = useMemo(() => {
     return performancePoints
