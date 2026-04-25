@@ -1663,7 +1663,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
     } catch (e) {
       toast.error("Erreur lors de l'export PDF");
     }
-  }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, activeMatchIds, playerProgressions, matchesDataForCharts, isRugby, kickingByPlayerFinal]);
+  }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, activeMatchIds, playerProgressions, matchesDataForCharts, isRugby, kickingByPlayerFinal, getCategoriesForPlayer]);
 
   // Enhanced individual player PDF export with photo, club, category, matches, kicking map
   const handleExportPlayerPdf = useCallback(async (playerId: string) => {
