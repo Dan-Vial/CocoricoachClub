@@ -227,11 +227,18 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
         b.specialty || undefined
       );
 
+      // SB lookup for this discipline/specialty
+      const rec = athleteRecords.find(
+        a => (a.discipline || null) === (b.discipline || null) && (a.specialty || null) === (b.specialty || null)
+      );
+      const sbVal = rec?.season_best ?? null;
+
       const races: RaceRow[] = b.rounds.map(r => {
         const { value, unit } = extractResult(r, lowerIsBetter);
         const finalUnit = unit || defaultUnit;
         const windRaw = r.wind_conditions ?? null;
         const windNum = windRaw != null ? Number(String(windRaw).replace(",", ".")) : NaN;
+        const isSB = value != null && sbVal != null && Math.abs(value - sbVal) < 0.001;
         return {
           roundId: r.id,
           phase: r.phase || null,
@@ -239,6 +246,7 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
           result: value,
           unit: finalUnit,
           isPR: !!r.is_personal_record,
+          isSB,
           windSpeed: Number.isFinite(windNum) ? windNum : null,
           windDirection: r.wind_direction || null,
           temperature: r.temperature_celsius ?? null,
