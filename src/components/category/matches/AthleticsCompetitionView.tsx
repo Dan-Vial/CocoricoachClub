@@ -151,6 +151,20 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
     enabled: allPlayerIds.length > 0,
   });
 
+  // Athletics records (PB/SB) for the selected athlete — used to mark SB matches in the PDF/UI.
+  const { data: athleteRecords = [] } = useQuery({
+    queryKey: ["athl-comp-records", selectedAthleteId],
+    queryFn: async () => {
+      if (!selectedAthleteId) return [] as Array<{ discipline: string | null; specialty: string | null; season_best: number | null; personal_best: number | null }>;
+      const { data } = await supabase
+        .from("athletics_records")
+        .select("discipline, specialty, season_best, personal_best")
+        .eq("player_id", selectedAthleteId);
+      return (data || []) as Array<{ discipline: string | null; specialty: string | null; season_best: number | null; personal_best: number | null }>;
+    },
+    enabled: !!selectedAthleteId,
+  });
+
   const sortedPlayers = useMemo(() => {
     return [...players].sort((a, b) => {
       const an = `${a.first_name || ""} ${a.name}`;
