@@ -2645,6 +2645,17 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
         </div>
       )}
 
+      {/* Athletics: comparison by discipline / specialty across athletes */}
+      {isAthletics && (
+        <div>
+          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            Comparaison par discipline / spécialité
+          </h3>
+          <AthleticsEventView categoryId={categoryId} matchIds={activeMatchIds} />
+        </div>
+      )}
+
       {/* Full detailed table below — hidden for athletics */}
       {!isAthletics && (
       <Card className="bg-gradient-card">
