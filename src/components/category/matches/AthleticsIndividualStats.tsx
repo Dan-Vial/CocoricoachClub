@@ -14,7 +14,6 @@ import { fr } from "date-fns/locale";
 import { getDefaultUnitForDiscipline } from "@/lib/athletics/recordsHelpers";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
 
 interface AthleticsIndividualStatsProps {
