@@ -2618,7 +2618,14 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
 
       {/* Charts (Comparaison / Évolution / Progression) — placed just above the detailed table */}
       {stats.length > 0 && (
-        <CumulativeStatsCharts stats={stats} matchesData={matchesDataForCharts} sportStats={sportStats} selectedMatchIds={activeMatchIds} sportType={sportType} />
+        <CumulativeStatsCharts
+          stats={stats}
+          matchesData={matchesDataForCharts}
+          sportStats={sportStats}
+          selectedMatchIds={activeMatchIds}
+          sportType={sportType}
+          playerDisciplineMap={isAthletics ? Object.fromEntries(Object.entries(playerDisciplineMap).map(([k, v]) => [k, Array.from(v as Set<string>)])) : undefined}
+        />
       )}
 
       {/* Full detailed table below */}

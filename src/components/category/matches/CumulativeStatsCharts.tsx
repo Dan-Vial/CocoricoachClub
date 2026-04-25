@@ -30,6 +30,10 @@ interface CumulativeStatsChartsProps {
   sportStats: StatField[];
   selectedMatchIds: string[];
   sportType?: string;
+  /** Optional: only used for athletics. Maps a playerId to the list of category keys (disciplines)
+   * the athlete is registered in. When provided, the comparison/evolution/progression charts only
+   * include athletes whose disciplines match the currently selected stat category. */
+  playerDisciplineMap?: Record<string, string[]>;
 }
 
 const getCategoryIcon = (catKey: string) => {
@@ -42,7 +46,7 @@ const getCategoryIcon = (catKey: string) => {
   }
 };
 
-export function CumulativeStatsCharts({ stats, matchesData, sportStats, selectedMatchIds, sportType = "XV" }: CumulativeStatsChartsProps) {
+export function CumulativeStatsCharts({ stats, matchesData, sportStats, selectedMatchIds, sportType = "XV", playerDisciplineMap }: CumulativeStatsChartsProps) {
   const statCategories = getStatCategories(sportType);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedStat, setSelectedStat] = useState<string>("");
@@ -73,10 +77,22 @@ export function CumulativeStatsCharts({ stats, matchesData, sportStats, selected
   const activeStat = selectedStat || categoryStats[0]?.key || "";
   const activeStatField = sportStats.find(s => s.key === activeStat);
 
+  // Athletics: restrict the charts to athletes registered in the selected discipline.
+  // For non-athletics, or for the generic 'ath_general' tab, show all athletes.
+  const filteredStats = useMemo(() => {
+    if (!playerDisciplineMap || !selectedCategory || selectedCategory === "ath_general") return stats;
+    if (!selectedCategory.startsWith("ath_")) return stats;
+    return stats.filter(p => {
+      const disciplines = playerDisciplineMap[p.playerId];
+      if (!disciplines || disciplines.length === 0) return false;
+      return disciplines.includes(selectedCategory);
+    });
+  }, [stats, playerDisciplineMap, selectedCategory]);
+
   // Top players for bar chart
   const top5 = useMemo(() => {
     if (!activeStat) return [];
-    return [...stats]
+    return [...filteredStats]
       .sort((a, b) => (b.sportData[activeStat] || 0) - (a.sportData[activeStat] || 0))
       .slice(0, 8)
       .map(p => ({
@@ -85,38 +101,38 @@ export function CumulativeStatsCharts({ stats, matchesData, sportStats, selected
         value: p.sportData[activeStat] || 0,
         avg: p.matchesPlayed > 0 ? Math.round(((p.sportData[activeStat] || 0) / p.matchesPlayed) * 10) / 10 : 0,
       }));
-  }, [stats, activeStat]);
+  }, [filteredStats, activeStat]);
 
   // Evolution data per match
   const evolutionData = useMemo(() => {
     if (!activeStat || matchesData.length === 0) return [];
     const activePlayers = selectedPlayers.length > 0 
-      ? selectedPlayers 
-      : stats.slice(0, 3).map(s => s.playerId);
+      ? selectedPlayers.filter(pid => filteredStats.some(s => s.playerId === pid))
+      : filteredStats.slice(0, 3).map(s => s.playerId);
     return matchesData.map(match => {
       const point: Record<string, string | number> = { match: match.matchLabel, date: match.matchDate };
       activePlayers.forEach(pid => {
         const player = match.players[pid];
-        const pName = player?.playerName || stats.find(s => s.playerId === pid)?.playerName || pid;
+        const pName = player?.playerName || filteredStats.find(s => s.playerId === pid)?.playerName || pid;
         point[pName] = player?.sportData[activeStat] || 0;
       });
       return point;
     });
-  }, [matchesData, activeStat, selectedPlayers, stats]);
+  }, [matchesData, activeStat, selectedPlayers, filteredStats]);
 
   const playerNames = useMemo(() => {
     const activePlayers = selectedPlayers.length > 0 
-      ? selectedPlayers 
-      : stats.slice(0, 3).map(s => s.playerId);
-    return activePlayers.map(pid => stats.find(s => s.playerId === pid)?.playerName || pid);
-  }, [selectedPlayers, stats]);
+      ? selectedPlayers.filter(pid => filteredStats.some(s => s.playerId === pid))
+      : filteredStats.slice(0, 3).map(s => s.playerId);
+    return activePlayers.map(pid => filteredStats.find(s => s.playerId === pid)?.playerName || pid);
+  }, [selectedPlayers, filteredStats]);
 
   // Diff data
   const diffData = useMemo(() => {
     if (!activeStat || matchesData.length < 2) return [];
     const first = matchesData[0];
     const last = matchesData[matchesData.length - 1];
-    return stats
+    return filteredStats
       .filter(p => first.players[p.playerId] || last.players[p.playerId])
       .map(p => {
         const firstVal = first.players[p.playerId]?.sportData[activeStat] || 0;
@@ -130,7 +146,7 @@ export function CumulativeStatsCharts({ stats, matchesData, sportStats, selected
       })
       .sort((a, b) => b.diff - a.diff)
       .slice(0, 10);
-  }, [stats, matchesData, activeStat]);
+  }, [filteredStats, matchesData, activeStat]);
 
   const COLORS = [
     "hsl(var(--primary))",
@@ -214,23 +230,29 @@ export function CumulativeStatsCharts({ stats, matchesData, sportStats, selected
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={top5} layout="vertical" margin={{ left: 10, right: 30 }}>
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                      <XAxis type="number" />
-                      <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 11 }} />
-                      <Tooltip 
-                        formatter={(value: number, name: string) => [value, name === "value" ? "Total" : "Moy/match"]}
-                        labelFormatter={(label) => top5.find(t => t.name === label)?.fullName || label}
-                        contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
-                      />
-                      <Legend />
-                      <Bar dataKey="value" name="Total" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
-                      <Bar dataKey="avg" name="Moy/match" fill="hsl(var(--primary) / 0.4)" radius={[0, 4, 4, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                {top5.length === 0 ? (
+                  <div className="py-8 text-center text-sm text-muted-foreground">
+                    Aucun athlète inscrit dans cette discipline.
+                  </div>
+                ) : (
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={top5} layout="vertical" margin={{ left: 10, right: 30 }}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                        <XAxis type="number" />
+                        <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 11 }} />
+                        <Tooltip 
+                          formatter={(value: number, name: string) => [value, name === "value" ? "Total" : "Moy/match"]}
+                          labelFormatter={(label) => top5.find(t => t.name === label)?.fullName || label}
+                          contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
+                        />
+                        <Legend />
+                        <Bar dataKey="value" name="Total" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                        <Bar dataKey="avg" name="Moy/match" fill="hsl(var(--primary) / 0.4)" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -243,7 +265,7 @@ export function CumulativeStatsCharts({ stats, matchesData, sportStats, selected
                     Évolution — {activeStatField?.label || activeStat}
                   </CardTitle>
                   <div className="flex gap-1 flex-wrap">
-                    {stats.slice(0, 6).map((p, i) => {
+                    {filteredStats.slice(0, 6).map((p, i) => {
                       const isActive = selectedPlayers.length === 0 ? i < 3 : selectedPlayers.includes(p.playerId);
                       return (
                         <Badge key={p.playerId} variant={isActive ? "default" : "outline"}
@@ -251,7 +273,8 @@ export function CumulativeStatsCharts({ stats, matchesData, sportStats, selected
                           onClick={() => {
                             setSelectedPlayers(prev => {
                               if (prev.length === 0) {
-                                const top3 = stats.slice(0, 3).map(s => s.playerId);
+                                const top3 = filteredStats.slice(0, 3).map(s => s.playerId);
+                                return top3.includes(p.playerId) ? top3.filter(id => id !== p.playerId) : [...top3, p.playerId];
                                 return top3.includes(p.playerId) ? top3.filter(id => id !== p.playerId) : [...top3, p.playerId];
                               }
                               return prev.includes(p.playerId) ? prev.filter(id => id !== p.playerId) : [...prev, p.playerId];
