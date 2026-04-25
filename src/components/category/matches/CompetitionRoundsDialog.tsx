@@ -1731,8 +1731,8 @@ export function CompetitionRoundsDialog({
                     onScoreSave={(roundNumber, stats, frames, ballData) => {
                       handleBowlingScoreSheetSave(selectedPlayer.playerId, roundNumber, stats, frames, ballData);
                     }}
-                    onLock={(roundNumber) => lockBowlingRound(selectedPlayer.playerId, roundNumber)}
-                    onUnlock={(roundNumber) => unlockBowlingRound(selectedPlayer.playerId, roundNumber)}
+                    onLock={(roundNumber) => lockBowlingRound(selectedPlayer.entryKey, roundNumber)}
+                    onUnlock={(roundNumber) => unlockBowlingRound(selectedPlayer.entryKey, roundNumber)}
                   />
                 ) : (
                 <div className="space-y-4 pb-4">
