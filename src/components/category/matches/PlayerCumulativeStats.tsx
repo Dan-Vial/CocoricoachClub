@@ -1792,7 +1792,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
       y += 6;
 
       // Stats by category, organised in colored sub-blocks (mirrors UI)
-      statCategories.forEach(cat => {
+      const playerPdfCategories = getCategoriesForPlayer(playerId);
+      playerPdfCategories.forEach(cat => {
         const categoryStats = sportStats.filter(s => s.category === cat.key);
         if (categoryStats.length === 0) return;
 
