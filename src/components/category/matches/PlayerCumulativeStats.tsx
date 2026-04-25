@@ -26,6 +26,7 @@ import jsPDF from "jspdf";
 import { CumulativeStatsCharts } from "./CumulativeStatsCharts";
 import { TeamCumulativeStats } from "./TeamCumulativeStats";
 import { CumulativeKickingMap } from "./CumulativeKickingMap";
+import { AthleticsIndividualStats } from "./AthleticsIndividualStats";
 import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
 import { preparePdfWithSettings } from "@/lib/pdfExport";
 import { drawPdfRugbyField, drawPdfZoneStatsGrid, svgPctToPdfPos } from "@/lib/pdfRugbyField";
