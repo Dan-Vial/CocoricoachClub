@@ -547,54 +547,191 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
         ? (PRETTY_LABELS[activePair.discipline] || activePair.discipline.replace(/^athletisme_/, ""))
         : "—";
 
-      // Header
-      doc.setFillColor(15, 23, 42);
-      doc.rect(0, 0, pageWidth, 22, "F");
+      // Palette
+      const COL_PRIMARY: [number, number, number] = [15, 23, 42];      // slate-900
+      const COL_ACCENT: [number, number, number] = [37, 99, 235];      // blue-600
+      const COL_SUCCESS: [number, number, number] = [16, 185, 129];    // emerald-500
+      const COL_DANGER: [number, number, number] = [239, 68, 68];      // red-500
+      const COL_MUTED: [number, number, number] = [100, 116, 139];     // slate-500
+      const COL_BORDER: [number, number, number] = [226, 232, 240];    // slate-200
+      const COL_ZEBRA: [number, number, number] = [248, 250, 252];     // slate-50
+      const COL_AMBER: [number, number, number] = [245, 158, 11];      // amber-500
+
+      // Header bandeau dégradé simulé (bande sombre + accent)
+      doc.setFillColor(...COL_PRIMARY);
+      doc.rect(0, 0, pageWidth, 24, "F");
+      doc.setFillColor(...COL_ACCENT);
+      doc.rect(0, 22, pageWidth, 2, "F");
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(14);
+      doc.setFontSize(15);
       doc.setFont("helvetica", "bold");
-      doc.text(`Performances individuelles — ${athleteName}`, margin, 10);
+      doc.text(`Performances individuelles — ${athleteName}`, margin, 11);
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.text(`${discLabel}${activePair.specialty ? ` • ${activePair.specialty}` : ""}`, margin, 17);
-      doc.text(format(new Date(), "dd/MM/yyyy", { locale: fr }), pageWidth - margin, 17, { align: "right" });
-      y = 28;
+      doc.text(`${discLabel}${activePair.specialty ? ` • ${activePair.specialty}` : ""}`, margin, 18);
+      doc.text(format(new Date(), "dd MMMM yyyy", { locale: fr }), pageWidth - margin, 18, { align: "right" });
+      y = 30;
       doc.setTextColor(0, 0, 0);
+
+      // Calcul best / worst pour mise en valeur
+      const lowerIsBetter = summary?.lowerIsBetter ?? true;
+      const validResults = performancePoints
+        .map((p) => Number(p.result))
+        .filter((v) => Number.isFinite(v));
+      const bestVal = validResults.length
+        ? (lowerIsBetter ? Math.min(...validResults) : Math.max(...validResults))
+        : null;
+      const worstVal = validResults.length
+        ? (lowerIsBetter ? Math.max(...validResults) : Math.min(...validResults))
+        : null;
 
       // KPI summary
       if (summary) {
-        const kpis: Array<{ label: string; value: string }> = [
-          { label: "Meilleure perf", value: formatResult(summary.bestResult, summary.unit) },
+        const kpis: Array<{ label: string; value: string; color?: [number, number, number] }> = [
+          { label: "Meilleure perf", value: formatResult(summary.bestResult, summary.unit), color: COL_SUCCESS },
           { label: `Moyenne (${summary.count})`, value: formatResult(summary.avgResult, summary.unit) },
           { label: "Classement moyen", value: summary.avgRank != null ? summary.avgRank.toFixed(1) : "—" },
-          { label: "Évolution", value: summary.evolutionPct != null ? `${summary.evolutionPct > 0 ? "+" : ""}${summary.evolutionPct.toFixed(1)} %` : "—" },
+          { label: "Évolution", value: summary.evolutionPct != null ? `${summary.evolutionPct > 0 ? "+" : ""}${summary.evolutionPct.toFixed(1)} %` : "—",
+            color: summary.evolutionPct == null ? undefined : ((lowerIsBetter ? summary.evolutionPct < 0 : summary.evolutionPct > 0) ? COL_SUCCESS : COL_DANGER) },
         ];
         const cardW = (pageWidth - margin * 2 - 9) / 4;
         kpis.forEach((k, i) => {
           const x = margin + i * (cardW + 3);
-          doc.setFillColor(241, 245, 249);
-          doc.roundedRect(x, y, cardW, 18, 2, 2, "F");
+          doc.setFillColor(255, 255, 255);
+          doc.setDrawColor(...COL_BORDER);
+          doc.setLineWidth(0.3);
+          doc.roundedRect(x, y, cardW, 20, 2, 2, "FD");
+          // accent bar
+          if (k.color) {
+            doc.setFillColor(...k.color);
+            doc.roundedRect(x, y, 1.5, 20, 0.5, 0.5, "F");
+          }
           doc.setFontSize(8);
-          doc.setTextColor(100, 116, 139);
-          doc.text(k.label, x + 3, y + 6);
-          doc.setFontSize(11);
-          doc.setFont("helvetica", "bold");
-          doc.setTextColor(15, 23, 42);
-          doc.text(k.value, x + 3, y + 14);
+          doc.setTextColor(...COL_MUTED);
           doc.setFont("helvetica", "normal");
+          doc.text(k.label, x + 4, y + 7);
+          doc.setFontSize(13);
+          doc.setFont("helvetica", "bold");
+          if (k.color) doc.setTextColor(...k.color);
+          else doc.setTextColor(...COL_PRIMARY);
+          doc.text(k.value, x + 4, y + 16);
         });
-        y += 24;
+        y += 26;
       }
+
+      // ============ GRAPHIQUE ÉVOLUTION ============
+      if (validResults.length >= 2) {
+        const chartH = 55;
+        const chartX = margin;
+        const chartY = y;
+        const chartW = pageWidth - 2 * margin;
+        const padL = 22, padR = 8, padT = 10, padB = 14;
+        const innerX = chartX + padL;
+        const innerY = chartY + padT;
+        const innerW = chartW - padL - padR;
+        const innerH = chartH - padT - padB;
+
+        // Card
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(...COL_BORDER);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(chartX, chartY, chartW, chartH, 2, 2, "FD");
+        // Title
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...COL_PRIMARY);
+        doc.text("Évolution du résultat", chartX + 4, chartY + 6);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7);
+        doc.setTextColor(...COL_MUTED);
+        doc.text(lowerIsBetter ? "(courbe descendante = progrès)" : "(courbe ascendante = progrès)", chartX + 50, chartY + 6);
+
+        const minV = Math.min(...validResults);
+        const maxV = Math.max(...validResults);
+        const range = maxV - minV;
+        const pad = range > 0 ? range * 0.15 : Math.max(Math.abs(maxV) * 0.02, 0.01);
+        const yMin = minV - pad;
+        const yMax = maxV + pad;
+        const yScale = (v: number) => {
+          const t = (v - yMin) / (yMax - yMin);
+          // Si lower is better, on inverse pour que petit = haut
+          return lowerIsBetter ? innerY + t * innerH : innerY + (1 - t) * innerH;
+        };
+
+        // Y axis ticks (3 ticks)
+        doc.setDrawColor(...COL_BORDER);
+        doc.setLineWidth(0.2);
+        doc.setFontSize(6);
+        doc.setTextColor(...COL_MUTED);
+        for (let i = 0; i <= 3; i++) {
+          const v = yMin + (yMax - yMin) * (i / 3);
+          const py = yScale(v);
+          doc.line(innerX, py, innerX + innerW, py);
+          doc.text(formatResult(v, summary?.unit || ""), innerX - 1, py + 1.5, { align: "right" });
+        }
+
+        // Points
+        const n = performancePoints.length;
+        const xStep = n > 1 ? innerW / (n - 1) : 0;
+        const points = performancePoints.map((p, i) => ({
+          x: innerX + i * xStep,
+          y: yScale(Number(p.result)),
+          val: Number(p.result),
+          label: p.matchDate ? format(parseISO(p.matchDate), "dd/MM", { locale: fr }) : "",
+        }));
+
+        // Ligne
+        doc.setDrawColor(...COL_ACCENT);
+        doc.setLineWidth(0.6);
+        for (let i = 1; i < points.length; i++) {
+          doc.line(points[i - 1].x, points[i - 1].y, points[i].x, points[i].y);
+        }
+
+        // Dots + x labels
+        points.forEach((pt) => {
+          const isBest = bestVal != null && pt.val === bestVal;
+          const isWorst = worstVal != null && pt.val === worstVal && bestVal !== worstVal;
+          const color = isBest ? COL_SUCCESS : isWorst ? COL_DANGER : COL_ACCENT;
+          doc.setFillColor(...color);
+          doc.circle(pt.x, pt.y, isBest || isWorst ? 1.6 : 1.2, "F");
+          doc.setFillColor(255, 255, 255);
+          doc.circle(pt.x, pt.y, 0.5, "F");
+          // x label
+          doc.setFontSize(6);
+          doc.setTextColor(...COL_MUTED);
+          doc.text(pt.label, pt.x, chartY + chartH - 3, { align: "center" });
+        });
+
+        y += chartH + 5;
+      }
+
+      // Section title
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...COL_PRIMARY);
+      doc.text("Détail des compétitions", margin, y + 2);
+      // Légende couleurs
+      doc.setFontSize(7);
+      doc.setFont("helvetica", "normal");
+      doc.setFillColor(...COL_SUCCESS);
+      doc.circle(pageWidth - margin - 50, y, 1.2, "F");
+      doc.setTextColor(...COL_MUTED);
+      doc.text("Meilleure perf.", pageWidth - margin - 47, y + 1);
+      doc.setFillColor(...COL_DANGER);
+      doc.circle(pageWidth - margin - 22, y, 1.2, "F");
+      doc.text("Pire perf.", pageWidth - margin - 19, y + 1);
+      y += 5;
 
       // Table header
       const headers = ["Date", "Compétition", "Phase", "Class.", "Résultat", "Vent", "Temp.", "RP"];
       const colW = [20, 75, 30, 18, 30, 25, 18, 12];
+      const tableW = colW.reduce((a, b) => a + b, 0);
       const drawHeader = () => {
-        doc.setFillColor(30, 41, 59);
+        doc.setFillColor(...COL_PRIMARY);
         doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(9);
-        doc.rect(margin, y, colW.reduce((a, b) => a + b, 0), 7, "F");
+        doc.rect(margin, y, tableW, 7, "F");
         let x = margin;
         headers.forEach((h, i) => {
           doc.text(h, x + 2, y + 5);
@@ -613,27 +750,63 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
           y = margin;
           drawHeader();
         }
+        // Zebra
         if (idx % 2 === 0) {
-          doc.setFillColor(248, 250, 252);
-          doc.rect(margin, y, colW.reduce((a, b) => a + b, 0), 6, "F");
+          doc.setFillColor(...COL_ZEBRA);
+          doc.rect(margin, y, tableW, 7, "F");
         }
+        const val = Number(p.result);
+        const isBest = bestVal != null && val === bestVal;
+        const isWorst = worstVal != null && val === worstVal && bestVal !== worstVal;
+
+        // Highlight band
+        if (isBest) {
+          doc.setFillColor(220, 252, 231); // emerald-100
+          doc.rect(margin, y, tableW, 7, "F");
+        } else if (isWorst) {
+          doc.setFillColor(254, 226, 226); // red-100
+          doc.rect(margin, y, tableW, 7, "F");
+        }
+
         const cells = [
           p.matchDate ? format(parseISO(p.matchDate), "dd/MM/yy", { locale: fr }) : "—",
           p.competition.length > 38 ? p.competition.slice(0, 36) + "…" : p.competition,
           p.phase || "—",
           p.ranking != null ? `${p.ranking}` : "—",
-          formatResult(p.result, p.unit),
+          formatResult(val, p.unit),
           p.windSpeed != null ? `${p.windSpeed > 0 ? "+" : ""}${p.windSpeed.toFixed(1)} m/s` : (p.windDirection || "—"),
           p.temperature != null ? `${p.temperature}°C` : "—",
-          p.isPersonalRecord ? "✓" : "",
+          p.isPersonalRecord ? "RP" : "",
         ];
         let x = margin;
         cells.forEach((c, i) => {
-          doc.text(String(c), x + 2, y + 4);
+          // Colonne Résultat (index 4) : couleur best/worst en gras
+          if (i === 4 && (isBest || isWorst)) {
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(...(isBest ? COL_SUCCESS : COL_DANGER));
+          } else if (i === 7 && p.isPersonalRecord) {
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(...COL_AMBER);
+          } else {
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(...COL_PRIMARY);
+          }
+          doc.text(String(c), x + 2, y + 4.5);
           x += colW[i];
         });
-        y += 6;
+        y += 7;
       });
+
+      // Footer pagination
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setTextColor(...COL_MUTED);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7);
+        doc.text(`Page ${i} / ${totalPages}`, pageWidth - margin, pageHeight - 5, { align: "right" });
+        doc.text("CocoriCoach Club — Athlétisme", margin, pageHeight - 5);
+      }
 
       const safeName = athleteName.replace(/\s+/g, "-");
       const safeDisc = (activePair.specialty || discLabel).replace(/\s+/g, "-");
