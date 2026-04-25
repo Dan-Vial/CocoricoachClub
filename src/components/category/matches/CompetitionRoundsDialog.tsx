@@ -1273,11 +1273,16 @@ export function CompetitionRoundsDialog({
                 {!round.isLocked && (
                   <Button
                     size="sm"
-                    onClick={() => lockBowlingRound(player.playerId, round.round_number)}
+                    onClick={() => {
+                      lockBowlingRound(player.entryKey, round.round_number);
+                      // Persist immediately so the validation is saved in DB
+                      setTimeout(() => saveRounds.mutate(), 0);
+                    }}
+                    disabled={saveRounds.isPending}
                     className="w-full gap-2"
                   >
                     <CheckCircle className="h-4 w-4" />
-                    Valider l'épreuve
+                    {saveRounds.isPending ? "Enregistrement..." : "Valider l'épreuve"}
                   </Button>
                 )}
               </CardContent>
