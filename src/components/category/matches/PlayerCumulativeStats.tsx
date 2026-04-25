@@ -2358,6 +2358,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
             sportStats={sportStats}
             sportType={sportType}
             statCategoriesOverride={statCategories}
+            playerCategoryMap={isAthletics ? playerDisciplineMap : undefined}
             matchesWithScores={allMatches.filter(m => activeMatchIds.includes(m.id)).map(m => ({
               id: m.id,
               is_home: m.is_home,
