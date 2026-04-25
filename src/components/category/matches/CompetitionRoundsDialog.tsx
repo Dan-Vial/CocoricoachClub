@@ -1008,7 +1008,7 @@ export function CompetitionRoundsDialog({
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   <div className="col-span-2">
                     <Label className="text-xs">Date & heure de l'épreuve</Label>
                     <Input
@@ -1032,24 +1032,9 @@ export function CompetitionRoundsDialog({
                       disabled={round.isLocked}
                     />
                   </div>
-                  <div>
-                    <Label className="text-xs">Temps / Perf</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      onWheel={blurOnWheel}
-                      value={round.final_time_seconds ?? ""}
-                      onChange={(e) => {
-                        const v = parseFloat(e.target.value);
-                        updateRound(player.entryKey, round.round_number, {
-                          final_time_seconds: Number.isFinite(v) ? v : undefined,
-                        });
-                      }}
-                      placeholder="ex: 11.42"
-                      className="h-8"
-                      disabled={round.isLocked}
-                    />
-                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <Label className="text-xs">Résultat</Label>
                     <Select
@@ -1069,26 +1054,43 @@ export function CompetitionRoundsDialog({
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-
-                <div>
-                  <Label className="text-xs">Tour de compétition</Label>
-                  <Select
-                    value={round.phase || ""}
-                    onValueChange={(value) => updateRound(player.entryKey, round.round_number, { phase: value })}
-                    disabled={round.isLocked}
-                  >
-                    <SelectTrigger className="h-8">
-                      <SelectValue placeholder="Séries, repêchages, finale..." />
-                    </SelectTrigger>
-                    <SelectContent className="z-[200]">
-                      {phases.map((p) => (
-                        <SelectItem key={p.value} value={p.value}>
-                          {p.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div>
+                    <Label className="text-xs">Tour de compétition</Label>
+                    <Select
+                      value={round.phase || ""}
+                      onValueChange={(value) => updateRound(player.entryKey, round.round_number, { phase: value })}
+                      disabled={round.isLocked}
+                    >
+                      <SelectTrigger className="h-8">
+                        <SelectValue placeholder="Séries, repêchages, finale..." />
+                      </SelectTrigger>
+                      <SelectContent className="z-[200]">
+                        {phases.map((p) => (
+                          <SelectItem key={p.value} value={p.value}>
+                            {p.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Performance</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      onWheel={blurOnWheel}
+                      value={round.final_time_seconds ?? ""}
+                      onChange={(e) => {
+                        const v = parseFloat(e.target.value);
+                        updateRound(player.entryKey, round.round_number, {
+                          final_time_seconds: Number.isFinite(v) ? v : undefined,
+                        });
+                      }}
+                      placeholder="ex: 11.42"
+                      className="h-8"
+                      disabled={round.isLocked}
+                    />
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
