@@ -256,10 +256,10 @@ export function CompetitionRoundsDialog({
   const roundLabel = isJudo ? "Combat" : isAviron ? "Course" : isBowling ? "Partie" : isAthletics ? "Épreuve" : "Round";
   const roundLabelPlural = isJudo ? "Combats" : isAviron ? "Courses" : isBowling ? "Parties" : isAthletics ? "Épreuves" : "Rounds";
 
-  // Lock a bowling round after validation
-  const lockBowlingRound = (playerId: string, roundNumber: number) => {
+  // Lock a bowling/athletics round after validation (per lineup entry)
+  const lockBowlingRound = (entryKey: string, roundNumber: number) => {
     setPlayerRoundsData(prev => prev.map(p => {
-      if (p.playerId === playerId) {
+      if (p.entryKey === entryKey) {
         return {
           ...p,
           rounds: p.rounds.map(r => 
@@ -269,13 +269,12 @@ export function CompetitionRoundsDialog({
       }
       return p;
     }));
-    toast.success(`Partie ${roundNumber} validée et verrouillée`);
   };
 
-  // Unlock a bowling round for re-editing
-  const unlockBowlingRound = (playerId: string, roundNumber: number) => {
+  // Unlock a bowling/athletics round for re-editing (per lineup entry)
+  const unlockBowlingRound = (entryKey: string, roundNumber: number) => {
     setPlayerRoundsData(prev => prev.map(p => {
-      if (p.playerId === playerId) {
+      if (p.entryKey === entryKey) {
         return {
           ...p,
           rounds: p.rounds.map(r => 
@@ -285,7 +284,7 @@ export function CompetitionRoundsDialog({
       }
       return p;
     }));
-    toast.info(`Partie ${roundNumber} déverrouillée pour modification`);
+    toast.info(`Épreuve ${roundNumber} déverrouillée pour modification`);
   };
 
   // Handle bowling score sheet save with frames
