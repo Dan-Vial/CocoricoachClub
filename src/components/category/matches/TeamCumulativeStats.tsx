@@ -257,6 +257,8 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
         if (categoryStats.length === 0) return null;
         const isGeneral = cat.key === "general";
         const groups = groupStats(cat.key, categoryStats);
+        const scoped = getScopedStats(cat.key);
+        const catTotals = computeCategoryTotals(scoped);
         return (
           <Card key={cat.key} className="border-border/60">
             <CardHeader className="py-2 px-3">
