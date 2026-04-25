@@ -1386,7 +1386,7 @@ export function CompetitionRoundsDialog({
             ) : (
               <ScrollArea
                 className={`pr-2 rounded-md border bg-muted/20 transition-all ${
-                  selectedPlayerId ? "h-[430px]" : "h-[220px]"
+                  selectedPlayerId ? "h-[65vh]" : "h-[220px]"
                 }`}
               >
                 <div className="space-y-3 p-2">
@@ -1436,7 +1436,7 @@ export function CompetitionRoundsDialog({
                                   key={player.entryKey}
                                   className={`rounded-xl border p-2.5 transition-all ${
                                     isSelected
-                                      ? "border-primary bg-primary/10 shadow-sm ring-1 ring-primary/40"
+                                      ? "border-primary bg-primary/10 shadow-sm ring-1 ring-primary/40 sm:col-span-2"
                                       : "border-border bg-card hover:bg-accent/40 hover:border-primary/30"
                                   }`}
                                 >
