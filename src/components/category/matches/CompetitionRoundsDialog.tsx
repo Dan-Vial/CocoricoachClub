@@ -1071,6 +1071,26 @@ export function CompetitionRoundsDialog({
                   </div>
                 </div>
 
+                <div>
+                  <Label className="text-xs">Tour de compétition</Label>
+                  <Select
+                    value={round.phase || ""}
+                    onValueChange={(value) => updateRound(player.entryKey, round.round_number, { phase: value })}
+                    disabled={round.isLocked}
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue placeholder="Séries, repêchages, finale..." />
+                    </SelectTrigger>
+                    <SelectContent className="z-[200]">
+                      {phases.map((p) => (
+                        <SelectItem key={p.value} value={p.value}>
+                          {p.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
                     <Label className="text-xs">Vent (m/s)</Label>
