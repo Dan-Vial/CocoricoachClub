@@ -1003,6 +1003,8 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
+                  );
+                  })()}
                 </CardContent>
               </Card>
             </TabsContent>
