@@ -2372,7 +2372,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
         </div>
         )}
 
-        {/* RIGHT: Individual Stats */}
+        {/* RIGHT: Individual Stats — hidden for athletics (replaced by AthleticsIndividualStats below) */}
+        {!isAthletics && (
         <div>
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <h3 className="text-lg font-semibold flex items-center gap-2">
