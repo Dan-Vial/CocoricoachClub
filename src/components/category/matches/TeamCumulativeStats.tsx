@@ -199,13 +199,20 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
   // Use shared sub-group helper (same logic as PlayerCumulativeStats and stats input)
   const groupStats = (catKey: string, statsList: StatField[]) => groupStatsByTheme(catKey, statsList);
 
-  const renderStatTile = (stat: StatField, opts?: { large?: boolean }) => {
+  const renderStatTile = (
+    stat: StatField,
+    catTotals: { totals: Record<string, number>; means: Record<string, number>; matchCount: number },
+    opts?: { large?: boolean },
+  ) => {
     const large = opts?.large;
-    const val = teamTotals.totals[stat.key] || 0;
-    const avg = teamTotals.matchCount > 0 ? Math.round((val / teamTotals.matchCount) * 10) / 10 : 0;
+    const val = catTotals.totals[stat.key] || 0;
+    const isLowerBetter = LOWER_IS_BETTER_TEAM_KEYS.has(stat.key);
+    const avg = isLowerBetter
+      ? (catTotals.means[stat.key] || 0)
+      : (catTotals.matchCount > 0 ? Math.round((val / catTotals.matchCount) * 10) / 10 : 0);
     const prog = teamProgression[stat.key] || 0;
     const neutral = isNeutralStat(stat.key);
-    const lowerIsBetter = /turnover|missed|error|penalt(y|ies)_conceded|fault|loss|interception_conceded/i.test(stat.key);
+    const lowerIsBetter = isLowerBetter || /turnover|missed|error|penalt(y|ies)_conceded|fault|loss|interception_conceded/i.test(stat.key);
     const effectiveProg = lowerIsBetter ? -prog : prog;
     let toneClass = "bg-muted/50 border-border/60";
     if (!neutral && matchesData.length >= 2 && !stat.computedFrom) {
@@ -213,6 +220,7 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
       else if (effectiveProg < 0) toneClass = "bg-destructive/10 border-destructive/30";
       else toneClass = "bg-amber-500/10 border-amber-500/30";
     }
+    const displayVal = stat.computedFrom ? `${val}%` : (val === 0 && isLowerBetter ? "—" : val);
     return (
       <Tooltip key={stat.key}>
         <TooltipTrigger asChild>
@@ -220,12 +228,14 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
             className={`${large ? "p-2.5" : "p-1.5"} rounded-md text-center space-y-0 border ${toneClass}`}
           >
             <p className={`${large ? "text-xl" : "text-base"} font-bold leading-tight`}>
-              {stat.computedFrom ? `${val}%` : val}
+              {displayVal}
             </p>
             <p className={`${large ? "text-[11px]" : "text-[9px]"} text-muted-foreground leading-tight`}>{stat.shortLabel}</p>
             <div className="flex items-center justify-center gap-0.5 flex-wrap">
               {!stat.computedFrom && (
-                <span className={`${large ? "text-[10px]" : "text-[9px]"} text-muted-foreground`}>Moy {avg}</span>
+                <span className={`${large ? "text-[10px]" : "text-[9px]"} text-muted-foreground`}>
+                  Moy {avg === 0 && isLowerBetter ? "—" : avg}
+                </span>
               )}
               {!neutral && matchesData.length >= 2 && !stat.computedFrom && (
                 <ProgressionBadge value={prog} />
