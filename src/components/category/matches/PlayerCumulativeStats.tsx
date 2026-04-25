@@ -2749,6 +2749,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
           </Tabs>
         </CardContent>
       </Card>
+      )}
 
       {/* Kicking ranking table for rugby */}
       {isRugby && Object.keys(kickingByPlayerFinal).length > 0 && (
