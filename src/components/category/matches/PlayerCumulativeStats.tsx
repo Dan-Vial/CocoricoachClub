@@ -2299,12 +2299,16 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                 </DropdownMenuItem>
               ) : (
                 <>
-                  <DropdownMenuItem onClick={() => handleExportExcel("all")}>
-                    <Users className="h-3.5 w-3.5 mr-2" />Tout (équipe + individuel)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleExportExcel("team")}>
-                    <Users className="h-3.5 w-3.5 mr-2" />Statistiques équipe
-                  </DropdownMenuItem>
+                  {!isAthletics && (
+                    <DropdownMenuItem onClick={() => handleExportExcel("all")}>
+                      <Users className="h-3.5 w-3.5 mr-2" />Tout (équipe + individuel)
+                    </DropdownMenuItem>
+                  )}
+                  {!isAthletics && (
+                    <DropdownMenuItem onClick={() => handleExportExcel("team")}>
+                      <Users className="h-3.5 w-3.5 mr-2" />Statistiques équipe
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => handleExportExcel("individual")}>
                     <User className="h-3.5 w-3.5 mr-2" />Statistiques individuelles
                   </DropdownMenuItem>
