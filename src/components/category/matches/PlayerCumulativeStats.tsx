@@ -2537,7 +2537,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            Tableau détaillé — tous les joueurs
+            Tableau détaillé — {isIndividualCompetitionSport ? "tous les athlètes" : "tous les joueurs"}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -2579,7 +2579,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                         )}
                         <TableRow>
                           <TableHead>Athlète</TableHead>
-                          <TableHead className="text-center">Matchs</TableHead>
+                          <TableHead className="text-center">{isIndividualCompetitionSport ? "Compét." : "Matchs"}</TableHead>
                           {columnGroups.map((group, gIdx) =>
                             group.items.map((stat, sIdx) => (
                               <TableHead
