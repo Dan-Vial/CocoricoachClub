@@ -2636,7 +2636,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
         </div>
       )}
 
-      {/* Full detailed table below */}
+      {/* Full detailed table below — hidden for athletics */}
+      {!isAthletics && (
       <Card className="bg-gradient-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
