@@ -77,10 +77,22 @@ export function CumulativeStatsCharts({ stats, matchesData, sportStats, selected
   const activeStat = selectedStat || categoryStats[0]?.key || "";
   const activeStatField = sportStats.find(s => s.key === activeStat);
 
+  // Athletics: restrict the charts to athletes registered in the selected discipline.
+  // For non-athletics, or for the generic 'ath_general' tab, show all athletes.
+  const filteredStats = useMemo(() => {
+    if (!playerDisciplineMap || !selectedCategory || selectedCategory === "ath_general") return stats;
+    if (!selectedCategory.startsWith("ath_")) return stats;
+    return stats.filter(p => {
+      const disciplines = playerDisciplineMap[p.playerId];
+      if (!disciplines || disciplines.length === 0) return false;
+      return disciplines.includes(selectedCategory);
+    });
+  }, [stats, playerDisciplineMap, selectedCategory]);
+
   // Top players for bar chart
   const top5 = useMemo(() => {
     if (!activeStat) return [];
-    return [...stats]
+    return [...filteredStats]
       .sort((a, b) => (b.sportData[activeStat] || 0) - (a.sportData[activeStat] || 0))
       .slice(0, 8)
       .map(p => ({
@@ -89,7 +101,7 @@ export function CumulativeStatsCharts({ stats, matchesData, sportStats, selected
         value: p.sportData[activeStat] || 0,
         avg: p.matchesPlayed > 0 ? Math.round(((p.sportData[activeStat] || 0) / p.matchesPlayed) * 10) / 10 : 0,
       }));
-  }, [stats, activeStat]);
+  }, [filteredStats, activeStat]);
 
   // Evolution data per match
   const evolutionData = useMemo(() => {
