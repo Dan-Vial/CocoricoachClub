@@ -2113,7 +2113,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
           <div className="text-center text-muted-foreground">
             <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Aucune statistique enregistrée pour le moment.</p>
-            <p className="text-sm mt-2">Les statistiques apparaîtront ici une fois saisies pour les matchs.</p>
+            <p className="text-sm mt-2">Les statistiques apparaîtront ici une fois saisies pour {isIndividualCompetitionSport ? "les compétitions" : "les matchs"}.</p>
           </div>
         </CardContent>
       </Card>
