@@ -167,9 +167,9 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
       if (matchIds.length === 0) return [];
       const { data } = await supabase
         .from("competition_rounds")
-        .select("id, match_id, player_id, final_time_seconds, ranking, is_personal_record, round_date, phase, competition_round_stats(stat_data)")
+        .select("id, match_id, player_id, final_time_seconds, ranking, is_personal_record, phase, competition_round_stats(stat_data)")
         .in("match_id", matchIds);
-      return (data || []) as RoundRow[];
+      return ((data || []) as unknown) as RoundRow[];
     },
     enabled: matchIds.length > 0,
   });
