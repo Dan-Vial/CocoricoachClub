@@ -2551,6 +2551,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
             );
           })()}
         </div>
+        )}
       </div>
 
       {!isSinglePlayerMode && <>
