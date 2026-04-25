@@ -156,6 +156,69 @@ export function CumulativeStatsCharts({ stats, matchesData, sportStats, selected
     "hsl(var(--chart-5, 340 75% 55%))",
   ];
 
+  // ---- Athletics individual mode ----
+  // For athletics (individual sport), comparing athletes makes little sense.
+  // We pivot the analysis on a single athlete across competitions instead.
+  const isAthleticsMode = !!playerDisciplineMap;
+  const [selectedAthleteId, setSelectedAthleteId] = useState<string>("");
+
+  // Athletes available for the selected discipline
+  const athletesForCategory = useMemo(() => {
+    if (!isAthleticsMode) return [];
+    return filteredStats.map(s => ({ id: s.playerId, name: s.playerName }));
+  }, [isAthleticsMode, filteredStats]);
+
+  // Auto-select first athlete when list changes
+  useEffect(() => {
+    if (!isAthleticsMode) return;
+    if (athletesForCategory.length === 0) {
+      setSelectedAthleteId("");
+      return;
+    }
+    if (!athletesForCategory.find(a => a.id === selectedAthleteId)) {
+      setSelectedAthleteId(athletesForCategory[0].id);
+    }
+  }, [isAthleticsMode, athletesForCategory, selectedAthleteId]);
+
+  // Per-competition values for the selected athlete + selected stat
+  const athleteCompetitionData = useMemo(() => {
+    if (!isAthleticsMode || !selectedAthleteId || !activeStat) return [];
+    return matchesData
+      .map(match => {
+        const player = match.players[selectedAthleteId];
+        const value = player?.sportData[activeStat];
+        return value !== undefined && value !== null
+          ? { competition: match.matchLabel, date: match.matchDate, value: Number(value) }
+          : null;
+      })
+      .filter((x): x is { competition: string; date: string; value: number } => x !== null);
+  }, [isAthleticsMode, selectedAthleteId, activeStat, matchesData]);
+
+  // Stats summary for the athlete (best, average, last, progression)
+  const athleteSummary = useMemo(() => {
+    if (athleteCompetitionData.length === 0) return null;
+    const values = athleteCompetitionData.map(d => d.value);
+    const lowerBetter = !!activeStatField?.lowerIsBetter;
+    const best = lowerBetter ? Math.min(...values) : Math.max(...values);
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    const last = values[values.length - 1];
+    const first = values[0];
+    const diff = last - first;
+    const pct = first !== 0 ? Math.round((diff / first) * 100) : 0;
+    // For "lower is better" stats, positive diff means regression
+    const isProgress = lowerBetter ? diff < 0 : diff > 0;
+    return {
+      best: Math.round(best * 100) / 100,
+      avg: Math.round(avg * 100) / 100,
+      last: Math.round(last * 100) / 100,
+      first: Math.round(first * 100) / 100,
+      diff: Math.round(diff * 100) / 100,
+      pct: Math.abs(pct),
+      isProgress,
+      count: values.length,
+    };
+  }, [athleteCompetitionData, activeStatField]);
+
   if (stats.length === 0) return null;
 
   return (
