@@ -198,7 +198,7 @@ export function CumulativeStatsCharts({ stats, matchesData, sportStats, selected
   const athleteSummary = useMemo(() => {
     if (athleteCompetitionData.length === 0) return null;
     const values = athleteCompetitionData.map(d => d.value);
-    const lowerBetter = !!activeStatField?.lowerIsBetter;
+    const lowerBetter = activeStatField?.type === "time";
     const best = lowerBetter ? Math.min(...values) : Math.max(...values);
     const avg = values.reduce((a, b) => a + b, 0) / values.length;
     const last = values[values.length - 1];
