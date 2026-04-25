@@ -771,11 +771,14 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
                           const windAided = isTimedDisc && p.windSpeed != null && p.windSpeed > 2;
                           const headWind = isTimedDisc && p.windSpeed != null && p.windSpeed < -1;
                           return (
-                            <TableRow key={p.matchId}>
+                            <TableRow key={p.roundId}>
                               <TableCell className="text-xs text-muted-foreground">
                                 {p.matchDate ? format(parseISO(p.matchDate), "dd/MM/yy", { locale: fr }) : "—"}
                               </TableCell>
                               <TableCell className="font-medium">{p.competition}</TableCell>
+                              <TableCell className="text-xs">
+                                {p.phase ? <Badge variant="outline" className="font-normal">{p.phase}</Badge> : <span className="text-muted-foreground">—</span>}
+                              </TableCell>
                               <TableCell className="text-center">
                                 {p.ranking != null ? (
                                   <Badge variant={p.ranking <= 3 ? "default" : "outline"} className="font-mono">
