@@ -1037,7 +1037,12 @@ export function CompetitionRoundsDialog({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {(() => {
+                  const { unit: _u, lowerIsBetter: _lib } = getDefaultUnitForDiscipline(player.discipline, player.specialty);
+                  // Pour les lancers/sauts, la performance est saisie via les essais ci-dessous
+                  const showTopPerf = _lib;
+                  return (
+                <div className={`grid grid-cols-1 sm:grid-cols-${showTopPerf ? 3 : 2} gap-3`}>
                   <div>
                     <Label className="text-xs">Résultat</Label>
                     <Select
@@ -1076,25 +1081,29 @@ export function CompetitionRoundsDialog({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label className="text-xs">Performance</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      onWheel={blurOnWheel}
-                      value={round.final_time_seconds ?? ""}
-                      onChange={(e) => {
-                        const v = parseFloat(e.target.value);
-                        updateRound(player.entryKey, round.round_number, {
-                          final_time_seconds: Number.isFinite(v) ? v : undefined,
-                        });
-                      }}
-                      placeholder="ex: 11.42"
-                      className="h-8"
-                      disabled={round.isLocked}
-                    />
-                  </div>
+                  {showTopPerf && (
+                    <div>
+                      <Label className="text-xs">Performance (temps)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        onWheel={blurOnWheel}
+                        value={round.final_time_seconds ?? ""}
+                        onChange={(e) => {
+                          const v = parseFloat(e.target.value);
+                          updateRound(player.entryKey, round.round_number, {
+                            final_time_seconds: Number.isFinite(v) ? v : undefined,
+                          });
+                        }}
+                        placeholder="ex: 11.42"
+                        className="h-8"
+                        disabled={round.isLocked}
+                      />
+                    </div>
+                  )}
                 </div>
+                  );
+                })()}
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
