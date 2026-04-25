@@ -2456,6 +2456,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                     );
                   })}
                 </Tabs>
+                  );
+                })()}
                 {/* Kicking stats for rugby */}
                 {isRugby && kickingByPlayerFinal[player.playerId] && (() => {
                   const k = kickingByPlayerFinal[player.playerId];
