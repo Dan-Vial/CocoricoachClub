@@ -557,35 +557,79 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
                           <TableHead>Compétition</TableHead>
                           <TableHead className="text-center">Classement</TableHead>
                           <TableHead className="text-right">Résultat</TableHead>
+                          <TableHead className="text-center">
+                            <span className="inline-flex items-center gap-1"><Wind className="h-3.5 w-3.5" />Vent</span>
+                          </TableHead>
+                          <TableHead className="text-center">
+                            <span className="inline-flex items-center gap-1"><Thermometer className="h-3.5 w-3.5" />Temp.</span>
+                          </TableHead>
                           <TableHead className="text-center">RP</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {performancePoints.map(p => (
-                          <TableRow key={p.matchId}>
-                            <TableCell className="text-xs text-muted-foreground">
-                              {p.matchDate ? format(parseISO(p.matchDate), "dd/MM/yy", { locale: fr }) : "—"}
-                            </TableCell>
-                            <TableCell className="font-medium">{p.competition}</TableCell>
-                            <TableCell className="text-center">
-                              {p.ranking != null ? (
-                                <Badge variant={p.ranking <= 3 ? "default" : "outline"} className="font-mono">
-                                  {p.ranking}ᵉ
-                                </Badge>
-                              ) : (
-                                <span className="text-muted-foreground">—</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right font-mono">
-                              {formatResult(p.result, p.unit)}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {p.isPersonalRecord && (
-                                <Badge variant="default" className="bg-amber-500 hover:bg-amber-500 text-white">RP</Badge>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {performancePoints.map(p => {
+                          // For sprints/hurdles, IAAF wind regulation: > +2.0 m/s = wind-aided (not record-eligible)
+                          const isTimedDisc = p.unit === "sec";
+                          const windAided = isTimedDisc && p.windSpeed != null && p.windSpeed > 2;
+                          const headWind = isTimedDisc && p.windSpeed != null && p.windSpeed < -1;
+                          return (
+                            <TableRow key={p.matchId}>
+                              <TableCell className="text-xs text-muted-foreground">
+                                {p.matchDate ? format(parseISO(p.matchDate), "dd/MM/yy", { locale: fr }) : "—"}
+                              </TableCell>
+                              <TableCell className="font-medium">{p.competition}</TableCell>
+                              <TableCell className="text-center">
+                                {p.ranking != null ? (
+                                  <Badge variant={p.ranking <= 3 ? "default" : "outline"} className="font-mono">
+                                    {p.ranking}ᵉ
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right font-mono">
+                                {formatResult(p.result, p.unit)}
+                              </TableCell>
+                              <TableCell className="text-center font-mono text-xs">
+                                {p.windSpeed != null ? (
+                                  <span
+                                    className={
+                                      windAided
+                                        ? "text-amber-600 dark:text-amber-400 font-semibold"
+                                        : headWind
+                                          ? "text-blue-600 dark:text-blue-400 font-semibold"
+                                          : ""
+                                    }
+                                    title={
+                                      windAided
+                                        ? "Vent favorable > +2 m/s (perf. non homologable comme RP officiel)"
+                                        : headWind
+                                          ? "Vent contraire — perf. dégradée"
+                                          : undefined
+                                    }
+                                  >
+                                    {p.windSpeed > 0 ? "+" : ""}{p.windSpeed.toFixed(1)} m/s
+                                    {p.windDirection && (
+                                      <span className="ml-1 text-muted-foreground">({p.windDirection})</span>
+                                    )}
+                                  </span>
+                                ) : p.windDirection ? (
+                                  <span className="text-muted-foreground">{p.windDirection}</span>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center font-mono text-xs">
+                                {p.temperature != null ? `${p.temperature}°C` : <span className="text-muted-foreground">—</span>}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {p.isPersonalRecord && (
+                                  <Badge variant="default" className="bg-amber-500 hover:bg-amber-500 text-white">RP</Badge>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
