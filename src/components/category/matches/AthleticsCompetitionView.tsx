@@ -649,6 +649,12 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
                             const isTimedDisc = r.unit === "sec";
                             const windAided = isTimedDisc && r.windSpeed != null && r.windSpeed > 2;
                             const headWind = isTimedDisc && r.windSpeed != null && r.windSpeed < -1;
+                            const validVals = sec.races.map(x => x.result).filter((v): v is number => v != null);
+                            const worstResult = validVals.length >= 2
+                              ? (sec.lowerIsBetter ? Math.max(...validVals) : Math.min(...validVals))
+                              : null;
+                            const isBest = r.result != null && sec.bestResult != null && Math.abs(r.result - sec.bestResult) < 0.001 && validVals.length >= 2;
+                            const isWorst = r.result != null && worstResult != null && Math.abs(r.result - worstResult) < 0.001 && !isBest;
                             return (
                               <TableRow key={r.roundId}>
                                 <TableCell className="text-center font-mono text-xs text-muted-foreground">{idx + 1}</TableCell>
@@ -662,14 +668,21 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
                                     <span className="text-muted-foreground">—</span>
                                   )}
                                 </TableCell>
-                                <TableCell className="text-right font-mono">{formatResult(r.result, r.unit)}</TableCell>
+                                <TableCell className={`text-right font-mono ${isBest ? "text-emerald-600 dark:text-emerald-400 font-bold" : isWorst ? "text-red-600 dark:text-red-400 font-bold" : ""}`}>
+                                  {formatResult(r.result, r.unit)}
+                                </TableCell>
                                 <TableCell className="text-center font-mono text-xs">
-                                  {r.windSpeed != null ? (
-                                    <span className={windAided ? "text-amber-600 dark:text-amber-400 font-semibold" : headWind ? "text-blue-600 dark:text-blue-400 font-semibold" : ""}>
-                                      {r.windSpeed > 0 ? "+" : ""}{r.windSpeed.toFixed(1)} m/s
-                                    </span>
-                                  ) : r.windDirection ? (
-                                    <span className="text-muted-foreground">{r.windDirection}</span>
+                                  {r.windSpeed != null || r.windDirection ? (
+                                    <div className="flex flex-col items-center leading-tight">
+                                      {r.windSpeed != null && (
+                                        <span className={windAided ? "text-amber-600 dark:text-amber-400 font-semibold" : headWind ? "text-blue-600 dark:text-blue-400 font-semibold" : ""}>
+                                          {r.windSpeed > 0 ? "+" : ""}{r.windSpeed.toFixed(1)} m/s
+                                        </span>
+                                      )}
+                                      {r.windDirection && (
+                                        <span className="text-[10px] text-muted-foreground">{r.windDirection}</span>
+                                      )}
+                                    </div>
                                   ) : (
                                     <span className="text-muted-foreground">—</span>
                                   )}
@@ -678,7 +691,11 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
                                   {r.temperature != null ? `${r.temperature}°C` : <span className="text-muted-foreground">—</span>}
                                 </TableCell>
                                 <TableCell className="text-center">
-                                  {r.isPR && <Badge variant="default" className="bg-amber-500 hover:bg-amber-500 text-white">RP</Badge>}
+                                  {r.isPR ? (
+                                    <Badge variant="default" className="bg-amber-500 hover:bg-amber-500 text-white">RP</Badge>
+                                  ) : r.isSB ? (
+                                    <Badge variant="default" className="bg-blue-500 hover:bg-blue-500 text-white">SB</Badge>
+                                  ) : null}
                                 </TableCell>
                               </TableRow>
                             );
