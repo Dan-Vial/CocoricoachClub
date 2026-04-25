@@ -1020,12 +1020,25 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
+                  {(() => {
+                    const ranks = rankingChartData.map((d: any) => Number(d.ranking)).filter((v) => Number.isFinite(v));
+                    const maxRank = ranks.length ? Math.max(...ranks) : 1;
+                    // Domaine: 1 (haut) à maxRank+1 (bas) pour laisser respirer
+                    const yMax = Math.max(maxRank + 1, 3);
+                    return (
                   <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={rankingChartData} margin={{ left: 10, right: 10 }}>
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                      <LineChart data={rankingChartData} margin={{ left: 10, right: 20, top: 10, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
                         <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                        <YAxis reversed tick={{ fontSize: 10 }} allowDecimals={false} />
+                        <YAxis
+                          reversed
+                          domain={[1, yMax]}
+                          tick={{ fontSize: 10 }}
+                          allowDecimals={false}
+                          tickFormatter={(v) => `${v}ᵉ`}
+                          width={40}
+                        />
                         <Tooltip
                           contentStyle={{ backgroundColor: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }}
                           formatter={(v: number) => [`${v}ᵉ`, "Classement"]}
@@ -1039,10 +1052,19 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
                             label={{ value: `Moy. ${summary.avgRank.toFixed(1)}`, fill: "hsl(var(--muted-foreground))", fontSize: 10, position: "right" }}
                           />
                         )}
-                        <Bar dataKey="ranking" fill={COLORS[2]} radius={[4, 4, 0, 0]} />
-                      </BarChart>
+                        <Line
+                          type="monotone"
+                          dataKey="ranking"
+                          stroke={COLORS[2]}
+                          strokeWidth={2}
+                          dot={{ r: 6, fill: COLORS[2], stroke: "hsl(var(--background))", strokeWidth: 2 }}
+                          activeDot={{ r: 8 }}
+                        />
+                      </LineChart>
                     </ResponsiveContainer>
                   </div>
+                  );
+                  })()}
                 </CardContent>
               </Card>
             </TabsContent>
