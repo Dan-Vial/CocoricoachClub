@@ -988,6 +988,31 @@ export function getAthletismeStatsForDiscipline(discipline?: string): StatField[
   return ATHLETISME_GENERAL_STATS;
 }
 
+// Get the athletics category key (ath_sprint, ath_haies, etc.) for a given discipline/specialty.
+// Returns null when the discipline is unknown / generic so callers can default to ath_general.
+export function getAthletismeCategoryKeyForDiscipline(discipline?: string | null): string | null {
+  if (!discipline) return null;
+  const disc = discipline.toLowerCase().replace(/_/g, ' ');
+
+  if (disc.includes('haies') || disc.includes('hurdles') || /\d+mh\b/i.test(disc) || disc === '110m' || disc === '60mh' || disc === '100mh' || disc === '110mh' || disc === '400mh') {
+    return 'ath_haies';
+  }
+  if (disc.includes('sprint') || disc.includes('60m') || disc.includes('100m') || disc.includes('200m') || disc.includes('400m')) {
+    return 'ath_sprint';
+  }
+  if (disc.includes('800m') || disc.includes('1500m') || disc.includes('3000m') || disc.includes('5000m') ||
+      disc.includes('10000m') || disc.includes('marathon') || disc.includes('demi fond') || disc.includes('demi-fond') ||
+      disc.includes('fond') || disc.includes('marche') || disc.includes('steeple') || disc.includes('cross') || disc.includes('mile')) {
+    return 'ath_endurance';
+  }
+  if (disc.includes('perche') || disc.includes('pole')) return 'ath_perche';
+  if (disc.includes('saut') || disc.includes('hauteur') || disc.includes('longueur') || disc.includes('triple')) return 'ath_sauts';
+  if (disc.includes('lancer') || disc.includes('poids') || disc.includes('disque') || disc.includes('javelot') || disc.includes('marteau') || disc.includes('throw')) return 'ath_lancers';
+  if (disc.includes('décathlon') || disc.includes('decathlon') || disc.includes('heptathlon') || disc.includes('combiné') || disc.includes('combine') || disc.includes('pentat')) return 'ath_combines';
+  if (disc.includes('trail') || disc.includes('ultra')) return 'ath_trail';
+  return null;
+}
+
 // Check if sport has goalkeeper-specific stats
 export function hasGoalkeeperStats(sportType: SportType | string): boolean {
   const baseSport = getBaseSport(sportType);
