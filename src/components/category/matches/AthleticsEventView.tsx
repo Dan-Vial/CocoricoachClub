@@ -195,13 +195,17 @@ export function AthleticsEventView({ categoryId, matchIds }: Props) {
     const matchById = new Map(matches.map(m => [m.id, m]));
     const playerById = new Map(players.map(p => [p.id, p]));
 
-    // Genre filter
+    // Genre filter — gender vient de categories.gender (masculine/male/feminine/female/mixed)
+    const isMale = (g: string) => ["M", "MALE", "MASCULINE", "HOMME", "HOMMES", "MIXED", "MIXTE"].includes(g);
+    const isFemale = (g: string) => ["F", "FEMALE", "FEMININE", "FEMME", "FEMMES", "MIXED", "MIXTE"].includes(g);
     const allowed = new Set<string>();
     players.forEach(p => {
       if (genderFilter === "all") { allowed.add(p.id); return; }
       const g = (p.gender || "").toUpperCase();
-      if (genderFilter === "M" && (g === "M" || g === "MALE" || g === "HOMME")) allowed.add(p.id);
-      if (genderFilter === "F" && (g === "F" || g === "FEMALE" || g === "FEMME")) allowed.add(p.id);
+      // Si pas de genre connu → on inclut quand même (pour ne pas masquer les athlètes)
+      if (!g) { allowed.add(p.id); return; }
+      if (genderFilter === "M" && isMale(g)) allowed.add(p.id);
+      if (genderFilter === "F" && isFemale(g)) allowed.add(p.id);
     });
 
     // Athletes alignés (lineups) sur cette épreuve, par compétition
