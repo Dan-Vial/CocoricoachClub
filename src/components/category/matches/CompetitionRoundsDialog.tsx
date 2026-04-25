@@ -31,6 +31,7 @@ import { BowlingScoreSheet, FrameData, BowlingStats } from "@/components/athlete
 import { isAthletismeCategory } from "@/lib/constants/sportTypes";
 import { getDisciplineLabel as getAthleticsDisciplineLabel } from "@/lib/constants/athleticProfiles";
 import { syncAthleticsRecordsFromRounds } from "@/lib/athletics/syncRecordsFromCompetition";
+import { getDefaultUnitForDiscipline } from "@/lib/athletics/recordsHelpers";
 import { BowlingBlockManager, type BowlingBlock, type Round as BowlingRound, BOWLING_COMPETITION_CATEGORIES, BOWLING_PHASES } from "@/components/bowling/BowlingBlockManager";
 import { BowlingCompetitionSummary } from "@/components/bowling/BowlingCompetitionSummary";
 
@@ -1303,6 +1304,16 @@ export function CompetitionRoundsDialog({
     const qualified = player.rounds.filter((r) => r.result === "qualified").length;
     const pStats = getPlayerStats(player);
     const pCats = getPlayerStatCategories(player);
+    const { unit: perfUnit, lowerIsBetter: perfLowerBetter } = getDefaultUnitForDiscipline(player.discipline, player.specialty);
+    const perfValues = player.rounds.map((r) => r.final_time_seconds).filter((v): v is number => typeof v === "number");
+    const bestPerf = perfValues.length > 0
+      ? (perfLowerBetter ? Math.min(...perfValues) : Math.max(...perfValues))
+      : null;
+    const bestPerfDisplay = bestPerf == null
+      ? null
+      : perfLowerBetter
+        ? formatTime(bestPerf)
+        : `${bestPerf.toFixed(2)} ${perfUnit}`;
 
     return (
       <Card>
@@ -1317,11 +1328,17 @@ export function CompetitionRoundsDialog({
             <p className="text-center text-muted-foreground py-4">Aucune épreuve enregistrée</p>
           ) : (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                 <div className="p-3 rounded-lg border bg-card">
                   <p className="text-2xl font-bold">{total}</p>
                   <p className="text-xs text-muted-foreground">Épreuves</p>
                 </div>
+                {bestPerfDisplay && (
+                  <div className="p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5">
+                    <p className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">{bestPerfDisplay}</p>
+                    <p className="text-xs text-muted-foreground">{perfLowerBetter ? "Meilleur temps" : "Meilleure perf"}</p>
+                  </div>
+                )}
                 {bestRanking.length > 0 && (
                   <div className="p-3 rounded-lg border border-primary/20 bg-primary/5">
                     <p className="text-2xl font-bold">{Math.min(...bestRanking)}e</p>
@@ -1334,29 +1351,49 @@ export function CompetitionRoundsDialog({
                 </div>
               </div>
 
-              <div className="space-y-1">
-                {player.rounds.map((round) => (
-                  <div key={round.round_number} className="flex items-center justify-between p-2 rounded border text-sm">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">
-                        {phases.find((p) => p.value === round.phase)?.label || `Épreuve ${round.round_number}`}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      {round.ranking && (
-                        <Badge variant={round.ranking <= 3 ? "default" : "secondary"}>
-                          {round.ranking === 1 ? "🥇" : round.ranking === 2 ? "🥈" : round.ranking === 3 ? "🥉" : `${round.ranking}e`}
-                        </Badge>
-                      )}
-                      {round.result && (
-                        <Badge variant={round.result === "qualified" ? "default" : "destructive"}>
-                          {round.result === "qualified" ? "Q" : round.result === "eliminated" ? "Élim." : round.result.toUpperCase()}
-                        </Badge>
-                      )}
-                    </div>
+              {(() => {
+                const { unit, lowerIsBetter } = getDefaultUnitForDiscipline(player.discipline, player.specialty);
+                const isTime = lowerIsBetter; // courses → temps en MM:SS.ms
+                const formatPerf = (v?: number) => {
+                  if (v == null) return null;
+                  if (isTime) return formatTime(v);
+                  return `${v.toFixed(2)} ${unit}`;
+                };
+                return (
+                  <div className="space-y-1">
+                    {player.rounds.map((round) => {
+                      const perf = formatPerf(round.final_time_seconds);
+                      return (
+                        <div key={round.round_number} className="flex items-center justify-between p-2 rounded border text-sm">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Badge variant="outline">
+                              {phases.find((p) => p.value === round.phase)?.label || `Épreuve ${round.round_number}`}
+                            </Badge>
+                            {perf && (
+                              <span className="font-mono font-semibold text-foreground">{perf}</span>
+                            )}
+                            {round.wind_conditions && isTime && (
+                              <span className="text-xs text-muted-foreground">vent {round.wind_conditions}</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            {round.ranking && (
+                              <Badge variant={round.ranking <= 3 ? "default" : "secondary"}>
+                                {round.ranking === 1 ? "🥇" : round.ranking === 2 ? "🥈" : round.ranking === 3 ? "🥉" : `${round.ranking}e`}
+                              </Badge>
+                            )}
+                            {round.result && (
+                              <Badge variant={round.result === "qualified" ? "default" : "destructive"}>
+                                {round.result === "qualified" ? "Q" : round.result === "eliminated" ? "Élim." : round.result.toUpperCase()}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
 
               {Object.keys(aggregated).length > 0 && (
                 <div className="space-y-3">
