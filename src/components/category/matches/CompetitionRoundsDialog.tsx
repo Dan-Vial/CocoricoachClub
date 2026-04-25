@@ -1304,6 +1304,16 @@ export function CompetitionRoundsDialog({
     const qualified = player.rounds.filter((r) => r.result === "qualified").length;
     const pStats = getPlayerStats(player);
     const pCats = getPlayerStatCategories(player);
+    const { unit: perfUnit, lowerIsBetter: perfLowerBetter } = getDefaultUnitForDiscipline(player.discipline, player.specialty);
+    const perfValues = player.rounds.map((r) => r.final_time_seconds).filter((v): v is number => typeof v === "number");
+    const bestPerf = perfValues.length > 0
+      ? (perfLowerBetter ? Math.min(...perfValues) : Math.max(...perfValues))
+      : null;
+    const bestPerfDisplay = bestPerf == null
+      ? null
+      : perfLowerBetter
+        ? formatTime(bestPerf)
+        : `${bestPerf.toFixed(2)} ${perfUnit}`;
 
     return (
       <Card>
@@ -1318,11 +1328,17 @@ export function CompetitionRoundsDialog({
             <p className="text-center text-muted-foreground py-4">Aucune épreuve enregistrée</p>
           ) : (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                 <div className="p-3 rounded-lg border bg-card">
                   <p className="text-2xl font-bold">{total}</p>
                   <p className="text-xs text-muted-foreground">Épreuves</p>
                 </div>
+                {bestPerfDisplay && (
+                  <div className="p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5">
+                    <p className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">{bestPerfDisplay}</p>
+                    <p className="text-xs text-muted-foreground">{perfLowerBetter ? "Meilleur temps" : "Meilleure perf"}</p>
+                  </div>
+                )}
                 {bestRanking.length > 0 && (
                   <div className="p-3 rounded-lg border border-primary/20 bg-primary/5">
                     <p className="text-2xl font-bold">{Math.min(...bestRanking)}e</p>
