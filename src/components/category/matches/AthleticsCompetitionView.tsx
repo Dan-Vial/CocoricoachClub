@@ -641,7 +641,7 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
                             <TableHead className="text-center">
                               <span className="inline-flex items-center gap-1"><Thermometer className="h-3.5 w-3.5" />Temp.</span>
                             </TableHead>
-                            <TableHead className="text-center">RP</TableHead>
+                            <TableHead className="text-center">Record</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
