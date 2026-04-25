@@ -611,8 +611,12 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
       }
 
       if (mode === "all" || mode === "individual" || mode === "single") {
+        // For single-athlete export, restrict tabs to disciplines the athlete is registered in.
+        const exportCategories = (mode === "single" && singlePlayerId)
+          ? getCategoriesForPlayer(singlePlayerId)
+          : statCategories;
         // Individual sheets per category
-        statCategories.forEach(cat => {
+        exportCategories.forEach(cat => {
           const categoryStats = sportStats.filter(s => s.category === cat.key);
           if (categoryStats.length === 0) return;
           const ws = wb.addWorksheet(cat.label);
