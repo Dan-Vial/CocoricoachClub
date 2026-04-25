@@ -32,8 +32,10 @@ interface RoundRow {
   final_time_seconds: number | null;
   ranking: number | null;
   is_personal_record: boolean | null;
-  round_date: string | null;
   phase?: string | null;
+  wind_conditions?: string | null;
+  wind_direction?: string | null;
+  temperature_celsius?: number | null;
   competition_round_stats?: Array<{ stat_data: Record<string, any> | null }>;
 }
 
@@ -63,7 +65,11 @@ interface PerfPoint {
   lowerIsBetter: boolean;
   isPersonalRecord: boolean;
   phase?: string | null;
+  windSpeed: number | null;
+  windDirection: string | null;
+  temperature: number | null;
 }
+
 
 const PRETTY_LABELS: Record<string, string> = {
   ath_sprint: "Sprint",
