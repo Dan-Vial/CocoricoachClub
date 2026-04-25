@@ -31,6 +31,7 @@ import { BowlingScoreSheet, FrameData, BowlingStats } from "@/components/athlete
 import { isAthletismeCategory } from "@/lib/constants/sportTypes";
 import { getDisciplineLabel as getAthleticsDisciplineLabel } from "@/lib/constants/athleticProfiles";
 import { syncAthleticsRecordsFromRounds } from "@/lib/athletics/syncRecordsFromCompetition";
+import { getDefaultUnitForDiscipline } from "@/lib/athletics/recordsHelpers";
 import { BowlingBlockManager, type BowlingBlock, type Round as BowlingRound, BOWLING_COMPETITION_CATEGORIES, BOWLING_PHASES } from "@/components/bowling/BowlingBlockManager";
 import { BowlingCompetitionSummary } from "@/components/bowling/BowlingCompetitionSummary";
 
