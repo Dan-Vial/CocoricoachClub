@@ -1042,7 +1042,7 @@ export function CompetitionRoundsDialog({
                   // Pour les lancers/sauts, la performance est saisie via les essais ci-dessous
                   const showTopPerf = _lib;
                   return (
-                <div className={`grid grid-cols-1 sm:grid-cols-${showTopPerf ? 3 : 2} gap-3`}>
+                <div className={`grid grid-cols-1 ${showTopPerf ? "sm:grid-cols-3" : "sm:grid-cols-2"} gap-3`}>
                   <div>
                     <Label className="text-xs">Résultat</Label>
                     <Select
