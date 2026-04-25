@@ -259,7 +259,7 @@ export function CumulativeStatsCharts({ stats, matchesData, sportStats, selected
                     Évolution — {activeStatField?.label || activeStat}
                   </CardTitle>
                   <div className="flex gap-1 flex-wrap">
-                    {stats.slice(0, 6).map((p, i) => {
+                    {filteredStats.slice(0, 6).map((p, i) => {
                       const isActive = selectedPlayers.length === 0 ? i < 3 : selectedPlayers.includes(p.playerId);
                       return (
                         <Badge key={p.playerId} variant={isActive ? "default" : "outline"}
@@ -267,7 +267,8 @@ export function CumulativeStatsCharts({ stats, matchesData, sportStats, selected
                           onClick={() => {
                             setSelectedPlayers(prev => {
                               if (prev.length === 0) {
-                                const top3 = stats.slice(0, 3).map(s => s.playerId);
+                                const top3 = filteredStats.slice(0, 3).map(s => s.playerId);
+                                return top3.includes(p.playerId) ? top3.filter(id => id !== p.playerId) : [...top3, p.playerId];
                                 return top3.includes(p.playerId) ? top3.filter(id => id !== p.playerId) : [...top3, p.playerId];
                               }
                               return prev.includes(p.playerId) ? prev.filter(id => id !== p.playerId) : [...prev, p.playerId];
