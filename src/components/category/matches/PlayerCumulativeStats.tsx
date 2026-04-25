@@ -27,6 +27,7 @@ import { CumulativeStatsCharts } from "./CumulativeStatsCharts";
 import { TeamCumulativeStats } from "./TeamCumulativeStats";
 import { CumulativeKickingMap } from "./CumulativeKickingMap";
 import { AthleticsIndividualStats } from "./AthleticsIndividualStats";
+import { AthleticsEventView } from "./AthleticsEventView";
 import { getExcelBranding, addBrandedHeader, styleDataHeaderRow, addZebraRows, addFooter, downloadWorkbook } from "@/lib/excelExport";
 import { preparePdfWithSettings } from "@/lib/pdfExport";
 import { drawPdfRugbyField, drawPdfZoneStatsGrid, svgPctToPdfPos } from "@/lib/pdfRugbyField";
@@ -2299,12 +2300,16 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                 </DropdownMenuItem>
               ) : (
                 <>
-                  <DropdownMenuItem onClick={() => handleExportExcel("all")}>
-                    <Users className="h-3.5 w-3.5 mr-2" />Tout (équipe + individuel)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleExportExcel("team")}>
-                    <Users className="h-3.5 w-3.5 mr-2" />Statistiques équipe
-                  </DropdownMenuItem>
+                  {!isAthletics && (
+                    <DropdownMenuItem onClick={() => handleExportExcel("all")}>
+                      <Users className="h-3.5 w-3.5 mr-2" />Tout (équipe + individuel)
+                    </DropdownMenuItem>
+                  )}
+                  {!isAthletics && (
+                    <DropdownMenuItem onClick={() => handleExportExcel("team")}>
+                      <Users className="h-3.5 w-3.5 mr-2" />Statistiques équipe
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => handleExportExcel("individual")}>
                     <User className="h-3.5 w-3.5 mr-2" />Statistiques individuelles
                   </DropdownMenuItem>
@@ -2327,12 +2332,16 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                 </DropdownMenuItem>
               ) : (
                 <>
-                  <DropdownMenuItem onClick={() => handleExportPdf("all")}>
-                    <Users className="h-3.5 w-3.5 mr-2" />Tout (équipe + individuel)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleExportPdf("team")}>
-                    <Users className="h-3.5 w-3.5 mr-2" />Statistiques équipe
-                  </DropdownMenuItem>
+                  {!isAthletics && (
+                    <DropdownMenuItem onClick={() => handleExportPdf("all")}>
+                      <Users className="h-3.5 w-3.5 mr-2" />Tout (équipe + individuel)
+                    </DropdownMenuItem>
+                  )}
+                  {!isAthletics && (
+                    <DropdownMenuItem onClick={() => handleExportPdf("team")}>
+                      <Users className="h-3.5 w-3.5 mr-2" />Statistiques équipe
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => handleExportPdf("individual")}>
                     <User className="h-3.5 w-3.5 mr-2" />Statistiques individuelles
                   </DropdownMenuItem>
@@ -2346,7 +2355,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
       {/* STACKED LAYOUT: Team (top, full width) + Individual (below) — or just individual in single player mode */}
       <div className={isSinglePlayerMode ? "" : "space-y-6"}>
         {/* TOP: Team Stats — full width, all categories stacked */}
-        {!isSinglePlayerMode && (
+        {!isSinglePlayerMode && !isAthletics && (
         <div>
           <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
@@ -2372,7 +2381,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
         </div>
         )}
 
-        {/* RIGHT: Individual Stats */}
+        {/* RIGHT: Individual Stats — hidden for athletics (replaced by AthleticsIndividualStats below) */}
+        {!isAthletics && (
         <div>
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -2550,6 +2560,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
             );
           })()}
         </div>
+        )}
       </div>
 
       {!isSinglePlayerMode && <>
@@ -2634,7 +2645,19 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
         </div>
       )}
 
-      {/* Full detailed table below */}
+      {/* Athletics: comparison by discipline / specialty across athletes */}
+      {isAthletics && (
+        <div>
+          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            Comparaison par discipline / spécialité
+          </h3>
+          <AthleticsEventView categoryId={categoryId} matchIds={activeMatchIds} />
+        </div>
+      )}
+
+      {/* Full detailed table below — hidden for athletics */}
+      {!isAthletics && (
       <Card className="bg-gradient-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -2746,6 +2769,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
           </Tabs>
         </CardContent>
       </Card>
+      )}
 
       {/* Kicking ranking table for rugby */}
       {isRugby && Object.keys(kickingByPlayerFinal).length > 0 && (
