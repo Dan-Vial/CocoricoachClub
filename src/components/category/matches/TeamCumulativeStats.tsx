@@ -48,10 +48,12 @@ interface TeamCumulativeStatsProps {
   sportStats: StatField[];
   sportType: string;
   matchesWithScores?: MatchScoreData[];
+  /** Optional override for displayed categories — used to hide athletics disciplines no athlete competes in. */
+  statCategoriesOverride?: { key: string; label: string }[];
 }
 
-export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType, matchesWithScores = [] }: TeamCumulativeStatsProps) {
-  const statCategories = getStatCategories(sportType);
+export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType, matchesWithScores = [], statCategoriesOverride }: TeamCumulativeStatsProps) {
+  const statCategories = statCategoriesOverride ?? getStatCategories(sportType);
 
   // Aggregate team totals across all players
   const teamTotals = useMemo(() => {
