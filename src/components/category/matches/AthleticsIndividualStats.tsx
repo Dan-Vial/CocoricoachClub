@@ -654,8 +654,9 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
         const yMax = maxV + pad;
         const yScale = (v: number) => {
           const t = (v - yMin) / (yMax - yMin);
-          // Si lower is better, on inverse pour que petit = haut
-          return lowerIsBetter ? innerY + t * innerH : innerY + (1 - t) * innerH;
+          // Petite valeur = bas du graphique, grande valeur = haut.
+          // Pour la vitesse (lowerIsBetter), un meilleur temps (plus petit) sera donc en bas → courbe descendante = progrès.
+          return innerY + (1 - t) * innerH;
         };
 
         // Y axis ticks (3 ticks)
