@@ -2617,8 +2617,19 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
       })()}
 
       {/* Charts (Comparaison / Évolution / Progression) — placed just above the detailed table */}
-      {stats.length > 0 && (
+      {stats.length > 0 && !isAthletics && (
         <CumulativeStatsCharts stats={stats} matchesData={matchesDataForCharts} sportStats={sportStats} selectedMatchIds={activeMatchIds} sportType={sportType} />
+      )}
+
+      {/* Athletics: dedicated per-athlete, per-competition view */}
+      {isAthletics && (
+        <div>
+          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+            <User className="h-5 w-5 text-primary" />
+            Analyse individuelle par compétition
+          </h3>
+          <AthleticsIndividualStats categoryId={categoryId} matchIds={activeMatchIds} />
+        </div>
       )}
 
       {/* Full detailed table below */}
