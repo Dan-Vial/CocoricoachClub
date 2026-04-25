@@ -107,32 +107,32 @@ export function CumulativeStatsCharts({ stats, matchesData, sportStats, selected
   const evolutionData = useMemo(() => {
     if (!activeStat || matchesData.length === 0) return [];
     const activePlayers = selectedPlayers.length > 0 
-      ? selectedPlayers 
-      : stats.slice(0, 3).map(s => s.playerId);
+      ? selectedPlayers.filter(pid => filteredStats.some(s => s.playerId === pid))
+      : filteredStats.slice(0, 3).map(s => s.playerId);
     return matchesData.map(match => {
       const point: Record<string, string | number> = { match: match.matchLabel, date: match.matchDate };
       activePlayers.forEach(pid => {
         const player = match.players[pid];
-        const pName = player?.playerName || stats.find(s => s.playerId === pid)?.playerName || pid;
+        const pName = player?.playerName || filteredStats.find(s => s.playerId === pid)?.playerName || pid;
         point[pName] = player?.sportData[activeStat] || 0;
       });
       return point;
     });
-  }, [matchesData, activeStat, selectedPlayers, stats]);
+  }, [matchesData, activeStat, selectedPlayers, filteredStats]);
 
   const playerNames = useMemo(() => {
     const activePlayers = selectedPlayers.length > 0 
-      ? selectedPlayers 
-      : stats.slice(0, 3).map(s => s.playerId);
-    return activePlayers.map(pid => stats.find(s => s.playerId === pid)?.playerName || pid);
-  }, [selectedPlayers, stats]);
+      ? selectedPlayers.filter(pid => filteredStats.some(s => s.playerId === pid))
+      : filteredStats.slice(0, 3).map(s => s.playerId);
+    return activePlayers.map(pid => filteredStats.find(s => s.playerId === pid)?.playerName || pid);
+  }, [selectedPlayers, filteredStats]);
 
   // Diff data
   const diffData = useMemo(() => {
     if (!activeStat || matchesData.length < 2) return [];
     const first = matchesData[0];
     const last = matchesData[matchesData.length - 1];
-    return stats
+    return filteredStats
       .filter(p => first.players[p.playerId] || last.players[p.playerId])
       .map(p => {
         const firstVal = first.players[p.playerId]?.sportData[activeStat] || 0;
@@ -146,7 +146,7 @@ export function CumulativeStatsCharts({ stats, matchesData, sportStats, selected
       })
       .sort((a, b) => b.diff - a.diff)
       .slice(0, 10);
-  }, [stats, matchesData, activeStat]);
+  }, [filteredStats, matchesData, activeStat]);
 
   const COLORS = [
     "hsl(var(--primary))",
