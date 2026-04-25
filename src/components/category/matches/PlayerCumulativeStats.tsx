@@ -132,8 +132,51 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
     return selectedMatchIds;
   }, [selectedMatchIds, allMatches]);
 
-  const { data: stats, isLoading } = useQuery({
-    queryKey: ["cumulative_player_stats", categoryId, sportType, activeMatchIds, isIndividualCompetitionSport],
+  // For athletics: fetch per-player registered disciplines from match_lineups.
+  // Used to show only the discipline tabs an athlete actually competes in.
+  const { data: playerDisciplineMap = {} } = useQuery({
+    queryKey: ["athletics-player-disciplines", categoryId, activeMatchIds, isAthletics],
+    queryFn: async () => {
+      if (!isAthletics || activeMatchIds.length === 0) return {} as Record<string, Set<string>>;
+      const { data, error } = await supabase
+        .from("match_lineups")
+        .select("player_id, discipline, specialty")
+        .in("match_id", activeMatchIds);
+      if (error) throw error;
+      const map: Record<string, Set<string>> = {};
+      (data || []).forEach((row: any) => {
+        if (!map[row.player_id]) map[row.player_id] = new Set<string>();
+        // Always include "ath_general" so generic stats stay visible.
+        map[row.player_id].add("ath_general");
+        const fromSpec = getAthletismeCategoryKeyForDiscipline(row.specialty);
+        const fromDisc = getAthletismeCategoryKeyForDiscipline(row.discipline);
+        if (fromSpec) map[row.player_id].add(fromSpec);
+        else if (fromDisc) map[row.player_id].add(fromDisc);
+      });
+      return map;
+    },
+    enabled: isAthletics && activeMatchIds.length > 0,
+  });
+
+  // Helper: filter the global category list to those an athlete is registered in.
+  // For non-athletics sports, returns the full list unchanged.
+  const getCategoriesForPlayer = useCallback((playerId?: string) => {
+    if (!isAthletics || !playerId) return allStatCategories;
+    const allowed = playerDisciplineMap[playerId];
+    if (!allowed || allowed.size === 0) return allStatCategories;
+    return allStatCategories.filter(c => allowed.has(c.key));
+  }, [allStatCategories, isAthletics, playerDisciplineMap]);
+
+  // Union of all disciplines seen across the team — used for team views & multi-player exports.
+  const statCategories = useMemo(() => {
+    if (!isAthletics) return allStatCategories;
+    const union = new Set<string>();
+    union.add("ath_general");
+    Object.values(playerDisciplineMap).forEach(set => set.forEach(k => union.add(k)));
+    if (union.size <= 1) return allStatCategories; // no inscriptions yet → show all
+    return allStatCategories.filter(c => union.has(c.key));
+  }, [allStatCategories, isAthletics, playerDisciplineMap]);
+
     queryFn: async () => {
       if (activeMatchIds.length === 0) return [];
       const { data: playerStats, error: statsError } = await supabase
