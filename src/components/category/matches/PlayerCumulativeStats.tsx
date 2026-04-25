@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
-import { getStatCategories, type StatField } from "@/lib/constants/sportStats";
+import { getStatCategories, getAthletismeCategoryKeyForDiscipline, type StatField } from "@/lib/constants/sportStats";
 import { groupStatsByTheme } from "@/lib/statSubGroups";
 import { pdfGroupColor } from "@/lib/pdfStatGroupPalette";
 import { useStatPreferences } from "@/hooks/use-stat-preferences";
