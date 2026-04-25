@@ -308,56 +308,38 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
     });
 
     const points: PerfPoint[] = [];
-    Object.entries(byMatch).forEach(([mid, rs]) => {
-      const m = matchById.get(mid);
+    filtered.forEach(r => {
+      const m = matchById.get(r.match_id);
       if (!m) return;
-      let bestVal: number | null = null;
-      let bestUnit = defaultUnit;
-      let bestRank: number | null = null;
-      let isPR = false;
-      let bestRoundIdx = -1;
-      rs.forEach((r, idx) => {
-        const { value, unit } = extractResult(r, lowerIsBetter);
-        if (value != null) {
-          if (
-            bestVal == null ||
-            (lowerIsBetter ? value < bestVal : value > bestVal)
-          ) {
-            bestVal = value;
-            if (unit) bestUnit = unit;
-            bestRoundIdx = idx;
-          }
-        }
-        if (r.ranking != null && r.ranking > 0) {
-          if (bestRank == null || r.ranking < bestRank) bestRank = r.ranking;
-        }
-        if (r.is_personal_record) isPR = true;
-      });
+      const { value, unit } = extractResult(r, lowerIsBetter);
+      const finalUnit = unit || defaultUnit;
 
-      // Pick weather from the best round, fallback to the first round having any data.
-      const weatherSource = bestRoundIdx >= 0
-        ? rs[bestRoundIdx]
-        : rs.find(r => r.wind_conditions || r.wind_direction || r.temperature_celsius != null) || rs[0];
-      const windRaw = weatherSource?.wind_conditions ?? null;
+      const windRaw = r.wind_conditions ?? null;
       const windNum = windRaw != null ? Number(String(windRaw).replace(",", ".")) : NaN;
 
       points.push({
-        matchId: mid,
-        matchLabel: m.competition || m.opponent || mid.slice(0, 6),
+        roundId: r.id,
+        matchId: r.match_id,
+        matchLabel: m.competition || m.opponent || r.match_id.slice(0, 6),
         matchDate: m.match_date,
         competition: m.competition || m.opponent || "—",
-        ranking: bestRank,
-        result: bestVal,
-        unit: bestUnit,
+        ranking: r.ranking != null && r.ranking > 0 ? r.ranking : null,
+        result: value,
+        unit: finalUnit,
         lowerIsBetter,
-        isPersonalRecord: isPR,
+        isPersonalRecord: !!r.is_personal_record,
+        phase: r.phase || null,
         windSpeed: Number.isFinite(windNum) ? windNum : null,
-        windDirection: weatherSource?.wind_direction || null,
-        temperature: weatherSource?.temperature_celsius ?? null,
+        windDirection: r.wind_direction || null,
+        temperature: r.temperature_celsius ?? null,
       });
     });
 
-    return points.sort((a, b) => a.matchDate.localeCompare(b.matchDate));
+    return points.sort((a, b) => {
+      const d = a.matchDate.localeCompare(b.matchDate);
+      if (d !== 0) return d;
+      return a.roundId.localeCompare(b.roundId);
+    });
   }, [selectedAthleteId, activePair, rounds, matches, disciplinePairs.length]);
 
   const summary = useMemo(() => {
