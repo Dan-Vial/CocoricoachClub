@@ -2140,7 +2140,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
       console.error(e);
       toast.error("Erreur lors de l'export PDF");
     }
-  }, [stats, sportStats, statCategories, categoryId, allMatches, activeMatchIds, isRugby, kickingByPlayerFinal, matchesDataForCharts]);
+  }, [stats, sportStats, statCategories, categoryId, allMatches, activeMatchIds, isRugby, kickingByPlayerFinal, matchesDataForCharts, getCategoriesForPlayer]);
 
   const getCategoryIcon = (catKey: string) => {
     switch (catKey) {
