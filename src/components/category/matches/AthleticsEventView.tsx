@@ -53,7 +53,6 @@ interface PlayerRow {
   id: string;
   name: string;
   first_name: string | null;
-  gender?: string | null;
 }
 
 interface AthleteResultRow {
