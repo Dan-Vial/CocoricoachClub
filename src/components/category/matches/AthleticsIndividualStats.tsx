@@ -357,21 +357,6 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
     });
   }, [selectedAthleteId, activePair, rounds, matches, disciplinePairs.length]);
 
-  // Hiérarchie des phases (de la moins à la plus avancée) — utilisée pour ne retenir
-  // que le classement de la phase la plus avancée saisie par compétition.
-  const phaseRank = (phase: string | null | undefined): number => {
-    if (!phase) return 0;
-    const p = phase.toLowerCase();
-    if (p.includes("final") && !p.includes("demi") && !p.includes("quart") && !p.includes("petite")) return 100;
-    if (p.includes("petite")) return 90;
-    if (p.includes("demi")) return 80;
-    if (p.includes("quart")) return 70;
-    if (p.includes("huiti") || p.includes("8e")) return 60;
-    if (p.includes("repechage") || p.includes("repêch")) return 30;
-    if (p.includes("série") || p.includes("serie") || p.includes("qualif")) return 20;
-    return 10;
-  };
-
   // Pour chaque compétition, on conserve uniquement le classement issu de la phase
   // la plus avancée saisie (ex : finale > demi > série). Tant que seule la série est
   // renseignée, c'est ce classement-là qui apparaît, étiqueté avec sa phase.
