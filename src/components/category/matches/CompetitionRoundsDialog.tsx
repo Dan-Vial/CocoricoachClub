@@ -256,10 +256,10 @@ export function CompetitionRoundsDialog({
   const roundLabel = isJudo ? "Combat" : isAviron ? "Course" : isBowling ? "Partie" : isAthletics ? "Épreuve" : "Round";
   const roundLabelPlural = isJudo ? "Combats" : isAviron ? "Courses" : isBowling ? "Parties" : isAthletics ? "Épreuves" : "Rounds";
 
-  // Lock a bowling round after validation
-  const lockBowlingRound = (playerId: string, roundNumber: number) => {
+  // Lock a bowling/athletics round after validation (per lineup entry)
+  const lockBowlingRound = (entryKey: string, roundNumber: number) => {
     setPlayerRoundsData(prev => prev.map(p => {
-      if (p.playerId === playerId) {
+      if (p.entryKey === entryKey) {
         return {
           ...p,
           rounds: p.rounds.map(r => 
@@ -269,13 +269,12 @@ export function CompetitionRoundsDialog({
       }
       return p;
     }));
-    toast.success(`Partie ${roundNumber} validée et verrouillée`);
   };
 
-  // Unlock a bowling round for re-editing
-  const unlockBowlingRound = (playerId: string, roundNumber: number) => {
+  // Unlock a bowling/athletics round for re-editing (per lineup entry)
+  const unlockBowlingRound = (entryKey: string, roundNumber: number) => {
     setPlayerRoundsData(prev => prev.map(p => {
-      if (p.playerId === playerId) {
+      if (p.entryKey === entryKey) {
         return {
           ...p,
           rounds: p.rounds.map(r => 
@@ -285,7 +284,7 @@ export function CompetitionRoundsDialog({
       }
       return p;
     }));
-    toast.info(`Partie ${roundNumber} déverrouillée pour modification`);
+    toast.info(`Épreuve ${roundNumber} déverrouillée pour modification`);
   };
 
   // Handle bowling score sheet save with frames
@@ -978,7 +977,7 @@ export function CompetitionRoundsDialog({
                     variant="outline"
                     size="sm"
                     className="h-7 text-xs gap-1"
-                    onClick={() => unlockBowlingRound(player.playerId, round.round_number)}
+                    onClick={() => unlockBowlingRound(player.entryKey, round.round_number)}
                   >
                     <Lock className="h-3 w-3" />
                     Modifier
@@ -1274,11 +1273,16 @@ export function CompetitionRoundsDialog({
                 {!round.isLocked && (
                   <Button
                     size="sm"
-                    onClick={() => lockBowlingRound(player.playerId, round.round_number)}
+                    onClick={() => {
+                      lockBowlingRound(player.entryKey, round.round_number);
+                      // Persist immediately so the validation is saved in DB
+                      setTimeout(() => saveRounds.mutate(), 0);
+                    }}
+                    disabled={saveRounds.isPending}
                     className="w-full gap-2"
                   >
                     <CheckCircle className="h-4 w-4" />
-                    Valider l'épreuve
+                    {saveRounds.isPending ? "Enregistrement..." : "Valider l'épreuve"}
                   </Button>
                 )}
               </CardContent>
@@ -1727,8 +1731,8 @@ export function CompetitionRoundsDialog({
                     onScoreSave={(roundNumber, stats, frames, ballData) => {
                       handleBowlingScoreSheetSave(selectedPlayer.playerId, roundNumber, stats, frames, ballData);
                     }}
-                    onLock={(roundNumber) => lockBowlingRound(selectedPlayer.playerId, roundNumber)}
-                    onUnlock={(roundNumber) => unlockBowlingRound(selectedPlayer.playerId, roundNumber)}
+                    onLock={(roundNumber) => lockBowlingRound(selectedPlayer.entryKey, roundNumber)}
+                    onUnlock={(roundNumber) => unlockBowlingRound(selectedPlayer.entryKey, roundNumber)}
                   />
                 ) : (
                 <div className="space-y-4 pb-4">
@@ -1758,7 +1762,7 @@ export function CompetitionRoundsDialog({
                               variant="outline"
                               size="sm"
                               className="h-7 text-xs gap-1"
-                              onClick={() => unlockBowlingRound(selectedPlayer.playerId, round.round_number)}
+                              onClick={() => unlockBowlingRound(selectedPlayer.entryKey, round.round_number)}
                             >
                               <Lock className="h-3 w-3" />
                               Modifier
