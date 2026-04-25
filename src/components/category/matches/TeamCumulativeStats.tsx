@@ -64,14 +64,34 @@ const LOWER_IS_BETTER_TEAM_KEYS = new Set([
 export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType, matchesWithScores = [], statCategoriesOverride, playerCategoryMap }: TeamCumulativeStatsProps) {
   const statCategories = statCategoriesOverride ?? getStatCategories(sportType);
 
-  // Aggregate team totals across all players
-  const teamTotals = useMemo(() => {
+  const isAthletics = (sportType || "").toLowerCase().includes("athl");
+
+  // Helper: returns the subset of players relevant for a given category key.
+  // Athletics: filter by playerCategoryMap (only athletes registered in that discipline).
+  // Other sports: full team.
+  const getScopedStats = (catKey: string): CumulativeStats[] => {
+    if (!isAthletics || !playerCategoryMap || catKey === "ath_general") return stats;
+    return stats.filter(p => playerCategoryMap[p.playerId]?.has(catKey));
+  };
+
+  // Compute totals for a scoped subset of players (per-category for athletics).
+  const computeCategoryTotals = (scoped: CumulativeStats[]) => {
     const totals: Record<string, number> = {};
-    const matchCount = Math.max(...stats.map(s => s.matchesPlayed), 1);
+    const means: Record<string, number> = {}; // mean of player values (for Moy on rank-type stats)
+    const matchCount = Math.max(...scoped.map(s => s.matchesPlayed), 1);
 
     sportStats.forEach(stat => {
       if (stat.computedFrom) return;
-      totals[stat.key] = stats.reduce((sum, p) => sum + (p.sportData[stat.key] || 0), 0);
+      if (LOWER_IS_BETTER_TEAM_KEYS.has(stat.key)) {
+        // Headline = best (MIN) of player values > 0; Moy = mean of player values > 0
+        const vals = scoped.map(p => p.sportData[stat.key] || 0).filter(v => v > 0);
+        totals[stat.key] = vals.length > 0 ? Math.min(...vals) : 0;
+        means[stat.key] = vals.length > 0
+          ? Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 10) / 10
+          : 0;
+      } else {
+        totals[stat.key] = scoped.reduce((sum, p) => sum + (p.sportData[stat.key] || 0), 0);
+      }
     });
 
     sportStats.forEach(stat => {
@@ -85,8 +105,8 @@ export function TeamCumulativeStats({ stats, matchesData, sportStats, sportType,
       }
     });
 
-    return { totals, matchCount };
-  }, [stats, sportStats]);
+    return { totals, means, matchCount };
+  };
 
   // Team progression: first match team total vs last match team total
   const teamProgression = useMemo(() => {
