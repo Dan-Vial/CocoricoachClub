@@ -310,7 +310,8 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
       let bestUnit = defaultUnit;
       let bestRank: number | null = null;
       let isPR = false;
-      rs.forEach(r => {
+      let bestRoundIdx = -1;
+      rs.forEach((r, idx) => {
         const { value, unit } = extractResult(r, lowerIsBetter);
         if (value != null) {
           if (
@@ -319,6 +320,7 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
           ) {
             bestVal = value;
             if (unit) bestUnit = unit;
+            bestRoundIdx = idx;
           }
         }
         if (r.ranking != null && r.ranking > 0) {
@@ -326,6 +328,14 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
         }
         if (r.is_personal_record) isPR = true;
       });
+
+      // Pick weather from the best round, fallback to the first round having any data.
+      const weatherSource = bestRoundIdx >= 0
+        ? rs[bestRoundIdx]
+        : rs.find(r => r.wind_conditions || r.wind_direction || r.temperature_celsius != null) || rs[0];
+      const windRaw = weatherSource?.wind_conditions ?? null;
+      const windNum = windRaw != null ? Number(String(windRaw).replace(",", ".")) : NaN;
+
       points.push({
         matchId: mid,
         matchLabel: m.competition || m.opponent || mid.slice(0, 6),
@@ -336,6 +346,9 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
         unit: bestUnit,
         lowerIsBetter,
         isPersonalRecord: isPR,
+        windSpeed: Number.isFinite(windNum) ? windNum : null,
+        windDirection: weatherSource?.wind_direction || null,
+        temperature: weatherSource?.temperature_celsius ?? null,
       });
     });
 
