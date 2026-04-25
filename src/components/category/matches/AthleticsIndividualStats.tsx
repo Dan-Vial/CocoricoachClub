@@ -956,7 +956,17 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[300px]">
+                   {(() => {
+                     const values = chartData.map((d: any) => Number(d.result)).filter((v) => Number.isFinite(v));
+                     const minV = values.length ? Math.min(...values) : 0;
+                     const maxV = values.length ? Math.max(...values) : 1;
+                     const range = maxV - minV;
+                     // Marge: 10% de l'amplitude, ou 2% de la valeur si toutes identiques
+                     const pad = range > 0 ? range * 0.15 : Math.max(Math.abs(maxV) * 0.02, 0.01);
+                     const yMin = Math.max(0, minV - pad);
+                     const yMax = maxV + pad;
+                     return (
+                   <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={chartData} margin={{ left: 10, right: 10 }}>
                         <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
@@ -964,6 +974,9 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
                         <YAxis
                           reversed={summary?.lowerIsBetter}
                           tick={{ fontSize: 10 }}
+                          domain={[yMin, yMax]}
+                          allowDecimals
+                          tickCount={6}
                           tickFormatter={(v) => formatResult(Number(v), summary?.unit || "")}
                         />
                         <Tooltip
