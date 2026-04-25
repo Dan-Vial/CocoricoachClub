@@ -377,15 +377,197 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
           weatherBits.push(`💨 ${p.windDirection}`);
         }
         if (p.temperature != null) weatherBits.push(`🌡️ ${p.temperature}°C`);
+        const dateStr = p.matchDate ? format(parseISO(p.matchDate), "dd/MM", { locale: fr }) : "";
+        const xLabel = p.phase ? `${dateStr} • ${p.phase}` : dateStr;
         return {
           name: p.competition,
-          date: p.matchDate ? format(parseISO(p.matchDate), "dd/MM", { locale: fr }) : "",
-          label: `${p.competition}${p.matchDate ? ` (${format(parseISO(p.matchDate), "dd/MM/yy", { locale: fr })})` : ""}${weatherBits.length ? `\n${weatherBits.join(" · ")}` : ""}`,
+          date: xLabel,
+          label: `${p.competition}${p.phase ? ` — ${p.phase}` : ""}${p.matchDate ? ` (${format(parseISO(p.matchDate), "dd/MM/yy", { locale: fr })})` : ""}${weatherBits.length ? `\n${weatherBits.join(" · ")}` : ""}`,
           result: p.result,
           ranking: p.ranking,
         };
       });
   }, [performancePoints]);
+
+  // Export Excel — détail des manches individuelles
+  const handleExportExcel = () => {
+    if (!selectedAthlete || !activePair || performancePoints.length === 0) {
+      toast.error("Aucune donnée à exporter");
+      return;
+    }
+    try {
+      const wb = XLSX.utils.book_new();
+      const discLabel = activePair.discipline
+        ? (PRETTY_LABELS[activePair.discipline] || activePair.discipline.replace(/^athletisme_/, ""))
+        : "—";
+
+      const rows = performancePoints.map(p => ({
+        "Date": p.matchDate ? format(parseISO(p.matchDate), "dd/MM/yyyy", { locale: fr }) : "",
+        "Compétition": p.competition,
+        "Phase / Manche": p.phase || "",
+        "Discipline": discLabel,
+        "Spécialité": activePair.specialty || "",
+        "Classement": p.ranking != null ? p.ranking : "",
+        "Résultat": formatResult(p.result, p.unit),
+        "Résultat brut": p.result != null ? p.result : "",
+        "Unité": p.unit,
+        "Vent (m/s)": p.windSpeed != null ? p.windSpeed : "",
+        "Direction vent": p.windDirection || "",
+        "Température (°C)": p.temperature != null ? p.temperature : "",
+        "Record perso": p.isPersonalRecord ? "Oui" : "",
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws["!cols"] = [
+        { wch: 11 }, { wch: 28 }, { wch: 14 }, { wch: 18 }, { wch: 18 },
+        { wch: 11 }, { wch: 14 }, { wch: 14 }, { wch: 8 },
+        { wch: 11 }, { wch: 14 }, { wch: 14 }, { wch: 12 },
+      ];
+      XLSX.utils.book_append_sheet(wb, ws, "Performances");
+
+      // Synthèse
+      if (summary) {
+        const synthRows = [
+          { Indicateur: "Athlète", Valeur: athleteName },
+          { Indicateur: "Discipline", Valeur: discLabel },
+          { Indicateur: "Spécialité", Valeur: activePair.specialty || "—" },
+          { Indicateur: "Nombre de courses / essais", Valeur: summary.count },
+          { Indicateur: "Meilleure performance", Valeur: formatResult(summary.bestResult, summary.unit) },
+          { Indicateur: "Performance moyenne", Valeur: formatResult(summary.avgResult, summary.unit) },
+          { Indicateur: "Dernière performance", Valeur: formatResult(summary.lastResult, summary.unit) },
+          { Indicateur: "Classement moyen", Valeur: summary.avgRank != null ? summary.avgRank.toFixed(1) : "—" },
+          { Indicateur: "Meilleur classement", Valeur: summary.bestRank != null ? `${summary.bestRank}ᵉ` : "—" },
+          { Indicateur: "Évolution (%)", Valeur: summary.evolutionPct != null ? `${summary.evolutionPct > 0 ? "+" : ""}${summary.evolutionPct.toFixed(1)} %` : "—" },
+        ];
+        const wsS = XLSX.utils.json_to_sheet(synthRows);
+        wsS["!cols"] = [{ wch: 30 }, { wch: 30 }];
+        XLSX.utils.book_append_sheet(wb, wsS, "Synthèse");
+      }
+
+      const safeName = athleteName.replace(/\s+/g, "-");
+      const safeDisc = (activePair.specialty || discLabel).replace(/\s+/g, "-");
+      XLSX.writeFile(wb, `stats-${safeName}-${safeDisc}-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+      toast.success("Export Excel téléchargé !");
+    } catch (e) {
+      console.error(e);
+      toast.error("Erreur lors de l'export Excel");
+    }
+  };
+
+  // Export PDF — détail des manches individuelles
+  const handleExportPdf = () => {
+    if (!selectedAthlete || !activePair || performancePoints.length === 0) {
+      toast.error("Aucune donnée à exporter");
+      return;
+    }
+    try {
+      const doc = new jsPDF({ orientation: "landscape" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 12;
+      let y = margin;
+
+      const discLabel = activePair.discipline
+        ? (PRETTY_LABELS[activePair.discipline] || activePair.discipline.replace(/^athletisme_/, ""))
+        : "—";
+
+      // Header
+      doc.setFillColor(15, 23, 42);
+      doc.rect(0, 0, pageWidth, 22, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Performances individuelles — ${athleteName}`, margin, 10);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${discLabel}${activePair.specialty ? ` • ${activePair.specialty}` : ""}`, margin, 17);
+      doc.text(format(new Date(), "dd/MM/yyyy", { locale: fr }), pageWidth - margin, 17, { align: "right" });
+      y = 28;
+      doc.setTextColor(0, 0, 0);
+
+      // KPI summary
+      if (summary) {
+        const kpis: Array<{ label: string; value: string }> = [
+          { label: "Meilleure perf", value: formatResult(summary.bestResult, summary.unit) },
+          { label: `Moyenne (${summary.count})`, value: formatResult(summary.avgResult, summary.unit) },
+          { label: "Classement moyen", value: summary.avgRank != null ? summary.avgRank.toFixed(1) : "—" },
+          { label: "Évolution", value: summary.evolutionPct != null ? `${summary.evolutionPct > 0 ? "+" : ""}${summary.evolutionPct.toFixed(1)} %` : "—" },
+        ];
+        const cardW = (pageWidth - margin * 2 - 9) / 4;
+        kpis.forEach((k, i) => {
+          const x = margin + i * (cardW + 3);
+          doc.setFillColor(241, 245, 249);
+          doc.roundedRect(x, y, cardW, 18, 2, 2, "F");
+          doc.setFontSize(8);
+          doc.setTextColor(100, 116, 139);
+          doc.text(k.label, x + 3, y + 6);
+          doc.setFontSize(11);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(15, 23, 42);
+          doc.text(k.value, x + 3, y + 14);
+          doc.setFont("helvetica", "normal");
+        });
+        y += 24;
+      }
+
+      // Table header
+      const headers = ["Date", "Compétition", "Phase", "Class.", "Résultat", "Vent", "Temp.", "RP"];
+      const colW = [20, 75, 30, 18, 30, 25, 18, 12];
+      const drawHeader = () => {
+        doc.setFillColor(30, 41, 59);
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.rect(margin, y, colW.reduce((a, b) => a + b, 0), 7, "F");
+        let x = margin;
+        headers.forEach((h, i) => {
+          doc.text(h, x + 2, y + 5);
+          x += colW[i];
+        });
+        y += 7;
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("helvetica", "normal");
+      };
+      drawHeader();
+
+      doc.setFontSize(9);
+      performancePoints.forEach((p, idx) => {
+        if (y > pageHeight - 15) {
+          doc.addPage();
+          y = margin;
+          drawHeader();
+        }
+        if (idx % 2 === 0) {
+          doc.setFillColor(248, 250, 252);
+          doc.rect(margin, y, colW.reduce((a, b) => a + b, 0), 6, "F");
+        }
+        const cells = [
+          p.matchDate ? format(parseISO(p.matchDate), "dd/MM/yy", { locale: fr }) : "—",
+          p.competition.length > 38 ? p.competition.slice(0, 36) + "…" : p.competition,
+          p.phase || "—",
+          p.ranking != null ? `${p.ranking}` : "—",
+          formatResult(p.result, p.unit),
+          p.windSpeed != null ? `${p.windSpeed > 0 ? "+" : ""}${p.windSpeed.toFixed(1)} m/s` : (p.windDirection || "—"),
+          p.temperature != null ? `${p.temperature}°C` : "—",
+          p.isPersonalRecord ? "✓" : "",
+        ];
+        let x = margin;
+        cells.forEach((c, i) => {
+          doc.text(String(c), x + 2, y + 4);
+          x += colW[i];
+        });
+        y += 6;
+      });
+
+      const safeName = athleteName.replace(/\s+/g, "-");
+      const safeDisc = (activePair.specialty || discLabel).replace(/\s+/g, "-");
+      doc.save(`stats-${safeName}-${safeDisc}-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      toast.success("Export PDF téléchargé !");
+    } catch (e) {
+      console.error(e);
+      toast.error("Erreur lors de l'export PDF");
+    }
+  };
 
   const sortedAthletes = useMemo(() => {
     return [...players]
