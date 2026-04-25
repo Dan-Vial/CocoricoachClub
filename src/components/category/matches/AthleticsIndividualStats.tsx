@@ -301,11 +301,7 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
       return rDisc === (activePair.discipline || null) && rSpec === (activePair.specialty || null);
     });
 
-    const byMatch: Record<string, RoundRow[]> = {};
-    filtered.forEach(r => {
-      if (!byMatch[r.match_id]) byMatch[r.match_id] = [];
-      byMatch[r.match_id].push(r);
-    });
+
 
     const points: PerfPoint[] = [];
     filtered.forEach(r => {
