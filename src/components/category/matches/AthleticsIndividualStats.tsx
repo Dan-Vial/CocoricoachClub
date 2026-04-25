@@ -294,9 +294,14 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
     }
     const keys = disciplinePairs.map(p => `${p.discipline || ""}|${p.specialty || ""}`);
     if (!keys.includes(selectedDisciplineKey)) {
-      setSelectedDisciplineKey(keys[0]);
+      // Priorité à la discipline/spécialité principale du profil athlète
+      const primaryKey = selectedAthlete
+        ? `${selectedAthlete.discipline || ""}|${selectedAthlete.specialty || ""}`
+        : "";
+      const primaryIdx = keys.indexOf(primaryKey);
+      setSelectedDisciplineKey(primaryIdx >= 0 ? keys[primaryIdx] : keys[0]);
     }
-  }, [disciplinePairs, selectedDisciplineKey]);
+  }, [disciplinePairs, selectedDisciplineKey, selectedAthlete]);
 
   const activePair = useMemo(() => {
     return disciplinePairs.find(p => `${p.discipline || ""}|${p.specialty || ""}` === selectedDisciplineKey);
