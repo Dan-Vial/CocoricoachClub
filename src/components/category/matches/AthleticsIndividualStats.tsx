@@ -752,6 +752,7 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
                         <TableRow>
                           <TableHead>Date</TableHead>
                           <TableHead>Compétition</TableHead>
+                          <TableHead>Phase / Manche</TableHead>
                           <TableHead className="text-center">Classement</TableHead>
                           <TableHead className="text-right">Résultat</TableHead>
                           <TableHead className="text-center">
