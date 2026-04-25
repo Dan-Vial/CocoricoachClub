@@ -385,13 +385,23 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
   const chartData = useMemo(() => {
     return performancePoints
       .filter(p => p.result != null)
-      .map(p => ({
-        name: p.competition,
-        date: p.matchDate ? format(parseISO(p.matchDate), "dd/MM", { locale: fr }) : "",
-        label: `${p.competition}${p.matchDate ? ` (${format(parseISO(p.matchDate), "dd/MM/yy", { locale: fr })})` : ""}`,
-        result: p.result,
-        ranking: p.ranking,
-      }));
+      .map(p => {
+        const weatherBits: string[] = [];
+        if (p.windSpeed != null) {
+          const windStr = `${p.windSpeed > 0 ? "+" : ""}${p.windSpeed.toFixed(1)} m/s${p.windDirection ? ` ${p.windDirection}` : ""}`;
+          weatherBits.push(`💨 ${windStr}`);
+        } else if (p.windDirection) {
+          weatherBits.push(`💨 ${p.windDirection}`);
+        }
+        if (p.temperature != null) weatherBits.push(`🌡️ ${p.temperature}°C`);
+        return {
+          name: p.competition,
+          date: p.matchDate ? format(parseISO(p.matchDate), "dd/MM", { locale: fr }) : "",
+          label: `${p.competition}${p.matchDate ? ` (${format(parseISO(p.matchDate), "dd/MM/yy", { locale: fr })})` : ""}${weatherBits.length ? `\n${weatherBits.join(" · ")}` : ""}`,
+          result: p.result,
+          ranking: p.ranking,
+        };
+      });
   }, [performancePoints]);
 
   const sortedAthletes = useMemo(() => {
