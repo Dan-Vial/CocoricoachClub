@@ -949,12 +949,17 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
             <TabsContent value="ranking">
               <Card className="bg-gradient-card">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Classement par compétition</CardTitle>
+                  <CardTitle className="text-sm">
+                    Classement par compétition
+                    <span className="block text-xs font-normal text-muted-foreground mt-0.5">
+                      Phase la plus avancée saisie pour chaque compétition (finale prioritaire sur série)
+                    </span>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={chartData} margin={{ left: 10, right: 10 }}>
+                      <BarChart data={rankingChartData} margin={{ left: 10, right: 10 }}>
                         <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                         <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                         <YAxis reversed tick={{ fontSize: 10 }} allowDecimals={false} />
