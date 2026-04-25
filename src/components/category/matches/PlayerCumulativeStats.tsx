@@ -2329,7 +2329,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                 <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
                   <div>
                     <p className="font-semibold text-lg">{player.playerName}</p>
-                    <p className="text-sm text-muted-foreground">{player.matchesPlayed} matchs joués</p>
+                    <p className="text-sm text-muted-foreground">{player.matchesPlayed} {isIndividualCompetitionSport ? (player.matchesPlayed > 1 ? "compétitions disputées" : "compétition disputée") : "matchs joués"}</p>
                   </div>
                 </div>
 
