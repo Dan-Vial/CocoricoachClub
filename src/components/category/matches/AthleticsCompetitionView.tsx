@@ -420,9 +420,9 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
           return;
         }
 
-        // Table header
-        const headers = ["#", "Phase", "Class.", "Résultat", "Vent", "Temp.", "RP"];
-        const colW = [10, 45, 18, 35, 30, 18, 12];
+        // Table header — séparation Vent (vitesse) + Sens
+        const headers = ["#", "Phase", "Class.", "Résultat", "Vent (m/s)", "Sens", "Temp.", "Record"];
+        const colW = [8, 36, 16, 32, 22, 18, 16, 20];
         doc.setFillColor(30, 41, 59);
         doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
@@ -437,26 +437,57 @@ export function AthleticsCompetitionView({ categoryId, matchIds }: Props) {
         doc.setTextColor(0, 0, 0);
         doc.setFont("helvetica", "normal");
 
+        // Compute worst result for color highlighting (only when ≥ 2 valid results)
+        const validVals = sec.races.map(r => r.result).filter((v): v is number => v != null);
+        const worstResult = validVals.length >= 2
+          ? (sec.lowerIsBetter ? Math.max(...validVals) : Math.min(...validVals))
+          : null;
+
         sec.races.forEach((r, idx) => {
           ensureSpace(8);
           if (idx % 2 === 0) {
             doc.setFillColor(248, 250, 252);
             doc.rect(margin, y, colW.reduce((a, b) => a + b, 0), 5.5, "F");
           }
+          const recordTag = r.isPR ? "RP" : (r.isSB ? "SB" : "");
+          const resultStr = formatResult(r.result, r.unit);
+          const isBest = r.result != null && sec.bestResult != null && Math.abs(r.result - sec.bestResult) < 0.001 && validVals.length >= 2;
+          const isWorst = r.result != null && worstResult != null && Math.abs(r.result - worstResult) < 0.001 && !isBest;
+
           const cells = [
             String(idx + 1),
             r.phase || "—",
             r.ranking != null ? `${r.ranking}` : "—",
-            formatResult(r.result, r.unit),
-            r.windSpeed != null ? `${r.windSpeed > 0 ? "+" : ""}${r.windSpeed.toFixed(1)} m/s` : (r.windDirection || "—"),
+            resultStr,
+            r.windSpeed != null ? `${r.windSpeed > 0 ? "+" : ""}${r.windSpeed.toFixed(1)}` : "—",
+            r.windDirection || "—",
             r.temperature != null ? `${r.temperature}°C` : "—",
-            r.isPR ? "✓" : "",
+            recordTag,
           ];
           let cx = margin;
           cells.forEach((c, cidx) => {
+            // Color the result cell (idx 3) and the record tag (idx 7)
+            if (cidx === 3 && isBest) {
+              doc.setTextColor(22, 163, 74); // green-600
+              doc.setFont("helvetica", "bold");
+            } else if (cidx === 3 && isWorst) {
+              doc.setTextColor(220, 38, 38); // red-600
+              doc.setFont("helvetica", "bold");
+            } else if (cidx === 7 && recordTag === "RP") {
+              doc.setTextColor(217, 119, 6); // amber-600
+              doc.setFont("helvetica", "bold");
+            } else if (cidx === 7 && recordTag === "SB") {
+              doc.setTextColor(37, 99, 235); // blue-600
+              doc.setFont("helvetica", "bold");
+            } else {
+              doc.setTextColor(0, 0, 0);
+              doc.setFont("helvetica", "normal");
+            }
             doc.text(String(c), cx + 1.5, y + 4);
             cx += colW[cidx];
           });
+          doc.setTextColor(0, 0, 0);
+          doc.setFont("helvetica", "normal");
           y += 5.5;
         });
 
