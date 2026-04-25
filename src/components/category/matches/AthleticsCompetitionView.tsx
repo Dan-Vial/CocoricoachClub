@@ -62,6 +62,7 @@ interface RaceRow {
   result: number | null;
   unit: string;
   isPR: boolean;
+  isSB: boolean;
   windSpeed: number | null;
   windDirection: string | null;
   temperature: number | null;
