@@ -420,6 +420,30 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
       });
   }, [performancePoints]);
 
+  // Données du graphique de classement : 1 point par compétition (phase la plus avancée).
+  const rankingChartData = useMemo(() => {
+    // Récupérer le 1er point performance de chaque compétition pour la date / le label.
+    const byMatch: Record<string, PerfPoint> = {};
+    performancePoints.forEach(p => {
+      if (!byMatch[p.matchId]) byMatch[p.matchId] = p;
+    });
+    return Object.entries(finalRankByMatch)
+      .map(([mid, info]) => {
+        const ref = byMatch[mid];
+        if (!ref) return null;
+        const dateStr = ref.matchDate ? format(parseISO(ref.matchDate), "dd/MM", { locale: fr }) : "";
+        return {
+          date: dateStr,
+          label: `${ref.competition}${info.phase ? ` — ${info.phase}` : ""}${ref.matchDate ? ` (${format(parseISO(ref.matchDate), "dd/MM/yy", { locale: fr })})` : ""}`,
+          ranking: info.ranking,
+          phase: info.phase,
+          matchDate: ref.matchDate,
+        };
+      })
+      .filter((x): x is NonNullable<typeof x> => x != null)
+      .sort((a, b) => a.matchDate.localeCompare(b.matchDate));
+  }, [performancePoints, finalRankByMatch]);
+
   // Export Excel — détail des manches individuelles
   const handleExportExcel = () => {
     if (!selectedAthlete || !activePair || performancePoints.length === 0) {
