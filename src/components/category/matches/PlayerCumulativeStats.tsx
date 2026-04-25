@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
-import { getStatCategories, type StatField } from "@/lib/constants/sportStats";
+import { getStatCategories, getAthletismeCategoryKeyForDiscipline, type StatField } from "@/lib/constants/sportStats";
 import { groupStatsByTheme } from "@/lib/statSubGroups";
 import { pdfGroupColor } from "@/lib/pdfStatGroupPalette";
 import { useStatPreferences } from "@/hooks/use-stat-preferences";
@@ -88,8 +88,11 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
   ]);
 
   const { stats: sportStats, isLoading: loadingPrefs } = useStatPreferences({ categoryId, sportType });
-  const statCategories = getStatCategories(sportType);
-
+  const allStatCategories = getStatCategories(sportType);
+  const isAthletics = (() => {
+    const t = (sportType || "").toLowerCase();
+    return t.includes("athl");
+  })();
   const { data: allMatches = [] } = useQuery({
     queryKey: ["matches-list-cumulative", categoryId, isIndividualCompetitionSport],
     queryFn: async () => {
@@ -128,6 +131,78 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
     if (selectedMatchIds.length === 0) return allMatches.map(m => m.id);
     return selectedMatchIds;
   }, [selectedMatchIds, allMatches]);
+
+  // For athletics: fetch per-player registered disciplines from match_lineups.
+  // Used to show only the discipline tabs an athlete actually competes in.
+  const { data: playerDisciplineMap = {} } = useQuery({
+    queryKey: ["athletics-player-disciplines", categoryId, activeMatchIds, isAthletics],
+    queryFn: async () => {
+      if (!isAthletics || activeMatchIds.length === 0) return {} as Record<string, Set<string>>;
+      const map: Record<string, Set<string>> = {};
+      const addFor = (playerId: string, discipline?: string | null, specialty?: string | null) => {
+        if (!playerId) return;
+        if (!map[playerId]) map[playerId] = new Set<string>();
+        // Always include "ath_general" so generic stats stay visible.
+        map[playerId].add("ath_general");
+        const fromSpec = getAthletismeCategoryKeyForDiscipline(specialty);
+        const fromDisc = getAthletismeCategoryKeyForDiscipline(discipline);
+        if (fromSpec) map[playerId].add(fromSpec);
+        else if (fromDisc) map[playerId].add(fromDisc);
+      };
+
+      // 1) match_lineups (per-event inscriptions)
+      const { data: lineups } = await supabase
+        .from("match_lineups")
+        .select("player_id, discipline, specialty")
+        .in("match_id", activeMatchIds);
+      (lineups || []).forEach((row: any) => addFor(row.player_id, row.discipline, row.specialty));
+
+      // 2) competition_rounds → stat_data._discipline / _specialty (fallback when no lineup)
+      const { data: rounds } = await supabase
+        .from("competition_rounds")
+        .select("player_id, competition_round_stats(stat_data)")
+        .in("match_id", activeMatchIds);
+      (rounds || []).forEach((r: any) => {
+        const sd = r.competition_round_stats?.[0]?.stat_data || {};
+        addFor(r.player_id, sd?._discipline ?? null, sd?._specialty ?? null);
+      });
+
+      // 3) players table primary discipline/specialty (last fallback)
+      const playerIds = [...new Set([...(lineups || []).map((l: any) => l.player_id), ...(rounds || []).map((r: any) => r.player_id)])];
+      if (playerIds.length > 0) {
+        const { data: players } = await supabase
+          .from("players")
+          .select("id, discipline, specialty")
+          .in("id", playerIds);
+        (players || []).forEach((p: any) => {
+          // Only use as fallback if nothing concrete was added
+          if (map[p.id] && map[p.id].size === 1) addFor(p.id, p.discipline, p.specialty);
+        });
+      }
+
+      return map;
+    },
+    enabled: isAthletics && activeMatchIds.length > 0,
+  });
+
+  // Helper: filter the global category list to those an athlete is registered in.
+  // For non-athletics sports, returns the full list unchanged.
+  const getCategoriesForPlayer = useCallback((playerId?: string) => {
+    if (!isAthletics || !playerId) return allStatCategories;
+    const allowed = playerDisciplineMap[playerId];
+    if (!allowed || allowed.size === 0) return allStatCategories;
+    return allStatCategories.filter(c => allowed.has(c.key));
+  }, [allStatCategories, isAthletics, playerDisciplineMap]);
+
+  // Union of all disciplines seen across the team — used for team views & multi-player exports.
+  const statCategories = useMemo(() => {
+    if (!isAthletics) return allStatCategories;
+    const union = new Set<string>();
+    union.add("ath_general");
+    Object.values(playerDisciplineMap).forEach(set => set.forEach(k => union.add(k)));
+    if (union.size <= 1) return allStatCategories; // no inscriptions yet → show all
+    return allStatCategories.filter(c => union.has(c.key));
+  }, [allStatCategories, isAthletics, playerDisciplineMap]);
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ["cumulative_player_stats", categoryId, sportType, activeMatchIds, isIndividualCompetitionSport],
@@ -563,8 +638,12 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
       }
 
       if (mode === "all" || mode === "individual" || mode === "single") {
+        // For single-athlete export, restrict tabs to disciplines the athlete is registered in.
+        const exportCategories = (mode === "single" && singlePlayerId)
+          ? getCategoriesForPlayer(singlePlayerId)
+          : statCategories;
         // Individual sheets per category
-        statCategories.forEach(cat => {
+        exportCategories.forEach(cat => {
           const categoryStats = sportStats.filter(s => s.category === cat.key);
           if (categoryStats.length === 0) return;
           const ws = wb.addWorksheet(cat.label);
@@ -617,7 +696,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
     } catch (e) {
       toast.error("Erreur lors de l'export Excel");
     }
-  }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, playerProgressions]);
+  }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, playerProgressions, getCategoriesForPlayer]);
 
   // Export PDF
   const handleExportPdf = useCallback(async (mode: "all" | "team" | "individual" | "single" = "all", singlePlayerId?: string) => {
@@ -1225,7 +1304,10 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
 
       } else {
         // ===== ALL / INDIVIDUAL / SINGLE: per-player tables, one per sub-group =====
-        statCategories.forEach((cat) => {
+        const pdfCategories = (mode === "single" && singlePlayerId)
+          ? getCategoriesForPlayer(singlePlayerId)
+          : statCategories;
+        pdfCategories.forEach((cat) => {
           const categoryStats = sportStats.filter(s => s.category === cat.key);
           if (categoryStats.length === 0) return;
 
@@ -1608,7 +1690,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
     } catch (e) {
       toast.error("Erreur lors de l'export PDF");
     }
-  }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, activeMatchIds, playerProgressions, matchesDataForCharts, isRugby, kickingByPlayerFinal]);
+  }, [stats, sportStats, statCategories, categoryId, selectedCount, allMatches, activeMatchIds, playerProgressions, matchesDataForCharts, isRugby, kickingByPlayerFinal, getCategoriesForPlayer]);
 
   // Enhanced individual player PDF export with photo, club, category, matches, kicking map
   const handleExportPlayerPdf = useCallback(async (playerId: string) => {
@@ -1737,7 +1819,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
       y += 6;
 
       // Stats by category, organised in colored sub-blocks (mirrors UI)
-      statCategories.forEach(cat => {
+      const playerPdfCategories = getCategoriesForPlayer(playerId);
+      playerPdfCategories.forEach(cat => {
         const categoryStats = sportStats.filter(s => s.category === cat.key);
         if (categoryStats.length === 0) return;
 
@@ -2084,7 +2167,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
       console.error(e);
       toast.error("Erreur lors de l'export PDF");
     }
-  }, [stats, sportStats, statCategories, categoryId, allMatches, activeMatchIds, isRugby, kickingByPlayerFinal, matchesDataForCharts]);
+  }, [stats, sportStats, statCategories, categoryId, allMatches, activeMatchIds, isRugby, kickingByPlayerFinal, matchesDataForCharts, getCategoriesForPlayer]);
 
   const getCategoryIcon = (catKey: string) => {
     switch (catKey) {
@@ -2273,6 +2356,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
             matchesData={matchesDataForCharts}
             sportStats={sportStats}
             sportType={sportType}
+            statCategoriesOverride={statCategories}
             matchesWithScores={allMatches.filter(m => activeMatchIds.includes(m.id)).map(m => ({
               id: m.id,
               is_home: m.is_home,
@@ -2333,9 +2417,12 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                   </div>
                 </div>
 
-                <Tabs defaultValue={statCategories[0]?.key || "general"} className="w-full">
+                {(() => {
+                  const playerStatCategories = getCategoriesForPlayer(player.playerId);
+                  return (
+                <Tabs defaultValue={playerStatCategories[0]?.key || "general"} className="w-full">
                   <TabsList className="flex w-full flex-wrap h-auto gap-1 justify-start">
-                    {statCategories.map(cat => (
+                    {playerStatCategories.map(cat => (
                       <TabsTrigger key={cat.key} value={cat.key} className="gap-1 text-xs">
                         {getCategoryIcon(cat.key)}
                         <span className="hidden sm:inline">{cat.label}</span>
@@ -2343,7 +2430,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                     ))}
                   </TabsList>
 
-                  {statCategories.map(cat => {
+                  {playerStatCategories.map(cat => {
                     const categoryStats = sportStats.filter(s => s.category === cat.key);
                     const groups = groupStatsByTheme(cat.key, categoryStats);
 
@@ -2405,6 +2492,8 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                     );
                   })}
                 </Tabs>
+                  );
+                })()}
                 {/* Kicking stats for rugby */}
                 {isRugby && kickingByPlayerFinal[player.playerId] && (() => {
                   const k = kickingByPlayerFinal[player.playerId];
