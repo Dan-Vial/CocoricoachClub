@@ -2579,7 +2579,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                         )}
                         <TableRow>
                           <TableHead>Athlète</TableHead>
-                          <TableHead className="text-center">Matchs</TableHead>
+                          <TableHead className="text-center">{isIndividualCompetitionSport ? "Compét." : "Matchs"}</TableHead>
                           {columnGroups.map((group, gIdx) =>
                             group.items.map((stat, sIdx) => (
                               <TableHead
