@@ -338,10 +338,39 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
     });
   }, [selectedAthleteId, activePair, rounds, matches, disciplinePairs.length]);
 
+  // Hiérarchie des phases (de la moins à la plus avancée) — utilisée pour ne retenir
+  // que le classement de la phase la plus avancée saisie par compétition.
+  const phaseRank = (phase: string | null | undefined): number => {
+    if (!phase) return 0;
+    const p = phase.toLowerCase();
+    if (p.includes("final") && !p.includes("demi") && !p.includes("quart") && !p.includes("petite")) return 100;
+    if (p.includes("petite")) return 90;
+    if (p.includes("demi")) return 80;
+    if (p.includes("quart")) return 70;
+    if (p.includes("huiti") || p.includes("8e")) return 60;
+    if (p.includes("repechage") || p.includes("repêch")) return 30;
+    if (p.includes("série") || p.includes("serie") || p.includes("qualif")) return 20;
+    return 10;
+  };
+
+  // Pour chaque compétition, on conserve uniquement le classement issu de la phase
+  // la plus avancée saisie (ex : finale > demi > série). Tant que seule la série est
+  // renseignée, c'est ce classement-là qui apparaît, étiqueté avec sa phase.
+  const finalRankByMatch = useMemo(() => {
+    const map: Record<string, { ranking: number; phase: string | null }> = {};
+    performancePoints.forEach(p => {
+      if (p.ranking == null) return;
+      const cur = map[p.matchId];
+      if (!cur || phaseRank(p.phase) > phaseRank(cur.phase)) {
+        map[p.matchId] = { ranking: p.ranking, phase: p.phase ?? null };
+      }
+    });
+    return map;
+  }, [performancePoints]);
+
   const summary = useMemo(() => {
     if (performancePoints.length === 0) return null;
     const valid = performancePoints.filter(p => p.result != null) as Array<PerfPoint & { result: number }>;
-    const validRanks = performancePoints.filter(p => p.ranking != null) as Array<PerfPoint & { ranking: number }>;
     const lowerIsBetter = performancePoints[0].lowerIsBetter;
     const unit = performancePoints[0].unit;
 
@@ -357,13 +386,15 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
       ? ((lastResult - firstResult) / firstResult) * 100
       : null;
 
-    const avgRank = validRanks.length > 0
-      ? validRanks.reduce((s, p) => s + p.ranking, 0) / validRanks.length
+    // Classement = uniquement la phase la plus avancée par compétition
+    const finalRanks = Object.values(finalRankByMatch).map(r => r.ranking);
+    const avgRank = finalRanks.length > 0
+      ? finalRanks.reduce((s, r) => s + r, 0) / finalRanks.length
       : null;
-    const bestRank = validRanks.length > 0 ? Math.min(...validRanks.map(p => p.ranking)) : null;
+    const bestRank = finalRanks.length > 0 ? Math.min(...finalRanks) : null;
 
-    return { avgResult, bestResult, lastResult, evolutionPct, avgRank, bestRank, unit, lowerIsBetter, count: valid.length };
-  }, [performancePoints]);
+    return { avgResult, bestResult, lastResult, evolutionPct, avgRank, bestRank, unit, lowerIsBetter, count: valid.length, rankCount: finalRanks.length };
+  }, [performancePoints, finalRankByMatch]);
 
   const chartData = useMemo(() => {
     return performancePoints
@@ -388,6 +419,30 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
         };
       });
   }, [performancePoints]);
+
+  // Données du graphique de classement : 1 point par compétition (phase la plus avancée).
+  const rankingChartData = useMemo(() => {
+    // Récupérer le 1er point performance de chaque compétition pour la date / le label.
+    const byMatch: Record<string, PerfPoint> = {};
+    performancePoints.forEach(p => {
+      if (!byMatch[p.matchId]) byMatch[p.matchId] = p;
+    });
+    return Object.entries(finalRankByMatch)
+      .map(([mid, info]) => {
+        const ref = byMatch[mid];
+        if (!ref) return null;
+        const dateStr = ref.matchDate ? format(parseISO(ref.matchDate), "dd/MM", { locale: fr }) : "";
+        return {
+          date: dateStr,
+          label: `${ref.competition}${info.phase ? ` — ${info.phase}` : ""}${ref.matchDate ? ` (${format(parseISO(ref.matchDate), "dd/MM/yy", { locale: fr })})` : ""}`,
+          ranking: info.ranking,
+          phase: info.phase,
+          matchDate: ref.matchDate,
+        };
+      })
+      .filter((x): x is NonNullable<typeof x> => x != null)
+      .sort((a, b) => a.matchDate.localeCompare(b.matchDate));
+  }, [performancePoints, finalRankByMatch]);
 
   // Export Excel — détail des manches individuelles
   const handleExportExcel = () => {
@@ -716,7 +771,11 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
                 icon={<Target className="h-4 w-4" />}
                 label="Classement moyen"
                 value={summary.avgRank != null ? summary.avgRank.toFixed(1) : "—"}
-                hint={summary.bestRank != null ? `Meilleur : ${summary.bestRank}ᵉ` : undefined}
+                hint={
+                  summary.bestRank != null
+                    ? `Meilleur : ${summary.bestRank}ᵉ • ${summary.rankCount ?? 0} compét.`
+                    : "Phase la plus avancée saisie"
+                }
               />
               <KpiCard
                 icon={summary.evolutionPct == null ? <Minus className="h-4 w-4" /> : (summary.lowerIsBetter ? (summary.evolutionPct < 0 ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />) : (summary.evolutionPct > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />))}
@@ -737,7 +796,7 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="results">Résultats</TabsTrigger>
               <TabsTrigger value="evolution" disabled={chartData.length < 2}>Évolution</TabsTrigger>
-              <TabsTrigger value="ranking" disabled={chartData.length === 0}>Classements</TabsTrigger>
+              <TabsTrigger value="ranking" disabled={rankingChartData.length === 0}>Classements</TabsTrigger>
             </TabsList>
 
             <TabsContent value="results">
@@ -753,7 +812,7 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
                           <TableHead>Date</TableHead>
                           <TableHead>Compétition</TableHead>
                           <TableHead>Phase / Manche</TableHead>
-                          <TableHead className="text-center">Classement</TableHead>
+                          <TableHead className="text-center" title="Classement de la manche/phase indiquée">Classement (par phase)</TableHead>
                           <TableHead className="text-right">Résultat</TableHead>
                           <TableHead className="text-center">
                             <span className="inline-flex items-center gap-1"><Wind className="h-3.5 w-3.5" />Vent</span>
@@ -890,12 +949,17 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
             <TabsContent value="ranking">
               <Card className="bg-gradient-card">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Classement par compétition</CardTitle>
+                  <CardTitle className="text-sm">
+                    Classement par compétition
+                    <span className="block text-xs font-normal text-muted-foreground mt-0.5">
+                      Phase la plus avancée saisie pour chaque compétition (finale prioritaire sur série)
+                    </span>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={chartData} margin={{ left: 10, right: 10 }}>
+                      <BarChart data={rankingChartData} margin={{ left: 10, right: 10 }}>
                         <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                         <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                         <YAxis reversed tick={{ fontSize: 10 }} allowDecimals={false} />
