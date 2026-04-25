@@ -59,6 +59,7 @@ interface PlayerRow {
 }
 
 interface PerfPoint {
+  roundId: string;
   matchId: string;
   matchLabel: string;
   matchDate: string;
