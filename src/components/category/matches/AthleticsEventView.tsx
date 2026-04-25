@@ -74,7 +74,6 @@ interface AthleteResultRow {
 }
 
 export function AthleticsEventView({ categoryId, matchIds }: Props) {
-  void categoryId;
   const [selectedDiscKey, setSelectedDiscKey] = useState<string>("");
   const [genderFilter, setGenderFilter] = useState<"all" | "M" | "F">("all");
 
