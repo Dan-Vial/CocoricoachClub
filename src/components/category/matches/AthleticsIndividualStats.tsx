@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
-import { Activity, Trophy, Timer, Target, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Activity, Trophy, Timer, Target, TrendingUp, TrendingDown, Minus, Wind, Thermometer } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { getDefaultUnitForDiscipline } from "@/lib/athletics/recordsHelpers";
@@ -32,8 +32,10 @@ interface RoundRow {
   final_time_seconds: number | null;
   ranking: number | null;
   is_personal_record: boolean | null;
-  round_date: string | null;
   phase?: string | null;
+  wind_conditions?: string | null;
+  wind_direction?: string | null;
+  temperature_celsius?: number | null;
   competition_round_stats?: Array<{ stat_data: Record<string, any> | null }>;
 }
 
@@ -63,7 +65,11 @@ interface PerfPoint {
   lowerIsBetter: boolean;
   isPersonalRecord: boolean;
   phase?: string | null;
+  windSpeed: number | null;
+  windDirection: string | null;
+  temperature: number | null;
 }
+
 
 const PRETTY_LABELS: Record<string, string> = {
   ath_sprint: "Sprint",
@@ -167,7 +173,7 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
       if (matchIds.length === 0) return [];
       const { data } = await supabase
         .from("competition_rounds")
-        .select("id, match_id, player_id, final_time_seconds, ranking, is_personal_record, phase, competition_round_stats(stat_data)")
+        .select("id, match_id, player_id, final_time_seconds, ranking, is_personal_record, phase, wind_conditions, wind_direction, temperature_celsius, competition_round_stats(stat_data)")
         .in("match_id", matchIds);
       return ((data || []) as unknown) as RoundRow[];
     },
@@ -304,7 +310,8 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
       let bestUnit = defaultUnit;
       let bestRank: number | null = null;
       let isPR = false;
-      rs.forEach(r => {
+      let bestRoundIdx = -1;
+      rs.forEach((r, idx) => {
         const { value, unit } = extractResult(r, lowerIsBetter);
         if (value != null) {
           if (
@@ -313,6 +320,7 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
           ) {
             bestVal = value;
             if (unit) bestUnit = unit;
+            bestRoundIdx = idx;
           }
         }
         if (r.ranking != null && r.ranking > 0) {
@@ -320,6 +328,14 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
         }
         if (r.is_personal_record) isPR = true;
       });
+
+      // Pick weather from the best round, fallback to the first round having any data.
+      const weatherSource = bestRoundIdx >= 0
+        ? rs[bestRoundIdx]
+        : rs.find(r => r.wind_conditions || r.wind_direction || r.temperature_celsius != null) || rs[0];
+      const windRaw = weatherSource?.wind_conditions ?? null;
+      const windNum = windRaw != null ? Number(String(windRaw).replace(",", ".")) : NaN;
+
       points.push({
         matchId: mid,
         matchLabel: m.competition || m.opponent || mid.slice(0, 6),
@@ -330,6 +346,9 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
         unit: bestUnit,
         lowerIsBetter,
         isPersonalRecord: isPR,
+        windSpeed: Number.isFinite(windNum) ? windNum : null,
+        windDirection: weatherSource?.wind_direction || null,
+        temperature: weatherSource?.temperature_celsius ?? null,
       });
     });
 
@@ -366,13 +385,23 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
   const chartData = useMemo(() => {
     return performancePoints
       .filter(p => p.result != null)
-      .map(p => ({
-        name: p.competition,
-        date: p.matchDate ? format(parseISO(p.matchDate), "dd/MM", { locale: fr }) : "",
-        label: `${p.competition}${p.matchDate ? ` (${format(parseISO(p.matchDate), "dd/MM/yy", { locale: fr })})` : ""}`,
-        result: p.result,
-        ranking: p.ranking,
-      }));
+      .map(p => {
+        const weatherBits: string[] = [];
+        if (p.windSpeed != null) {
+          const windStr = `${p.windSpeed > 0 ? "+" : ""}${p.windSpeed.toFixed(1)} m/s${p.windDirection ? ` ${p.windDirection}` : ""}`;
+          weatherBits.push(`💨 ${windStr}`);
+        } else if (p.windDirection) {
+          weatherBits.push(`💨 ${p.windDirection}`);
+        }
+        if (p.temperature != null) weatherBits.push(`🌡️ ${p.temperature}°C`);
+        return {
+          name: p.competition,
+          date: p.matchDate ? format(parseISO(p.matchDate), "dd/MM", { locale: fr }) : "",
+          label: `${p.competition}${p.matchDate ? ` (${format(parseISO(p.matchDate), "dd/MM/yy", { locale: fr })})` : ""}${weatherBits.length ? `\n${weatherBits.join(" · ")}` : ""}`,
+          result: p.result,
+          ranking: p.ranking,
+        };
+      });
   }, [performancePoints]);
 
   const sortedAthletes = useMemo(() => {
@@ -538,35 +567,79 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
                           <TableHead>Compétition</TableHead>
                           <TableHead className="text-center">Classement</TableHead>
                           <TableHead className="text-right">Résultat</TableHead>
+                          <TableHead className="text-center">
+                            <span className="inline-flex items-center gap-1"><Wind className="h-3.5 w-3.5" />Vent</span>
+                          </TableHead>
+                          <TableHead className="text-center">
+                            <span className="inline-flex items-center gap-1"><Thermometer className="h-3.5 w-3.5" />Temp.</span>
+                          </TableHead>
                           <TableHead className="text-center">RP</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {performancePoints.map(p => (
-                          <TableRow key={p.matchId}>
-                            <TableCell className="text-xs text-muted-foreground">
-                              {p.matchDate ? format(parseISO(p.matchDate), "dd/MM/yy", { locale: fr }) : "—"}
-                            </TableCell>
-                            <TableCell className="font-medium">{p.competition}</TableCell>
-                            <TableCell className="text-center">
-                              {p.ranking != null ? (
-                                <Badge variant={p.ranking <= 3 ? "default" : "outline"} className="font-mono">
-                                  {p.ranking}ᵉ
-                                </Badge>
-                              ) : (
-                                <span className="text-muted-foreground">—</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right font-mono">
-                              {formatResult(p.result, p.unit)}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {p.isPersonalRecord && (
-                                <Badge variant="default" className="bg-amber-500 hover:bg-amber-500 text-white">RP</Badge>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {performancePoints.map(p => {
+                          // For sprints/hurdles, IAAF wind regulation: > +2.0 m/s = wind-aided (not record-eligible)
+                          const isTimedDisc = p.unit === "sec";
+                          const windAided = isTimedDisc && p.windSpeed != null && p.windSpeed > 2;
+                          const headWind = isTimedDisc && p.windSpeed != null && p.windSpeed < -1;
+                          return (
+                            <TableRow key={p.matchId}>
+                              <TableCell className="text-xs text-muted-foreground">
+                                {p.matchDate ? format(parseISO(p.matchDate), "dd/MM/yy", { locale: fr }) : "—"}
+                              </TableCell>
+                              <TableCell className="font-medium">{p.competition}</TableCell>
+                              <TableCell className="text-center">
+                                {p.ranking != null ? (
+                                  <Badge variant={p.ranking <= 3 ? "default" : "outline"} className="font-mono">
+                                    {p.ranking}ᵉ
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right font-mono">
+                                {formatResult(p.result, p.unit)}
+                              </TableCell>
+                              <TableCell className="text-center font-mono text-xs">
+                                {p.windSpeed != null ? (
+                                  <span
+                                    className={
+                                      windAided
+                                        ? "text-amber-600 dark:text-amber-400 font-semibold"
+                                        : headWind
+                                          ? "text-blue-600 dark:text-blue-400 font-semibold"
+                                          : ""
+                                    }
+                                    title={
+                                      windAided
+                                        ? "Vent favorable > +2 m/s (perf. non homologable comme RP officiel)"
+                                        : headWind
+                                          ? "Vent contraire — perf. dégradée"
+                                          : undefined
+                                    }
+                                  >
+                                    {p.windSpeed > 0 ? "+" : ""}{p.windSpeed.toFixed(1)} m/s
+                                    {p.windDirection && (
+                                      <span className="ml-1 text-muted-foreground">({p.windDirection})</span>
+                                    )}
+                                  </span>
+                                ) : p.windDirection ? (
+                                  <span className="text-muted-foreground">{p.windDirection}</span>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center font-mono text-xs">
+                                {p.temperature != null ? `${p.temperature}°C` : <span className="text-muted-foreground">—</span>}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {p.isPersonalRecord && (
+                                  <Badge variant="default" className="bg-amber-500 hover:bg-amber-500 text-white">RP</Badge>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
