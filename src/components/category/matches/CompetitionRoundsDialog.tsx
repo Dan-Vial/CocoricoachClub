@@ -1037,7 +1037,12 @@ export function CompetitionRoundsDialog({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {(() => {
+                  const { unit: _u, lowerIsBetter: _lib } = getDefaultUnitForDiscipline(player.discipline, player.specialty);
+                  // Pour les lancers/sauts, la performance est saisie via les essais ci-dessous
+                  const showTopPerf = _lib;
+                  return (
+                <div className={`grid grid-cols-1 ${showTopPerf ? "sm:grid-cols-3" : "sm:grid-cols-2"} gap-3`}>
                   <div>
                     <Label className="text-xs">Résultat</Label>
                     <Select
@@ -1076,25 +1081,29 @@ export function CompetitionRoundsDialog({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label className="text-xs">Performance</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      onWheel={blurOnWheel}
-                      value={round.final_time_seconds ?? ""}
-                      onChange={(e) => {
-                        const v = parseFloat(e.target.value);
-                        updateRound(player.entryKey, round.round_number, {
-                          final_time_seconds: Number.isFinite(v) ? v : undefined,
-                        });
-                      }}
-                      placeholder="ex: 11.42"
-                      className="h-8"
-                      disabled={round.isLocked}
-                    />
-                  </div>
+                  {showTopPerf && (
+                    <div>
+                      <Label className="text-xs">Performance (temps)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        onWheel={blurOnWheel}
+                        value={round.final_time_seconds ?? ""}
+                        onChange={(e) => {
+                          const v = parseFloat(e.target.value);
+                          updateRound(player.entryKey, round.round_number, {
+                            final_time_seconds: Number.isFinite(v) ? v : undefined,
+                          });
+                        }}
+                        placeholder="ex: 11.42"
+                        className="h-8"
+                        disabled={round.isLocked}
+                      />
+                    </div>
+                  )}
                 </div>
+                  );
+                })()}
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
@@ -1216,7 +1225,7 @@ export function CompetitionRoundsDialog({
                                       <Label className="text-[10px] text-muted-foreground">{stat.shortLabel}</Label>
                                       <Input
                                         type="number"
-                                        value={round.stats[stat.key] || 0}
+                                        value={round.stats[stat.key] ?? ""}
                                         onChange={(e) => updateRoundStat(player.entryKey, round.round_number, stat.key, parseFloat(e.target.value) || 0)}
                                         min={stat.min ?? 0}
                                         max={stat.max}
@@ -1244,7 +1253,7 @@ export function CompetitionRoundsDialog({
                                       <Label className="text-[10px] text-muted-foreground">{stat.shortLabel}</Label>
                                       <Input
                                         type="number"
-                                        value={round.stats[stat.key] || 0}
+                                        value={round.stats[stat.key] ?? ""}
                                         onChange={(e) => updateRoundStat(player.entryKey, round.round_number, stat.key, parseFloat(e.target.value) || 0)}
                                         min={stat.min ?? 0}
                                         max={stat.max}
@@ -2265,7 +2274,7 @@ export function CompetitionRoundsDialog({
                                               <Label className="text-[10px] text-muted-foreground">{stat.shortLabel}</Label>
                                               <Input
                                                 type="number"
-                                                value={round.stats[stat.key] || 0}
+                                                value={round.stats[stat.key] ?? ""}
                                                 onChange={(e) => updateRoundStat(selectedPlayer.entryKey, round.round_number, stat.key, parseFloat(e.target.value) || 0)}
                                                 min={stat.min ?? 0}
                                                 max={stat.max}
@@ -2293,7 +2302,7 @@ export function CompetitionRoundsDialog({
                                               <Label className="text-[10px] text-muted-foreground">{stat.shortLabel}</Label>
                                               <Input
                                                 type="number"
-                                                value={round.stats[stat.key] || 0}
+                                                value={round.stats[stat.key] ?? ""}
                                                 onChange={(e) => updateRoundStat(selectedPlayer.entryKey, round.round_number, stat.key, parseFloat(e.target.value) || 0)}
                                                 min={stat.min ?? 0}
                                                 max={stat.max}
