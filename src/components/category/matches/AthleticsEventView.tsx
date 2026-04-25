@@ -74,7 +74,6 @@ interface AthleteResultRow {
 }
 
 export function AthleticsEventView({ categoryId, matchIds }: Props) {
-  void categoryId;
   const [selectedDiscKey, setSelectedDiscKey] = useState<string>("");
   const [genderFilter, setGenderFilter] = useState<"all" | "M" | "F">("all");
 
@@ -125,22 +124,38 @@ export function AthleticsEventView({ categoryId, matchIds }: Props) {
   }, [rounds, lineups]);
 
   const { data: players = [] } = useQuery({
-    queryKey: ["athl-event-players", allPlayerIds],
+    queryKey: ["athl-event-players", allPlayerIds, categoryId],
     queryFn: async () => {
       if (allPlayerIds.length === 0) return [];
       const [playersRes, pcRes] = await Promise.all([
         supabase.from("players").select("id, name, first_name").in("id", allPlayerIds),
         supabase
           .from("player_categories")
-          .select("player_id, categories(gender)")
+          .select("player_id, category_id, is_primary, categories(gender)")
           .in("player_id", allPlayerIds),
       ]);
       const genderByPlayer = new Map<string, string | null>();
-      ((pcRes.data || []) as any[]).forEach((row) => {
-        const g = row?.categories?.gender ?? null;
-        if (g && !genderByPlayer.has(row.player_id)) {
-          genderByPlayer.set(row.player_id, g);
+      const pcRows = (pcRes.data || []) as any[];
+      // Priorité 1 : la catégorie courante
+      pcRows.forEach((row) => {
+        if (row?.category_id === categoryId) {
+          const g = row?.categories?.gender ?? null;
+          if (g) genderByPlayer.set(row.player_id, g);
         }
+      });
+      // Priorité 2 : la catégorie marquée "primary"
+      pcRows.forEach((row) => {
+        if (genderByPlayer.has(row.player_id)) return;
+        if (row?.is_primary) {
+          const g = row?.categories?.gender ?? null;
+          if (g) genderByPlayer.set(row.player_id, g);
+        }
+      });
+      // Priorité 3 : n'importe quelle catégorie
+      pcRows.forEach((row) => {
+        if (genderByPlayer.has(row.player_id)) return;
+        const g = row?.categories?.gender ?? null;
+        if (g) genderByPlayer.set(row.player_id, g);
       });
       return ((playersRes.data || []) as any[]).map((p) => ({
         ...p,
@@ -195,13 +210,17 @@ export function AthleticsEventView({ categoryId, matchIds }: Props) {
     const matchById = new Map(matches.map(m => [m.id, m]));
     const playerById = new Map(players.map(p => [p.id, p]));
 
-    // Genre filter
+    // Genre filter — gender vient de categories.gender (masculine/male/feminine/female/mixed)
+    const isMale = (g: string) => ["M", "MALE", "MASCULINE", "HOMME", "HOMMES", "MIXED", "MIXTE"].includes(g);
+    const isFemale = (g: string) => ["F", "FEMALE", "FEMININE", "FEMME", "FEMMES", "MIXED", "MIXTE"].includes(g);
     const allowed = new Set<string>();
     players.forEach(p => {
       if (genderFilter === "all") { allowed.add(p.id); return; }
       const g = (p.gender || "").toUpperCase();
-      if (genderFilter === "M" && (g === "M" || g === "MALE" || g === "HOMME")) allowed.add(p.id);
-      if (genderFilter === "F" && (g === "F" || g === "FEMALE" || g === "FEMME")) allowed.add(p.id);
+      // Si pas de genre connu → on inclut quand même (pour ne pas masquer les athlètes)
+      if (!g) { allowed.add(p.id); return; }
+      if (genderFilter === "M" && isMale(g)) allowed.add(p.id);
+      if (genderFilter === "F" && isFemale(g)) allowed.add(p.id);
     });
 
     // Athletes alignés (lineups) sur cette épreuve, par compétition
