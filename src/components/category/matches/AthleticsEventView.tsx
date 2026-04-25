@@ -53,6 +53,7 @@ interface PlayerRow {
   id: string;
   name: string;
   first_name: string | null;
+  gender?: string | null;
 }
 
 interface AthleteResultRow {
@@ -127,11 +128,24 @@ export function AthleticsEventView({ categoryId, matchIds }: Props) {
     queryKey: ["athl-event-players", allPlayerIds],
     queryFn: async () => {
       if (allPlayerIds.length === 0) return [];
-      const { data } = await supabase
-        .from("players")
-        .select("id, name, first_name, gender")
-        .in("id", allPlayerIds);
-      return (data || []) as PlayerRow[];
+      const [playersRes, pcRes] = await Promise.all([
+        supabase.from("players").select("id, name, first_name").in("id", allPlayerIds),
+        supabase
+          .from("player_categories")
+          .select("player_id, categories(gender)")
+          .in("player_id", allPlayerIds),
+      ]);
+      const genderByPlayer = new Map<string, string | null>();
+      ((pcRes.data || []) as any[]).forEach((row) => {
+        const g = row?.categories?.gender ?? null;
+        if (g && !genderByPlayer.has(row.player_id)) {
+          genderByPlayer.set(row.player_id, g);
+        }
+      });
+      return ((playersRes.data || []) as any[]).map((p) => ({
+        ...p,
+        gender: genderByPlayer.get(p.id) ?? null,
+      })) as PlayerRow[];
     },
     enabled: allPlayerIds.length > 0,
   });
