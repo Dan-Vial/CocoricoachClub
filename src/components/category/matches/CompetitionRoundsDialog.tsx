@@ -1436,7 +1436,7 @@ export function CompetitionRoundsDialog({
                                   key={player.entryKey}
                                   className={`rounded-xl border p-2.5 transition-all ${
                                     isSelected
-                                      ? "border-primary bg-primary/10 shadow-sm ring-1 ring-primary/40"
+                                      ? "border-primary bg-primary/10 shadow-sm ring-1 ring-primary/40 sm:col-span-2"
                                       : "border-border bg-card hover:bg-accent/40 hover:border-primary/30"
                                   }`}
                                 >
