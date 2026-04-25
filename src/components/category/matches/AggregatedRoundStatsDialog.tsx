@@ -711,60 +711,77 @@ export function AggregatedRoundStatsDialog({
                             })()}
 
                             {/* Rounds detail table */}
-                            {player.rounds.length > 0 && (
-                              <div className="space-y-2">
-                                <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
-                                  <Timer className="h-4 w-4" />
-                                  Détail des épreuves
-                                </h4>
-                                <div className="overflow-x-auto">
-                                  <table className="w-full text-xs border-collapse">
-                                    <thead>
-                                      <tr className="bg-muted/50">
-                                        <th className="text-left px-2 py-1.5 font-medium">Phase</th>
-                                        <th className="px-2 py-1.5 font-medium text-center">Place</th>
-                                        <th className="px-2 py-1.5 font-medium text-center">Résultat</th>
-                                        {disciplineStats.slice(0, 5).map(s => (
-                                          <th key={s.key} className="px-2 py-1.5 font-medium text-center" title={s.label}>
-                                            {s.shortLabel}
-                                          </th>
-                                        ))}
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {player.rounds.map((round, idx) => (
-                                        <tr key={idx} className={idx % 2 === 1 ? "bg-muted/20" : ""}>
-                                          <td className="px-2 py-1.5">
-                                            {ATHLETISME_PHASES.find(p => p.value === round.phase)?.label || round.phase || `Épreuve ${idx + 1}`}
-                                          </td>
-                                          <td className="px-2 py-1.5 text-center font-semibold">
-                                            {round.ranking ? (
-                                              <Badge variant={round.ranking <= 3 ? "default" : "secondary"} className="text-[10px]">
-                                                {round.ranking === 1 ? "🥇" : round.ranking === 2 ? "🥈" : round.ranking === 3 ? "🥉" : `${round.ranking}e`}
-                                              </Badge>
-                                            ) : '-'}
-                                          </td>
-                                          <td className="px-2 py-1.5 text-center">
-                                            {round.result === 'qualified' ? (
-                                              <Badge className="bg-green-600 text-[10px]">Q</Badge>
-                                            ) : round.result === 'eliminated' ? (
-                                              <Badge variant="destructive" className="text-[10px]">Élim.</Badge>
-                                            ) : round.result ? (
-                                              <span className="text-muted-foreground">{round.result.toUpperCase()}</span>
-                                            ) : '-'}
-                                          </td>
-                                          {disciplineStats.slice(0, 5).map(s => (
-                                            <td key={s.key} className="px-2 py-1.5 text-center font-mono">
-                                              {round.stats[s.key] != null ? round.stats[s.key] : '-'}
-                                            </td>
+                            {player.rounds.length > 0 && (() => {
+                              // Exclude redundant/unwanted columns:
+                              // - finalRanking (already shown as "Place" badge)
+                              // - lane (couloir, not relevant)
+                              // - personalBest (RP flag, shown via PB/SB badges elsewhere)
+                              // - hurdlesHit (touchées, too granular)
+                              const EXCLUDED_KEYS = new Set([
+                                "finalRanking",
+                                "lane",
+                                "personalBest",
+                                "hurdlesHit",
+                              ]);
+                              const detailStats = disciplineStats
+                                .filter(s => !EXCLUDED_KEYS.has(s.key))
+                                .slice(0, 4);
+
+                              return (
+                                <div className="space-y-2">
+                                  <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
+                                    <Timer className="h-4 w-4" />
+                                    Détail des épreuves
+                                  </h4>
+                                  <div className="overflow-x-auto">
+                                    <table className="w-full text-xs border-collapse">
+                                      <thead>
+                                        <tr className="bg-muted/50">
+                                          <th className="text-left px-2 py-1.5 font-medium">Phase</th>
+                                          <th className="px-2 py-1.5 font-medium text-center">Place</th>
+                                          <th className="px-2 py-1.5 font-medium text-center">Résultat</th>
+                                          {detailStats.map(s => (
+                                            <th key={s.key} className="px-2 py-1.5 font-medium text-center" title={s.label}>
+                                              {s.shortLabel}
+                                            </th>
                                           ))}
                                         </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
+                                      </thead>
+                                      <tbody>
+                                        {player.rounds.map((round, idx) => (
+                                          <tr key={idx} className={idx % 2 === 1 ? "bg-muted/20" : ""}>
+                                            <td className="px-2 py-1.5">
+                                              {ATHLETISME_PHASES.find(p => p.value === round.phase)?.label || round.phase || `Épreuve ${idx + 1}`}
+                                            </td>
+                                            <td className="px-2 py-1.5 text-center font-semibold">
+                                              {round.ranking ? (
+                                                <Badge variant={round.ranking <= 3 ? "default" : "secondary"} className="text-[10px]">
+                                                  {round.ranking === 1 ? "🥇" : round.ranking === 2 ? "🥈" : round.ranking === 3 ? "🥉" : `${round.ranking}e`}
+                                                </Badge>
+                                              ) : '-'}
+                                            </td>
+                                            <td className="px-2 py-1.5 text-center">
+                                              {round.result === 'qualified' ? (
+                                                <Badge className="bg-green-600 text-[10px]">Q</Badge>
+                                              ) : round.result === 'eliminated' ? (
+                                                <Badge variant="destructive" className="text-[10px]">Élim.</Badge>
+                                              ) : round.result ? (
+                                                <span className="text-muted-foreground">{round.result.toUpperCase()}</span>
+                                              ) : '-'}
+                                            </td>
+                                            {detailStats.map(s => (
+                                              <td key={s.key} className="px-2 py-1.5 text-center font-mono">
+                                                {round.stats[s.key] != null ? round.stats[s.key] : '-'}
+                                              </td>
+                                            ))}
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              );
+                            })()}
 
                             {/* Aggregated discipline stats */}
                             {Object.keys(player.stats).length > 0 && (
