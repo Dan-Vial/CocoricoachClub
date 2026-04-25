@@ -2321,7 +2321,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
                 </div>
 
                 <Tabs defaultValue={statCategories[0]?.key || "general"} className="w-full">
-                  <TabsList className={`grid w-full grid-cols-${Math.min(statCategories.length, 4)}`}>
+                  <TabsList className="flex w-full flex-wrap h-auto gap-1 justify-start">
                     {statCategories.map(cat => (
                       <TabsTrigger key={cat.key} value={cat.key} className="gap-1 text-xs">
                         {getCategoryIcon(cat.key)}
@@ -2529,7 +2529,7 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
         </CardHeader>
         <CardContent>
           <Tabs defaultValue={statCategories[0]?.key || "scoring"} className="w-full">
-            <TabsList className={`grid w-full grid-cols-${Math.min(statCategories.length, 4)}`}>
+            <TabsList className="flex w-full flex-wrap h-auto gap-1 justify-start">
               {statCategories.map(cat => (
                 <TabsTrigger key={cat.key} value={cat.key} className="gap-1">
                   {getCategoryIcon(cat.key)}
