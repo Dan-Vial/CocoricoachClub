@@ -1225,7 +1225,7 @@ export function CompetitionRoundsDialog({
                                       <Label className="text-[10px] text-muted-foreground">{stat.shortLabel}</Label>
                                       <Input
                                         type="number"
-                                        value={round.stats[stat.key] || 0}
+                                        value={round.stats[stat.key] ?? ""}
                                         onChange={(e) => updateRoundStat(player.entryKey, round.round_number, stat.key, parseFloat(e.target.value) || 0)}
                                         min={stat.min ?? 0}
                                         max={stat.max}
@@ -1253,7 +1253,7 @@ export function CompetitionRoundsDialog({
                                       <Label className="text-[10px] text-muted-foreground">{stat.shortLabel}</Label>
                                       <Input
                                         type="number"
-                                        value={round.stats[stat.key] || 0}
+                                        value={round.stats[stat.key] ?? ""}
                                         onChange={(e) => updateRoundStat(player.entryKey, round.round_number, stat.key, parseFloat(e.target.value) || 0)}
                                         min={stat.min ?? 0}
                                         max={stat.max}
@@ -2274,7 +2274,7 @@ export function CompetitionRoundsDialog({
                                               <Label className="text-[10px] text-muted-foreground">{stat.shortLabel}</Label>
                                               <Input
                                                 type="number"
-                                                value={round.stats[stat.key] || 0}
+                                                value={round.stats[stat.key] ?? ""}
                                                 onChange={(e) => updateRoundStat(selectedPlayer.entryKey, round.round_number, stat.key, parseFloat(e.target.value) || 0)}
                                                 min={stat.min ?? 0}
                                                 max={stat.max}
@@ -2302,7 +2302,7 @@ export function CompetitionRoundsDialog({
                                               <Label className="text-[10px] text-muted-foreground">{stat.shortLabel}</Label>
                                               <Input
                                                 type="number"
-                                                value={round.stats[stat.key] || 0}
+                                                value={round.stats[stat.key] ?? ""}
                                                 onChange={(e) => updateRoundStat(selectedPlayer.entryKey, round.round_number, stat.key, parseFloat(e.target.value) || 0)}
                                                 min={stat.min ?? 0}
                                                 max={stat.max}
