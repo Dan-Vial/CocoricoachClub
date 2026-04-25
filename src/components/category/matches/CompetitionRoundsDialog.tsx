@@ -797,6 +797,9 @@ export function CompetitionRoundsDialog({
       // Refresh distinct phases on the match card
       queryClient.invalidateQueries({ queryKey: ["match-distinct-round-phases", matchId] });
       queryClient.invalidateQueries({ queryKey: ["distinct-round-phases", matchId] });
+      // Refresh compteur "Ajouter résultats (X)" affiché sur la carte de compétition
+      queryClient.invalidateQueries({ queryKey: ["competition_rounds_count", matchId] });
+      queryClient.invalidateQueries({ queryKey: ["competition_rounds_phases", matchId] });
       if (keepOpenAfterSave) {
         (async () => {
           try {
