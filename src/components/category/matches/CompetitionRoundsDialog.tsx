@@ -1386,7 +1386,7 @@ export function CompetitionRoundsDialog({
             ) : (
               <ScrollArea
                 className={`pr-2 rounded-md border bg-muted/20 transition-all ${
-                  selectedPlayerId ? "h-[430px]" : "h-[220px]"
+                  selectedPlayerId ? "h-[65vh]" : "h-[220px]"
                 }`}
               >
                 <div className="space-y-3 p-2">
