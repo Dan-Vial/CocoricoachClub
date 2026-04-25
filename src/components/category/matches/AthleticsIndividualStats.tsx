@@ -58,7 +58,7 @@ interface PlayerRow {
   specialty: string | null;
 }
 
-interface PerfPoint {
+export interface PerfPoint {
   roundId: string;
   matchId: string;
   matchLabel: string;
@@ -76,7 +76,7 @@ interface PerfPoint {
 }
 
 
-const PRETTY_LABELS: Record<string, string> = {
+export const PRETTY_LABELS: Record<string, string> = {
   ath_sprint: "Sprint",
   ath_haies: "Haies",
   ath_endurance: "Demi-fond / Fond",
@@ -88,7 +88,7 @@ const PRETTY_LABELS: Record<string, string> = {
 };
 
 /** Format a result according to its unit (sec → mm:ss.cc when ≥60, m / cm). */
-function formatResult(value: number | null, unit: string): string {
+export function formatResult(value: number | null, unit: string): string {
   if (value == null || !Number.isFinite(value)) return "—";
   if (unit === "sec") {
     if (value >= 60) {
@@ -112,7 +112,7 @@ function formatResult(value: number | null, unit: string): string {
  * Extract the best numeric performance from a round's stat_data,
  * given whether lower or higher is better.
  */
-function extractResult(round: RoundRow, lowerIsBetter: boolean): { value: number | null; unit: string } {
+export function extractResult(round: { final_time_seconds: number | null; competition_round_stats?: Array<{ stat_data: Record<string, any> | null }> }, lowerIsBetter: boolean): { value: number | null; unit: string } {
   const sd = round.competition_round_stats?.[0]?.stat_data || {};
   const raw = sd as Record<string, any>;
 
@@ -145,6 +145,25 @@ function extractResult(round: RoundRow, lowerIsBetter: boolean): { value: number
   if (nums.length === 0) return { value: null, unit: "" };
   const v = lowerIsBetter ? Math.min(...nums) : Math.max(...nums);
   return { value: v, unit: "" };
+}
+
+/** Hiérarchie des phases — finale > demi > série, etc. */
+export function phaseRank(phase: string | null | undefined): number {
+  if (!phase) return 0;
+  const p = phase.toLowerCase();
+  if (p.includes("final") && !p.includes("demi") && !p.includes("quart") && !p.includes("petite")) return 100;
+  if (p.includes("petite")) return 90;
+  if (p.includes("demi")) return 80;
+  if (p.includes("quart")) return 70;
+  if (p.includes("huiti") || p.includes("8e")) return 60;
+  if (p.includes("repechage") || p.includes("repêch")) return 30;
+  if (p.includes("série") || p.includes("serie") || p.includes("qualif")) return 20;
+  return 10;
+}
+
+export function disciplineLabel(discipline: string | null | undefined): string {
+  if (!discipline) return "—";
+  return PRETTY_LABELS[discipline] || discipline.replace(/^athletisme_/, "");
 }
 
 const COLORS = [
