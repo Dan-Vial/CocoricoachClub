@@ -257,7 +257,7 @@ export function CumulativeStatsCharts({ stats, matchesData, sportStats, selected
         {matchesData.length >= 2 && (
           <Badge variant="outline" className="gap-1 text-xs">
             <TrendingUp className="h-3 w-3" />
-            {matchesData.length} matchs comparés
+            {matchesData.length} {isAthleticsMode ? "compétitions" : "matchs"} comparé{matchesData.length > 1 ? "s" : ""}
           </Badge>
         )}
       </div>
@@ -266,6 +266,101 @@ export function CumulativeStatsCharts({ stats, matchesData, sportStats, selected
         <Card className="bg-gradient-card">
           <CardContent className="py-8 text-center text-muted-foreground text-sm">
             Aucune statistique numérique dans cette catégorie.
+          </CardContent>
+        </Card>
+      ) : isAthleticsMode ? (
+        // ===== Athletics individual mode: focus on a single athlete across competitions =====
+        <Card className="bg-gradient-card">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Analyse individuelle — {activeStatField?.label || activeStat}
+              </CardTitle>
+              <Select value={selectedAthleteId} onValueChange={setSelectedAthleteId}>
+                <SelectTrigger className="w-[240px]">
+                  <SelectValue placeholder="Choisir un athlète" />
+                </SelectTrigger>
+                <SelectContent>
+                  {athletesForCategory.map(a => (
+                    <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {athletesForCategory.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                Aucun athlète inscrit dans cette discipline.
+              </p>
+            ) : athleteCompetitionData.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                Aucune performance enregistrée pour cet athlète sur les compétitions sélectionnées.
+              </p>
+            ) : (
+              <>
+                {/* KPI summary */}
+                {athleteSummary && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <div className="rounded-md border bg-background/50 p-3">
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Meilleure perf</p>
+                      <p className="text-lg font-bold">{athleteSummary.best}</p>
+                    </div>
+                    <div className="rounded-md border bg-background/50 p-3">
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Moyenne</p>
+                      <p className="text-lg font-bold">{athleteSummary.avg}</p>
+                    </div>
+                    <div className="rounded-md border bg-background/50 p-3">
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Dernière</p>
+                      <p className="text-lg font-bold">{athleteSummary.last}</p>
+                    </div>
+                    <div className="rounded-md border bg-background/50 p-3">
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Évolution</p>
+                      <p className={`text-lg font-bold ${athleteSummary.diff === 0 ? 'text-muted-foreground' : athleteSummary.isProgress ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {athleteSummary.diff > 0 ? '+' : ''}{athleteSummary.diff}
+                        <span className="text-xs ml-1 font-normal">({athleteSummary.pct}%)</span>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Evolution line chart across competitions */}
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Évolution par compétition</p>
+                  <div className="h-[260px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={athleteCompetitionData} margin={{ left: 10, right: 10 }}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                        <XAxis dataKey="competition" tick={{ fontSize: 10 }} />
+                        <YAxis domain={['auto', 'auto']} />
+                        <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }} />
+                        {athleteSummary && (
+                          <ReferenceLine y={athleteSummary.avg} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" label={{ value: "Moy.", fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                        )}
+                        <Line type="monotone" dataKey="value" name={activeStatField?.label || activeStat} stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 5 }} activeDot={{ r: 7 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Per-competition comparison bars */}
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Comparaison par compétition</p>
+                  <div className="h-[220px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={athleteCompetitionData} margin={{ left: 10, right: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                        <XAxis dataKey="competition" tick={{ fontSize: 10 }} />
+                        <YAxis />
+                        <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }} />
+                        <Bar dataKey="value" name={activeStatField?.label || activeStat} fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       ) : (
