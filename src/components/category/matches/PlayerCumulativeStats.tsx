@@ -1277,7 +1277,10 @@ export function PlayerCumulativeStats({ categoryId, sportType = "XV", playerId: 
 
       } else {
         // ===== ALL / INDIVIDUAL / SINGLE: per-player tables, one per sub-group =====
-        statCategories.forEach((cat) => {
+        const pdfCategories = (mode === "single" && singlePlayerId)
+          ? getCategoriesForPlayer(singlePlayerId)
+          : statCategories;
+        pdfCategories.forEach((cat) => {
           const categoryStats = sportStats.filter(s => s.category === cat.key);
           if (categoryStats.length === 0) return;
 
