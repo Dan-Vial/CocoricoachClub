@@ -878,7 +878,7 @@ export function getStatsForSport(sportType: SportType | string, isGoalkeeper: bo
       return TENNIS_STATS;
     case "athletisme":
     case "athlétisme":
-      return discipline ? getAthletismeStatsForDiscipline(discipline) : getAllAthletismeStats();
+      return discipline ? getAthletismeStatsForDiscipline(discipline) : getAllAthletismeStatsTagged();
     default:
       return RUGBY_STATS;
   }
