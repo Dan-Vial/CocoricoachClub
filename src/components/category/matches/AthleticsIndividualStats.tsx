@@ -796,7 +796,7 @@ export function AthleticsIndividualStats({ categoryId, matchIds }: AthleticsIndi
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="results">Résultats</TabsTrigger>
               <TabsTrigger value="evolution" disabled={chartData.length < 2}>Évolution</TabsTrigger>
-              <TabsTrigger value="ranking" disabled={chartData.length === 0}>Classements</TabsTrigger>
+              <TabsTrigger value="ranking" disabled={rankingChartData.length === 0}>Classements</TabsTrigger>
             </TabsList>
 
             <TabsContent value="results">
