@@ -144,3 +144,61 @@ export function isThrowingBlock(trainingType?: string | null): boolean {
   if (!trainingType) return false;
   return THROWING_TRAINING_TYPES.has(trainingType);
 }
+
+/**
+ * Disciplines de course/sprint/haies/sauts à élan où on chronomètre des distances.
+ */
+const SPRINT_TRAINING_TYPES = new Set([
+  "athle_vitesse",
+  "athle_departs",
+  "athle_acceleration",
+  "athle_vitesse_max",
+  "athle_endurance_vitesse",
+  "athle_haies",
+  "athle_rythme_haies",
+  "athle_haies_technique",
+  "athle_fartlek",
+  "athle_fractionne",
+  "athle_seuil",
+  "athle_vma",
+  "athle_cotes",
+  "athle_course_elan",
+  "athle_tempo_run",
+]);
+
+export function isSprintBlock(trainingType?: string | null): boolean {
+  if (!trainingType) return false;
+  return SPRINT_TRAINING_TYPES.has(trainingType);
+}
+
+// === Référentiels saisie sprint/course ===
+export const SPRINT_EXERCISE_TYPES = [
+  { value: "sprint", label: "Sprint" },
+  { value: "acceleration", label: "Accélération" },
+  { value: "vitesse_max", label: "Vitesse max (Vmax)" },
+  { value: "endurance_vitesse", label: "Endurance de vitesse" },
+  { value: "haies", label: "Haies" },
+  { value: "demifond", label: "Demi-fond / fractionné" },
+  { value: "course_elan", label: "Course d'élan" },
+  { value: "cotes", label: "Côtes" },
+] as const;
+
+export const START_TYPES = [
+  { value: "blocs", label: "Départ blocs" },
+  { value: "trois_points", label: "3 points" },
+  { value: "debout", label: "Départ debout" },
+  { value: "lance", label: "Départ lancé" },
+] as const;
+
+export const LOAD_TYPES = [
+  { value: "aucun", label: "Aucun (délesté)" },
+  { value: "leste", label: "Lesté (gilet/poids)" },
+  { value: "gilet", label: "Gilet lesté" },
+  { value: "parachute", label: "Parachute" },
+  { value: "traineau", label: "Traîneau" },
+  { value: "elastique", label: "Élastique résistance" },
+  { value: "descente", label: "Descente / facilité" },
+] as const;
+
+export const SPRINT_DISTANCES = [10, 20, 30, 40, 50, 60, 80, 100, 110, 150, 200, 300, 400, 600, 800, 1000, 1500, 3000];
+
