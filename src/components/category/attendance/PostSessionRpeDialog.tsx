@@ -258,6 +258,44 @@ export function PostSessionRpeDialog({
         }
       }
 
+      // Save throwing attempts if any
+      if (hasThrowingBlocks) {
+        const throwInserts: any[] = [];
+        for (const playerId of Object.keys(throwsState)) {
+          const blocksMap = throwsState[playerId] || {};
+          for (const blockId of Object.keys(blocksMap)) {
+            const block = throwingBlocks?.find((b) => b.id === blockId);
+            if (!block) continue;
+            const attempts = (blocksMap[blockId] || []).filter(
+              (a) => a.distance && !Number.isNaN(parseFloat(a.distance)),
+            );
+            attempts.forEach((a, idx) => {
+              throwInserts.push({
+                training_session_id: session.id,
+                block_id: blockId,
+                player_id: playerId,
+                category_id: categoryId,
+                session_date: session.session_date,
+                implement: block.implement,
+                implement_weight_g: block.implement_weight_g,
+                attempt_number: idx + 1,
+                distance_m: parseFloat(a.distance),
+                is_valid: a.isValid,
+              });
+            });
+          }
+        }
+        if (throwInserts.length > 0) {
+          const { error: throwError } = await supabase
+            .from("athletics_throwing_attempts")
+            .insert(throwInserts);
+          if (throwError) {
+            console.error("Throwing attempts insert error:", throwError);
+            toast.error("RPE enregistrés mais erreur lancers");
+          }
+        }
+      }
+
       // Trigger AWCR alerts check
       try {
         await supabase.functions.invoke("check-awcr-alerts");
@@ -270,6 +308,7 @@ export function PostSessionRpeDialog({
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ["awcr_tracking"] });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["athletics_throwing_attempts"] });
       if (showHrv) {
         queryClient.invalidateQueries({ queryKey: ["hrv_records"] });
       }
@@ -278,6 +317,8 @@ export function PostSessionRpeDialog({
       setHrvMs(""); setRestingHr(""); setAvgHr(""); setMaxHr("");
       setShowZones(false);
       setZone1(""); setZone2(""); setZone3(""); setZone4(""); setZone5("");
+      setThrowsState({});
+      setExpandedThrowsPlayer(null);
       onOpenChange(false);
     },
     onError: (error: Error) => {
