@@ -7,10 +7,11 @@ import { BowlingTrainingStats } from "@/components/bowling/BowlingTrainingStats"
 import { TennisTrainingStats } from "@/components/tennis/TennisTrainingStats";
 import { PrecisionTrainingStats } from "@/components/training/PrecisionTrainingStats";
 import { PrecisionFieldTracker } from "@/components/rugby/PrecisionFieldTracker";
+import { AthleticsThrowingStats } from "@/components/athletics/AthleticsThrowingStats";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
-import { isRugbyType } from "@/lib/constants/sportTypes";
+import { isRugbyType, isAthletismeCategory } from "@/lib/constants/sportTypes";
 
 interface PerformanceTabProps {
   categoryId: string;
@@ -41,6 +42,7 @@ export function PerformanceTab({ categoryId, sportType }: PerformanceTabProps) {
   const isBowling = (sportType || "").toLowerCase().includes("bowling");
   const isTennis = (sportType || "").toLowerCase().includes("tennis");
   const isRugby = isRugbyType(sportType || "");
+  const isAthletics = isAthletismeCategory(sportType || "");
 
   if (isViewer) {
     return <PerformanceDisabledMessage />;
@@ -106,6 +108,8 @@ export function PerformanceTab({ categoryId, sportType }: PerformanceTabProps) {
           <BowlingTrainingStats categoryId={categoryId} />
         ) : isTennis ? (
           <TennisTrainingStats categoryId={categoryId} />
+        ) : isAthletics ? (
+          <AthleticsThrowingStats categoryId={categoryId} />
         ) : isRugby ? (
           <div className="space-y-6">
             <PrecisionFieldTracker categoryId={categoryId} />
