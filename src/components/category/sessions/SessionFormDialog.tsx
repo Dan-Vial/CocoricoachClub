@@ -553,6 +553,8 @@ export function SessionFormDialog({
           notes: block.notes || undefined,
           block_order: block.block_order,
           bowling_exercise_type: block.bowling_exercise_type || undefined,
+          throwing_implement: block.throwing_implement || undefined,
+          implement_weight_g: block.implement_weight_g ?? null,
         }))
       );
     } else if (!editSession) {
