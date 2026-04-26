@@ -43,6 +43,22 @@ interface PlayerRpeEntry {
   duration: string;
 }
 
+interface ThrowAttempt {
+  tempId: string;
+  distance: string;
+  isValid: boolean;
+}
+
+interface ThrowingBlock {
+  id: string;
+  implement: ImplementType;
+  implement_weight_g: number | null;
+  block_order: number;
+}
+
+// playerId -> blockId -> array of attempts
+type ThrowsState = Record<string, Record<string, ThrowAttempt[]>>;
+
 export function PostSessionRpeDialog({
   open,
   onOpenChange,
@@ -64,6 +80,8 @@ export function PostSessionRpeDialog({
   const [zone3, setZone3] = useState("");
   const [zone4, setZone4] = useState("");
   const [zone5, setZone5] = useState("");
+  const [throwsState, setThrowsState] = useState<ThrowsState>({});
+  const [expandedThrowsPlayer, setExpandedThrowsPlayer] = useState<string | null>(null);
 
   // Fetch players info
   const { data: players } = useQuery({
