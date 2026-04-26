@@ -37,6 +37,8 @@ export interface SessionBlock {
   volume?: string;
   contact_charge?: string;
   bowling_exercise_type?: string;
+  throwing_implement?: string;
+  implement_weight_g?: number | null;
 }
 
 const BOWLING_PRECISION_EXERCISES = [
