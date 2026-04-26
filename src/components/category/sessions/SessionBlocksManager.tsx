@@ -355,8 +355,13 @@ export function SessionBlocksManager({
                             <Select
                               value={block.throwing_implement || ""}
                               onValueChange={(val) => {
-                                updateBlock(index, "throwing_implement", val || undefined);
-                                updateBlock(index, "implement_weight_g", null);
+                                const updated = [...blocks];
+                                updated[index] = {
+                                  ...updated[index],
+                                  throwing_implement: val || undefined,
+                                  implement_weight_g: null,
+                                };
+                                onBlocksChange(updated);
                               }}
                             >
                               <SelectTrigger className="h-9">
