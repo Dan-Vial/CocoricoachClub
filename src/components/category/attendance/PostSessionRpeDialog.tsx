@@ -494,46 +494,153 @@ export function PostSessionRpeDialog({
                   ? rpeValue * parseInt(entry.duration)
                   : null;
 
+                const throwsCount = countPlayerThrows(player.id);
+                const isExpanded = expandedThrowsPlayer === player.id;
+
                 return (
                   <div
                     key={player.id}
                     className={cn(
-                      "flex items-center gap-3 p-3 rounded-lg border",
-                      isValidRpe ? "bg-green-50/50 border-green-200" : "bg-background"
+                      "rounded-lg border",
+                      isValidRpe ? "bg-green-50/50 border-green-200" : "bg-background",
                     )}
                   >
-                    <span className="w-40 font-medium truncate">{player.name}</span>
+                    <div className="flex items-center gap-3 p-3">
+                      <span className="w-32 sm:w-40 font-medium truncate">{player.name}</span>
 
-                    <div className="flex items-center gap-2 flex-1">
-                      <div className="flex items-center gap-1">
-                        <Activity className="h-4 w-4 text-muted-foreground" />
-                        <Input
-                          type="number"
-                          min="0"
-                          max="10"
-                          placeholder="RPE"
-                          className="w-16 h-8"
-                          value={entry.rpe}
-                          onChange={(e) => handleEntryChange(player.id, "rpe", e.target.value)}
-                        />
+                      <div className="flex items-center gap-2 flex-1 flex-wrap">
+                        <div className="flex items-center gap-1">
+                          <Activity className="h-4 w-4 text-muted-foreground" />
+                          <Input
+                            type="number"
+                            min="0"
+                            max="10"
+                            placeholder="RPE"
+                            className="w-16 h-8"
+                            value={entry.rpe}
+                            onChange={(e) => handleEntryChange(player.id, "rpe", e.target.value)}
+                          />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          <Input
+                            type="number"
+                            min="1"
+                            placeholder="min"
+                            className="w-20 h-8"
+                            value={entry.duration}
+                            onChange={(e) => handleEntryChange(player.id, "duration", e.target.value)}
+                          />
+                        </div>
+                        {load !== null && (
+                          <Badge variant="outline">Charge: {load}</Badge>
+                        )}
+                        {hasThrowingBlocks && (
+                          <Button
+                            type="button"
+                            variant={isExpanded ? "secondary" : "outline"}
+                            size="sm"
+                            className="h-8 ml-auto gap-1"
+                            onClick={() =>
+                              setExpandedThrowsPlayer(isExpanded ? null : player.id)
+                            }
+                          >
+                            <Target className="h-3.5 w-3.5" />
+                            Lancers
+                            {throwsCount > 0 && (
+                              <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                                {throwsCount}
+                              </Badge>
+                            )}
+                          </Button>
+                        )}
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <Input
-                          type="number"
-                          min="1"
-                          placeholder="min"
-                          className="w-20 h-8"
-                          value={entry.duration}
-                          onChange={(e) => handleEntryChange(player.id, "duration", e.target.value)}
-                        />
-                      </div>
-                      {load !== null && (
-                        <Badge variant="outline" className="ml-auto">
-                          Charge: {load}
-                        </Badge>
-                      )}
                     </div>
+
+                    {hasThrowingBlocks && isExpanded && (
+                      <div className="border-t bg-muted/30 p-3 space-y-3">
+                        {throwingBlocks?.map((block) => {
+                          const attempts = getAttempts(player.id, block.id);
+                          return (
+                            <div key={block.id} className="space-y-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 text-xs font-medium">
+                                  <Target className="h-3.5 w-3.5 text-primary" />
+                                  <span>{IMPLEMENT_LABELS[block.implement] || block.implement}</span>
+                                  <Badge variant="outline" className="text-[10px] h-4">
+                                    {formatWeight(block.implement_weight_g)}
+                                  </Badge>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs"
+                                  onClick={() => addAttempt(player.id, block.id)}
+                                >
+                                  <Plus className="h-3 w-3 mr-1" /> Essai
+                                </Button>
+                              </div>
+                              {attempts.length === 0 ? (
+                                <p className="text-[11px] text-muted-foreground italic pl-5">
+                                  Aucun essai. Cliquez sur "Essai" pour en ajouter.
+                                </p>
+                              ) : (
+                                <div className="space-y-1.5">
+                                  {attempts.map((a, idx) => (
+                                    <div
+                                      key={a.tempId}
+                                      className="flex items-center gap-2 pl-5"
+                                    >
+                                      <span className="text-[11px] text-muted-foreground w-6">
+                                        #{idx + 1}
+                                      </span>
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        placeholder="dist. (m)"
+                                        className="h-7 w-24 text-xs"
+                                        value={a.distance}
+                                        onChange={(e) =>
+                                          updateAttempt(player.id, block.id, a.tempId, {
+                                            distance: e.target.value,
+                                          })
+                                        }
+                                      />
+                                      <label className="flex items-center gap-1 text-[11px] cursor-pointer">
+                                        <Checkbox
+                                          checked={a.isValid}
+                                          onCheckedChange={(c) =>
+                                            updateAttempt(player.id, block.id, a.tempId, {
+                                              isValid: !!c,
+                                            })
+                                          }
+                                        />
+                                        <span className={cn(!a.isValid && "text-rose-600")}>
+                                          {a.isValid ? "Valide" : "Mordu/nul"}
+                                        </span>
+                                      </label>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 ml-auto text-muted-foreground hover:text-rose-600"
+                                        onClick={() =>
+                                          removeAttempt(player.id, block.id, a.tempId)
+                                        }
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })}
