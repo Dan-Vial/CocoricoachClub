@@ -479,14 +479,53 @@ function ThrowingAttemptDialog({ categoryId, players, blocks, onClose }: DialogP
 
       const userRes = await supabase.auth.getUser();
       const userId = userRes.data.user?.id;
+      if (!userId) throw new Error("Vous devez être connecté");
+
+      // Resolve session + block
+      let resolvedSessionId: string | null = null;
+      let resolvedBlockId: string | null = null;
+
+      if (blockId && blockId !== "new") {
+        const b = blocks.find((x) => x.id === blockId);
+        resolvedSessionId = b?.training_session_id || null;
+        resolvedBlockId = blockId;
+      }
+
+      // If no block selected, create a quick "lancers" session + block on the fly
+      if (!resolvedSessionId) {
+        const { data: newSession, error: sessErr } = await supabase
+          .from("training_sessions")
+          .insert({
+            category_id: categoryId,
+            session_date: sessionDate,
+            training_type: "athle_lancers_technique" as any,
+            notes: "[Séance lancers — saisie staff]",
+          })
+          .select("id")
+          .single();
+        if (sessErr) throw sessErr;
+        resolvedSessionId = newSession.id;
+
+        const { data: newBlock, error: blockErr } = await supabase
+          .from("training_session_blocks")
+          .insert({
+            training_session_id: resolvedSessionId,
+            block_order: 0,
+            training_type: "athle_lancers_technique" as any,
+            throwing_implement: implement,
+            implement_weight_g: weightG ? Number(weightG) : null,
+          })
+          .select("id")
+          .single();
+        if (blockErr) throw blockErr;
+        resolvedBlockId = newBlock.id;
+      }
 
       const rows = validAttempts.map((a, idx) => ({
         category_id: categoryId,
         player_id: playerId,
-        training_session_id: blockId && blockId !== "new"
-          ? blocks.find((b) => b.id === blockId)?.training_session_id
-          : null,
-        block_id: blockId && blockId !== "new" ? blockId : null,
+        training_session_id: resolvedSessionId!,
+        block_id: resolvedBlockId,
         session_date: sessionDate,
         implement,
         implement_weight_g: weightG ? Number(weightG) : null,
@@ -496,17 +535,12 @@ function ThrowingAttemptDialog({ categoryId, players, blocks, onClose }: DialogP
         created_by: userId,
       }));
 
-      // If no block selected, we need a session id — fallback: create a quick session? Simplification: require block.
-      const rowsToInsert = rows.filter((r) => r.training_session_id);
-      if (rowsToInsert.length === 0) {
-        throw new Error("Veuillez sélectionner une séance avec un bloc de lancers");
-      }
-
-      const { error } = await supabase.from("athletics_throwing_attempts").insert(rowsToInsert as any);
+      const { error } = await supabase.from("athletics_throwing_attempts").insert(rows as any);
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["throwing-attempts", categoryId] });
+      qc.invalidateQueries({ queryKey: ["throwing-blocks", categoryId] });
       toast.success("Essais enregistrés");
       onClose();
     },
