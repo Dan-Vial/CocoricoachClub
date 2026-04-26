@@ -99,6 +99,30 @@ export function PostSessionRpeDialog({
     enabled: open && presentPlayerIds.length > 0,
   });
 
+  // Fetch throwing blocks for this session
+  const { data: throwingBlocks } = useQuery({
+    queryKey: ["throwing-blocks", session?.id],
+    queryFn: async (): Promise<ThrowingBlock[]> => {
+      if (!session?.id) return [];
+      const { data, error } = await supabase
+        .from("training_session_blocks")
+        .select("id, throwing_implement, implement_weight_g, block_order")
+        .eq("training_session_id", session.id)
+        .not("throwing_implement", "is", null)
+        .order("block_order");
+      if (error) throw error;
+      return (data || []).map((b: any) => ({
+        id: b.id,
+        implement: b.throwing_implement as ImplementType,
+        implement_weight_g: b.implement_weight_g,
+        block_order: b.block_order,
+      }));
+    },
+    enabled: open && !!session?.id,
+  });
+
+  const hasThrowingBlocks = (throwingBlocks?.length ?? 0) > 0;
+
   // Calculate duration from session times
   useEffect(() => {
     if (session?.session_start_time && session?.session_end_time) {
