@@ -689,6 +689,111 @@ export type Database = {
           },
         ]
       }
+      athletics_sprint_attempts: {
+        Row: {
+          attempt_number: number
+          block_id: string | null
+          category_id: string
+          created_at: string
+          created_by: string | null
+          distance_m: number
+          exercise_type: string
+          id: string
+          is_valid: boolean
+          load_kg: number | null
+          load_type: string | null
+          notes: string | null
+          player_id: string
+          session_date: string
+          start_type: string | null
+          time_seconds: number | null
+          training_session_id: string
+          updated_at: string
+          vmax_ms: number | null
+          wind_ms: number | null
+        }
+        Insert: {
+          attempt_number?: number
+          block_id?: string | null
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          distance_m: number
+          exercise_type: string
+          id?: string
+          is_valid?: boolean
+          load_kg?: number | null
+          load_type?: string | null
+          notes?: string | null
+          player_id: string
+          session_date: string
+          start_type?: string | null
+          time_seconds?: number | null
+          training_session_id: string
+          updated_at?: string
+          vmax_ms?: number | null
+          wind_ms?: number | null
+        }
+        Update: {
+          attempt_number?: number
+          block_id?: string | null
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          distance_m?: number
+          exercise_type?: string
+          id?: string
+          is_valid?: boolean
+          load_kg?: number | null
+          load_type?: string | null
+          notes?: string | null
+          player_id?: string
+          session_date?: string
+          start_type?: string | null
+          time_seconds?: number | null
+          training_session_id?: string
+          updated_at?: string
+          vmax_ms?: number | null
+          wind_ms?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athletics_sprint_attempts_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "training_session_blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athletics_sprint_attempts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athletics_sprint_attempts_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athletics_sprint_attempts_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "athletics_sprint_attempts_training_session_id_fkey"
+            columns: ["training_session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       athletics_throwing_attempts: {
         Row: {
           attempt_number: number

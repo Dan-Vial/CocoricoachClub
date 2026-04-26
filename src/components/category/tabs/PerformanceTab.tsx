@@ -8,6 +8,7 @@ import { TennisTrainingStats } from "@/components/tennis/TennisTrainingStats";
 import { PrecisionTrainingStats } from "@/components/training/PrecisionTrainingStats";
 import { PrecisionFieldTracker } from "@/components/rugby/PrecisionFieldTracker";
 import { AthleticsThrowingStats } from "@/components/athletics/AthleticsThrowingStats";
+import { AthleticsSprintStats } from "@/components/athletics/AthleticsSprintStats";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
@@ -109,7 +110,10 @@ export function PerformanceTab({ categoryId, sportType }: PerformanceTabProps) {
         ) : isTennis ? (
           <TennisTrainingStats categoryId={categoryId} />
         ) : isAthletics ? (
-          <AthleticsThrowingStats categoryId={categoryId} />
+          <div className="space-y-6">
+            <AthleticsSprintStats categoryId={categoryId} />
+            <AthleticsThrowingStats categoryId={categoryId} />
+          </div>
         ) : isRugby ? (
           <div className="space-y-6">
             <PrecisionFieldTracker categoryId={categoryId} />
