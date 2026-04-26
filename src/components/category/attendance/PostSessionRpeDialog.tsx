@@ -16,9 +16,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { format, differenceInMinutes, parse } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Activity, Clock, Loader2, Users, ChevronRight, Heart } from "lucide-react";
+import { Activity, Clock, Loader2, Users, ChevronRight, Heart, Target, Plus, Trash2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { IMPLEMENT_LABELS, type ImplementType } from "@/lib/constants/athleticsImplements";
 
 interface PostSessionRpeDialogProps {
   open: boolean;
