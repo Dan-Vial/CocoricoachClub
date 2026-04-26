@@ -372,11 +372,6 @@ export function SessionBlocksManager({
                           <div className="space-y-1">
                             <Label className="text-xs text-muted-foreground">
                               Poids du matériel
-                              {ageCategory && genderFilter !== "ALL" && (
-                                <span className="ml-1 text-muted-foreground/70">
-                                  ({ageCategory} {genderFilter})
-                                </span>
-                              )}
                             </Label>
                             <Select
                               value={block.implement_weight_g != null ? String(block.implement_weight_g) : ""}
@@ -386,18 +381,19 @@ export function SessionBlocksManager({
                               disabled={!block.throwing_implement}
                             >
                               <SelectTrigger className="h-9">
-                                <SelectValue placeholder={block.throwing_implement ? "Sélectionner..." : "Choisir l'engin"} />
+                                <SelectValue placeholder={block.throwing_implement ? "Sélectionner le poids..." : "Choisir d'abord l'engin"} />
                               </SelectTrigger>
                               <SelectContent>
                                 {block.throwing_implement &&
                                   getWeightOptions(
                                     block.throwing_implement as ImplementType,
-                                    ageCategory,
-                                    genderFilter,
+                                    null,
+                                    "ALL",
                                   ).map((w) => (
                                     <SelectItem
                                       key={`${w.weight_g}-${w.gender}-${w.age}`}
-                                      value={String(w.weight_g)}
+                                      value={`${w.weight_g}__${w.age}_${w.gender}`}
+                                      textValue={w.label}
                                     >
                                       {w.label}
                                     </SelectItem>
