@@ -110,7 +110,10 @@ export function PerformanceTab({ categoryId, sportType }: PerformanceTabProps) {
         ) : isTennis ? (
           <TennisTrainingStats categoryId={categoryId} />
         ) : isAthletics ? (
-          <AthleticsThrowingStats categoryId={categoryId} />
+          <div className="space-y-6">
+            <AthleticsSprintStats categoryId={categoryId} />
+            <AthleticsThrowingStats categoryId={categoryId} />
+          </div>
         ) : isRugby ? (
           <div className="space-y-6">
             <PrecisionFieldTracker categoryId={categoryId} />
