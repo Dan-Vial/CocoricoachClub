@@ -8,6 +8,7 @@ import { TennisTrainingStats } from "@/components/tennis/TennisTrainingStats";
 import { PrecisionTrainingStats } from "@/components/training/PrecisionTrainingStats";
 import { PrecisionFieldTracker } from "@/components/rugby/PrecisionFieldTracker";
 import { AthleticsThrowingStats } from "@/components/athletics/AthleticsThrowingStats";
+import { AthleticsSprintStats } from "@/components/athletics/AthleticsSprintStats";
 import { useViewerModeContext } from "@/contexts/ViewerModeContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ColoredSubTabsList, ColoredSubTabsTrigger } from "@/components/ui/colored-subtabs";
