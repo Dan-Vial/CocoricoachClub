@@ -569,17 +569,15 @@ function ThrowingAttemptDialog({ categoryId, players, blocks, onClose }: DialogP
             </Select>
           </div>
           <div>
-            <Label>Séance / bloc de lancers *</Label>
-            <Select value={blockId} onValueChange={onSelectBlock}>
+            <Label>Séance / bloc de lancers</Label>
+            <Select value={blockId || "new"} onValueChange={onSelectBlock}>
               <SelectTrigger>
-                <SelectValue placeholder="Choisir un bloc..." />
+                <SelectValue placeholder="Nouvelle séance rapide" />
               </SelectTrigger>
               <SelectContent>
-                {blocks.length === 0 && (
-                  <div className="text-xs text-muted-foreground p-2">
-                    Aucun bloc de lancers configuré
-                  </div>
-                )}
+                <SelectItem value="new">
+                  ➕ Nouvelle séance de lancers (rapide)
+                </SelectItem>
                 {blocks.map((b: any) => (
                   <SelectItem key={b.id} value={b.id}>
                     {format(new Date(b.training_sessions?.session_date), "dd/MM/yy")} —{" "}
@@ -588,6 +586,9 @@ function ThrowingAttemptDialog({ categoryId, players, blocks, onClose }: DialogP
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Laissez sur "Nouvelle séance" pour créer une session rapide à la date choisie.
+            </p>
           </div>
         </div>
 
