@@ -732,6 +732,9 @@ export function SessionFormDialog({
             bowling_exercise_type: block.bowling_exercise_type || null,
             throwing_implement: block.throwing_implement || null,
             implement_weight_g: block.implement_weight_g ?? null,
+          }));
+
+        const validExercisesForAthlete = exercises
           .filter(e => e.exercise_name.trim())
           .map((ex, idx) => ({
             exercise_name: ex.exercise_name,
