@@ -372,11 +372,6 @@ export function SessionBlocksManager({
                           <div className="space-y-1">
                             <Label className="text-xs text-muted-foreground">
                               Poids du matériel
-                              {ageCategory && genderFilter !== "ALL" && (
-                                <span className="ml-1 text-muted-foreground/70">
-                                  ({ageCategory} {genderFilter})
-                                </span>
-                              )}
                             </Label>
                             <Select
                               value={block.implement_weight_g != null ? String(block.implement_weight_g) : ""}
@@ -386,22 +381,32 @@ export function SessionBlocksManager({
                               disabled={!block.throwing_implement}
                             >
                               <SelectTrigger className="h-9">
-                                <SelectValue placeholder={block.throwing_implement ? "Sélectionner..." : "Choisir l'engin"} />
+                                <SelectValue placeholder={block.throwing_implement ? "Sélectionner le poids..." : "Choisir d'abord l'engin"} />
                               </SelectTrigger>
                               <SelectContent>
                                 {block.throwing_implement &&
-                                  getWeightOptions(
-                                    block.throwing_implement as ImplementType,
-                                    ageCategory,
-                                    genderFilter,
-                                  ).map((w) => (
-                                    <SelectItem
-                                      key={`${w.weight_g}-${w.gender}-${w.age}`}
-                                      value={String(w.weight_g)}
-                                    >
-                                      {w.label}
-                                    </SelectItem>
-                                  ))}
+                                  Object.entries(
+                                    getWeightOptions(
+                                      block.throwing_implement as ImplementType,
+                                      null,
+                                      "ALL",
+                                    ).reduce<Record<number, string[]>>((acc, w) => {
+                                      const cat = `${w.age.charAt(0).toUpperCase() + w.age.slice(1)} ${w.gender}`;
+                                      if (!acc[w.weight_g]) acc[w.weight_g] = [];
+                                      if (!acc[w.weight_g].includes(cat)) acc[w.weight_g].push(cat);
+                                      return acc;
+                                    }, {}),
+                                  )
+                                    .sort(([a], [b]) => parseInt(a) - parseInt(b))
+                                    .map(([weight, cats]) => {
+                                      const wg = parseInt(weight);
+                                      const kg = wg >= 1000 ? `${(wg / 1000).toFixed(wg % 1000 === 0 ? 0 : 2)} kg` : `${wg} g`;
+                                      return (
+                                        <SelectItem key={weight} value={weight}>
+                                          {kg} — {cats.join(", ")}
+                                        </SelectItem>
+                                      );
+                                    })}
                               </SelectContent>
                             </Select>
                           </div>
