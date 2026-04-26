@@ -346,6 +346,60 @@ export function PostSessionRpeDialog({
     });
   };
 
+  const getAttempts = (playerId: string, blockId: string): ThrowAttempt[] => {
+    return throwsState[playerId]?.[blockId] || [];
+  };
+
+  const setAttempts = (playerId: string, blockId: string, attempts: ThrowAttempt[]) => {
+    setThrowsState((prev) => ({
+      ...prev,
+      [playerId]: {
+        ...(prev[playerId] || {}),
+        [blockId]: attempts,
+      },
+    }));
+  };
+
+  const addAttempt = (playerId: string, blockId: string) => {
+    const current = getAttempts(playerId, blockId);
+    setAttempts(playerId, blockId, [
+      ...current,
+      { tempId: `${Date.now()}-${Math.random()}`, distance: "", isValid: true },
+    ]);
+  };
+
+  const updateAttempt = (
+    playerId: string,
+    blockId: string,
+    tempId: string,
+    patch: Partial<ThrowAttempt>,
+  ) => {
+    const current = getAttempts(playerId, blockId);
+    setAttempts(
+      playerId,
+      blockId,
+      current.map((a) => (a.tempId === tempId ? { ...a, ...patch } : a)),
+    );
+  };
+
+  const removeAttempt = (playerId: string, blockId: string, tempId: string) => {
+    const current = getAttempts(playerId, blockId);
+    setAttempts(playerId, blockId, current.filter((a) => a.tempId !== tempId));
+  };
+
+  const formatWeight = (g: number | null | undefined) => {
+    if (!g) return "—";
+    return g >= 1000 ? `${(g / 1000).toFixed(g % 1000 === 0 ? 0 : 2)} kg` : `${g} g`;
+  };
+
+  const countPlayerThrows = (playerId: string) => {
+    const blocksMap = throwsState[playerId] || {};
+    return Object.values(blocksMap).reduce(
+      (sum, arr) => sum + arr.filter((a) => a.distance).length,
+      0,
+    );
+  };
+
   const validCount = Object.values(entries).filter(
     (e) => e.rpe && parseInt(e.rpe) >= 0 && parseInt(e.rpe) <= 10
   ).length;
