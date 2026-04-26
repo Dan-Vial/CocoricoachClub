@@ -347,6 +347,67 @@ export function SessionBlocksManager({
                         </div>
                       )}
 
+                      {/* Athlétisme - Lancers : engin + poids du matériel */}
+                      {isThrowingBlock(block.training_type) && (
+                        <div className="grid grid-cols-2 gap-3 rounded-md border border-dashed border-primary/30 bg-primary/5 p-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">Engin</Label>
+                            <Select
+                              value={block.throwing_implement || ""}
+                              onValueChange={(val) => {
+                                updateBlock(index, "throwing_implement", val || undefined);
+                                updateBlock(index, "implement_weight_g", null);
+                              }}
+                            >
+                              <SelectTrigger className="h-9">
+                                <SelectValue placeholder="Javelot, poids..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {(Object.keys(IMPLEMENT_LABELS) as ImplementType[]).map((k) => (
+                                  <SelectItem key={k} value={k}>{IMPLEMENT_LABELS[k]}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">
+                              Poids du matériel
+                              {ageCategory && genderFilter !== "ALL" && (
+                                <span className="ml-1 text-muted-foreground/70">
+                                  ({ageCategory} {genderFilter})
+                                </span>
+                              )}
+                            </Label>
+                            <Select
+                              value={block.implement_weight_g != null ? String(block.implement_weight_g) : ""}
+                              onValueChange={(val) =>
+                                updateBlock(index, "implement_weight_g", val ? parseInt(val) : null)
+                              }
+                              disabled={!block.throwing_implement}
+                            >
+                              <SelectTrigger className="h-9">
+                                <SelectValue placeholder={block.throwing_implement ? "Sélectionner..." : "Choisir l'engin"} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {block.throwing_implement &&
+                                  getWeightOptions(
+                                    block.throwing_implement as ImplementType,
+                                    ageCategory,
+                                    genderFilter,
+                                  ).map((w) => (
+                                    <SelectItem
+                                      key={`${w.weight_g}-${w.gender}-${w.age}`}
+                                      value={String(w.weight_g)}
+                                    >
+                                      {w.label}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Enrichment fields */}
                       <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">Objectif principal</Label>
