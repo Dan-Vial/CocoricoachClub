@@ -90,6 +90,23 @@ export function SessionBlocksManager({
 }: SessionBlocksManagerProps) {
   const isRugby = isRugbyType(sportType || "");
 
+  // Charger nom + sexe de la catégorie pour filtrer les poids du matériel de lancer
+  const { data: categoryInfo } = useQuery({
+    queryKey: ["category-name-gender-blocks", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("name, gender")
+        .eq("id", categoryId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!categoryId,
+  });
+  const ageCategory = detectAgeCategory(categoryInfo?.name);
+  const genderFilter = detectGender(categoryInfo?.gender);
+
   const addBlock = () => {
     const lastBlock = blocks[blocks.length - 1];
     const newStartTime = lastBlock?.end_time || sessionStartTime || undefined;
