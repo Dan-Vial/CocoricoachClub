@@ -553,6 +553,8 @@ export function SessionFormDialog({
           notes: block.notes || undefined,
           block_order: block.block_order,
           bowling_exercise_type: block.bowling_exercise_type || undefined,
+          throwing_implement: block.throwing_implement || undefined,
+          implement_weight_g: block.implement_weight_g ?? null,
         }))
       );
     } else if (!editSession) {
@@ -728,6 +730,8 @@ export function SessionFormDialog({
             volume: block.volume || null,
             contact_charge: block.contact_charge || null,
             bowling_exercise_type: block.bowling_exercise_type || null,
+            throwing_implement: block.throwing_implement || null,
+            implement_weight_g: block.implement_weight_g ?? null,
           }));
 
         const validExercisesForAthlete = exercises
@@ -905,6 +909,8 @@ export function SessionFormDialog({
             volume: block.volume || null,
             contact_charge: block.contact_charge || null,
             bowling_exercise_type: block.bowling_exercise_type || null,
+            throwing_implement: block.throwing_implement || null,
+            implement_weight_g: block.implement_weight_g ?? null,
           }));
 
         if (blockRecords.length > 0) {

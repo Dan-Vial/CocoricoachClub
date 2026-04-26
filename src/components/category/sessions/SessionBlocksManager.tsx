@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +24,14 @@ import {
   getObjectiveLabel,
   getVolumeLabel,
 } from "@/lib/constants/sessionBlockOptions";
+import {
+  IMPLEMENT_LABELS,
+  ImplementType,
+  isThrowingBlock,
+  detectAgeCategory,
+  detectGender,
+  getWeightOptions,
+} from "@/lib/constants/athleticsImplements";
 
 export interface SessionBlock {
   id?: string;
@@ -37,6 +47,8 @@ export interface SessionBlock {
   volume?: string;
   contact_charge?: string;
   bowling_exercise_type?: string;
+  throwing_implement?: string;
+  implement_weight_g?: number | null;
 }
 
 const BOWLING_PRECISION_EXERCISES = [
@@ -77,6 +89,23 @@ export function SessionBlocksManager({
   sessionEndTime,
 }: SessionBlocksManagerProps) {
   const isRugby = isRugbyType(sportType || "");
+
+  // Charger nom + sexe de la catégorie pour filtrer les poids du matériel de lancer
+  const { data: categoryInfo } = useQuery({
+    queryKey: ["category-name-gender-blocks", categoryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("name, gender")
+        .eq("id", categoryId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!categoryId,
+  });
+  const ageCategory = detectAgeCategory(categoryInfo?.name);
+  const genderFilter = detectGender(categoryInfo?.gender);
 
   const addBlock = () => {
     const lastBlock = blocks[blocks.length - 1];
@@ -315,6 +344,67 @@ export function SessionBlocksManager({
                               ))}
                             </SelectContent>
                           </Select>
+                        </div>
+                      )}
+
+                      {/* Athlétisme - Lancers : engin + poids du matériel */}
+                      {isThrowingBlock(block.training_type) && (
+                        <div className="grid grid-cols-2 gap-3 rounded-md border border-dashed border-primary/30 bg-primary/5 p-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">Engin</Label>
+                            <Select
+                              value={block.throwing_implement || ""}
+                              onValueChange={(val) => {
+                                updateBlock(index, "throwing_implement", val || undefined);
+                                updateBlock(index, "implement_weight_g", null);
+                              }}
+                            >
+                              <SelectTrigger className="h-9">
+                                <SelectValue placeholder="Javelot, poids..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {(Object.keys(IMPLEMENT_LABELS) as ImplementType[]).map((k) => (
+                                  <SelectItem key={k} value={k}>{IMPLEMENT_LABELS[k]}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">
+                              Poids du matériel
+                              {ageCategory && genderFilter !== "ALL" && (
+                                <span className="ml-1 text-muted-foreground/70">
+                                  ({ageCategory} {genderFilter})
+                                </span>
+                              )}
+                            </Label>
+                            <Select
+                              value={block.implement_weight_g != null ? String(block.implement_weight_g) : ""}
+                              onValueChange={(val) =>
+                                updateBlock(index, "implement_weight_g", val ? parseInt(val) : null)
+                              }
+                              disabled={!block.throwing_implement}
+                            >
+                              <SelectTrigger className="h-9">
+                                <SelectValue placeholder={block.throwing_implement ? "Sélectionner..." : "Choisir l'engin"} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {block.throwing_implement &&
+                                  getWeightOptions(
+                                    block.throwing_implement as ImplementType,
+                                    ageCategory,
+                                    genderFilter,
+                                  ).map((w) => (
+                                    <SelectItem
+                                      key={`${w.weight_g}-${w.gender}-${w.age}`}
+                                      value={String(w.weight_g)}
+                                    >
+                                      {w.label}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       )}
 

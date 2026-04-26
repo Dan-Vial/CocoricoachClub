@@ -10707,12 +10707,14 @@ export type Database = {
           created_at: string
           end_time: string | null
           id: string
+          implement_weight_g: number | null
           intensity: number | null
           notes: string | null
           objective: string | null
           session_type: string | null
           start_time: string | null
           target_intensity: string | null
+          throwing_implement: string | null
           training_session_id: string
           training_type: string
           volume: string | null
@@ -10724,12 +10726,14 @@ export type Database = {
           created_at?: string
           end_time?: string | null
           id?: string
+          implement_weight_g?: number | null
           intensity?: number | null
           notes?: string | null
           objective?: string | null
           session_type?: string | null
           start_time?: string | null
           target_intensity?: string | null
+          throwing_implement?: string | null
           training_session_id: string
           training_type: string
           volume?: string | null
@@ -10741,12 +10745,14 @@ export type Database = {
           created_at?: string
           end_time?: string | null
           id?: string
+          implement_weight_g?: number | null
           intensity?: number | null
           notes?: string | null
           objective?: string | null
           session_type?: string | null
           start_time?: string | null
           target_intensity?: string | null
+          throwing_implement?: string | null
           training_session_id?: string
           training_type?: string
           volume?: string | null
