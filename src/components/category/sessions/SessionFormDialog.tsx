@@ -730,9 +730,8 @@ export function SessionFormDialog({
             volume: block.volume || null,
             contact_charge: block.contact_charge || null,
             bowling_exercise_type: block.bowling_exercise_type || null,
-          }));
-
-        const validExercisesForAthlete = exercises
+            throwing_implement: block.throwing_implement || null,
+            implement_weight_g: block.implement_weight_g ?? null,
           .filter(e => e.exercise_name.trim())
           .map((ex, idx) => ({
             exercise_name: ex.exercise_name,
