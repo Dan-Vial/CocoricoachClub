@@ -710,6 +710,17 @@ export const TRAINING_TYPE_LABELS: Record<string, string> = {
   basketball_defense: "Travail Défensif",
   basketball_pick_roll: "Pick & Roll",
   basketball_transition: "Transition",
+  // Basketball 3x3 specific (FIBA)
+  basket3x3_1c1: "1c1 / Isolation",
+  basket3x3_2c2: "2c2 / Pick & Roll court",
+  basket3x3_check_ball: "Check-ball / Remise arc",
+  basket3x3_ressortie_arc: "Ressortie arc + tir",
+  basket3x3_tir_apres_check: "Tir après check-ball",
+  basket3x3_rebond_ressortie: "Rebond off. + ressortie",
+  basket3x3_endurance_lactique: "Endurance lactique 10 min",
+  basket3x3_explosivite: "Explosivité / Vmax",
+  basket3x3_recup_inter_match: "Récup. inter-match",
+  basket3x3_vps_simulation: "Simulation match (VPS)",
   // Aviron specific
   aviron_ergo: "Ergomètre (Indoor)",
   aviron_eau: "Sur l'eau (Outdoor)",
