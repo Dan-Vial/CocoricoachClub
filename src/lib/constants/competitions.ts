@@ -417,6 +417,52 @@ export const BASKETBALL_COMPETITIONS: CompetitionCategory[] = [
   },
 ];
 
+// Basketball 3x3 competitions (FIBA 3x3 ruleset - format court 10 min ou 21 pts)
+export const BASKETBALL_3X3_COMPETITIONS: CompetitionCategory[] = [
+  {
+    label: "Compétitions FIBA 3x3 internationales",
+    options: [
+      "FIBA 3x3 World Cup",
+      "FIBA 3x3 World Tour",
+      "FIBA 3x3 Europe Cup",
+      "FIBA 3x3 Challenger",
+      "FIBA 3x3 Olympic Qualifying Tournament",
+      "Jeux Olympiques 3x3",
+    ],
+  },
+  {
+    label: "Compétitions nationales 3x3",
+    options: [
+      "Championnat de France 3x3",
+      "Open de France 3x3",
+      "Open Plus 3x3",
+      "Open Start 3x3",
+      "Superleague 3x3",
+    ],
+  },
+  {
+    label: "Compétitions Jeunes 3x3",
+    options: [
+      "Championnat U18 3x3",
+      "Championnat U16 3x3",
+      "Championnat U14 3x3",
+      "Tournoi scolaire 3x3",
+      "UNSS 3x3",
+    ],
+  },
+  {
+    label: "Tournois & Open Tour",
+    options: [
+      "Open Tour FFBB",
+      "Tournoi local 3x3",
+      "Tournoi régional 3x3",
+      "Streetball / Playground",
+      "Tournoi entreprise",
+      "Match amical 3x3",
+    ],
+  },
+];
+
 // Judo competitions
 export const JUDO_COMPETITIONS: CompetitionCategory[] = [
   {
