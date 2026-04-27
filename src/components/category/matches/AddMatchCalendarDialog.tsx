@@ -151,8 +151,14 @@ export function AddMatchCalendarDialog({
         event_type: isAviron ? eventType : (isIndividual ? "individual" : "team"),
         age_category: ageCategory || null,
         distance_meters: distanceMeters || null,
-        // Tennis/Padel specific
-        match_format: isPadel ? "double" : (isTennis ? matchFormat : null),
+        // Tennis/Padel/3x3 specific
+        match_format: isPadel
+          ? "double"
+          : isTennis
+          ? matchFormat
+          : is3x3
+          ? format3x3
+          : null,
       } as any);
       if (error) throw error;
     },
