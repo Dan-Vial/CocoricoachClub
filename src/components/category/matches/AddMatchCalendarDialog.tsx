@@ -248,6 +248,51 @@ export function AddMatchCalendarDialog({
             </div>
           )}
 
+          {/* Basketball 3x3 specific: Match format (FIBA ruleset) */}
+          {is3x3 && (
+            <div className="space-y-2 rounded-lg border border-orange-200 bg-orange-50/50 p-3 dark:border-orange-900/50 dark:bg-orange-950/20">
+              <Label className="flex items-center gap-2 text-orange-900 dark:text-orange-200">
+                Format de match 3x3 *
+              </Label>
+              <div className="flex flex-col gap-2">
+                <label className="flex items-start gap-2 cursor-pointer rounded-md p-2 hover:bg-orange-100/50 dark:hover:bg-orange-900/20">
+                  <input
+                    type="radio"
+                    name="format3x3"
+                    value="time_10min"
+                    checked={format3x3 === "time_10min"}
+                    onChange={(e) => setFormat3x3(e.target.value)}
+                    className="mt-0.5 w-4 h-4"
+                  />
+                  <div>
+                    <span className="font-medium">Match au temps (10 min)</span>
+                    <p className="text-xs text-muted-foreground">1 mi-temps de 10 minutes (chrono arrêté). L'équipe avec le plus de points gagne.</p>
+                  </div>
+                </label>
+                <label className="flex items-start gap-2 cursor-pointer rounded-md p-2 hover:bg-orange-100/50 dark:hover:bg-orange-900/20">
+                  <input
+                    type="radio"
+                    name="format3x3"
+                    value="first_to_21"
+                    checked={format3x3 === "first_to_21"}
+                    onChange={(e) => setFormat3x3(e.target.value)}
+                    className="mt-0.5 w-4 h-4"
+                  />
+                  <div>
+                    <span className="font-medium">Premier à 21 points</span>
+                    <p className="text-xs text-muted-foreground">L'équipe qui atteint 21 points en premier gagne (avant la fin des 10 min).</p>
+                  </div>
+                </label>
+              </div>
+              <div className="flex items-start gap-2 mt-2 text-xs text-muted-foreground border-t border-orange-200/60 dark:border-orange-900/40 pt-2">
+                <Info className="h-3.5 w-3.5 mt-0.5 shrink-0 text-orange-600 dark:text-orange-400" />
+                <span>
+                  <strong>Règles FIBA 3x3 :</strong> 1 pt à l'intérieur de l'arc, 2 pts derrière l'arc · Possession 12s · Check-ball après chaque panier encaissé · Bonus à 7 fautes · Prolongation : 1ère équipe à +2 pts.
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* Aviron specific: Event type (Individual/Team) */}
           {isAviron && (
             <div className="space-y-2">
