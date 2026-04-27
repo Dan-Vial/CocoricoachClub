@@ -887,6 +887,11 @@ function getTriathlonStatsForDiscipline(discipline?: string): StatField[] {
 
 export function getStatsForSport(sportType: SportType | string, isGoalkeeper: boolean = false, discipline?: string): StatField[] {
   const baseSport = getBaseSport(sportType);
+  // Basketball 3x3 = ruleset FIBA distinct (1pt / 2pts au lieu de 2pts / 3pts)
+  const sportLower = String(sportType).toLowerCase();
+  if (sportLower === "basketball_3x3") {
+    return BASKETBALL_3X3_STATS;
+  }
   
   switch (baseSport) {
     case "rugby":
