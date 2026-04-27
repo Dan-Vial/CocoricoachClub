@@ -143,6 +143,18 @@ export const ALL_TRAINING_TYPES: TrainingTypeOption[] = [
   { value: "basketball_transition", label: "Transition", hasExercises: false, forSports: ["basketball"], category: "basketball" },
   { value: "basketball_tactique", label: "Tactique", hasExercises: false, forSports: ["basketball"], category: "basketball" },
   
+  // Basketball 3x3 specific (FIBA ruleset - format court 10 min, possession 12s, check-ball)
+  { value: "basket3x3_1c1", label: "1c1 / Isolation", hasExercises: false, forSports: ["basketball_3x3"], category: "basketball" },
+  { value: "basket3x3_2c2", label: "2c2 / Pick & Roll court", hasExercises: false, forSports: ["basketball_3x3"], category: "basketball" },
+  { value: "basket3x3_check_ball", label: "Check-ball / Remise en jeu arc", hasExercises: false, forSports: ["basketball_3x3"], category: "basketball" },
+  { value: "basket3x3_ressortie_arc", label: "Ressortie arc + tir", hasExercises: false, forSports: ["basketball_3x3"], category: "basketball" },
+  { value: "basket3x3_tir_apres_check", label: "Tir après check-ball", hasExercises: false, forSports: ["basketball_3x3"], category: "basketball" },
+  { value: "basket3x3_rebond_ressortie", label: "Rebond offensif + ressortie", hasExercises: false, forSports: ["basketball_3x3"], category: "basketball" },
+  { value: "basket3x3_endurance_lactique", label: "Endurance lactique 10 min", hasExercises: false, forSports: ["basketball_3x3"], category: "basketball" },
+  { value: "basket3x3_explosivite", label: "Explosivité / Vmax", hasExercises: false, forSports: ["basketball_3x3"], category: "basketball" },
+  { value: "basket3x3_recup_inter_match", label: "Récup. inter-match (tournoi)", hasExercises: false, forSports: ["basketball_3x3"], category: "basketball" },
+  { value: "basket3x3_vps_simulation", label: "Simulation match (VPS)", hasExercises: false, forSports: ["basketball_3x3"], category: "basketball" },
+  
   // Aviron specific (with category)
   { value: "aviron_ergo", label: "Ergomètre (Indoor)", hasExercises: false, forSports: ["aviron"], category: "aviron" },
   { value: "aviron_eau", label: "Sur l'eau (Outdoor)", hasExercises: false, forSports: ["aviron"], category: "aviron" },
