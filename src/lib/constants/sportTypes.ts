@@ -689,6 +689,12 @@ export const getMainSportFromType = (type: string): MainSportCategory => {
   return "rugby"; // default
 };
 
+// Helper to check if a category is Basketball 3x3 (FIBA 3x3 ruleset)
+export const isBasket3x3 = (type: string | undefined | null): boolean => {
+  if (!type) return false;
+  return type.toLowerCase() === "basketball_3x3";
+};
+
 export const isIndividualSport = (type: string): boolean => {
   const individualPrefixes = [
     "judo", "bowling", "aviron", "athletisme", "crossfit",
