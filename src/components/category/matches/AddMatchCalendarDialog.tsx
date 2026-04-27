@@ -124,6 +124,9 @@ export function AddMatchCalendarDialog({
   // Tennis specific fields
   const [matchFormat, setMatchFormat] = useState<string>("simple");
   
+  // Basketball 3x3 specific format (FIBA): 'time_10min' = match 10 min OR 'first_to_21' = 1ère à 21 pts
+  const [format3x3, setFormat3x3] = useState<string>("time_10min");
+  
   const queryClient = useQueryClient();
 
   const COMPETITION_STAGES = getCompetitionStagesBySport(sportType || "XV");
