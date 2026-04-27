@@ -530,6 +530,17 @@ export const TRAINING_TYPE_COLORS: Record<string, string> = {
   basketball_pick_roll: "bg-purple-500",
   basketball_transition: "bg-amber-500",
   basketball_tactique: "bg-blue-600",
+  // Basketball 3x3 specific (FIBA)
+  basket3x3_1c1: "bg-orange-700",
+  basket3x3_2c2: "bg-orange-600",
+  basket3x3_check_ball: "bg-amber-600",
+  basket3x3_ressortie_arc: "bg-yellow-600",
+  basket3x3_tir_apres_check: "bg-orange-500",
+  basket3x3_rebond_ressortie: "bg-amber-700",
+  basket3x3_endurance_lactique: "bg-red-700",
+  basket3x3_explosivite: "bg-pink-600",
+  basket3x3_recup_inter_match: "bg-emerald-600",
+  basket3x3_vps_simulation: "bg-purple-600",
   // Aviron specific
   aviron_ergo: "bg-blue-400",
   aviron_eau: "bg-cyan-500",
