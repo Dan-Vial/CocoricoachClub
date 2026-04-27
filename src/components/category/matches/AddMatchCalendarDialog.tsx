@@ -100,6 +100,7 @@ export function AddMatchCalendarDialog({
   const isAviron = sportType.toLowerCase().includes("aviron");
   const isTennis = sportType.toLowerCase().includes("tennis");
   const isPadel = sportType.toLowerCase().includes("padel");
+  const is3x3 = isBasket3x3(sportType);
   const hasTournamentBracket = isPadel || isTennis;
   
   const baseSport = sportType.split('_')[0].toLowerCase();
