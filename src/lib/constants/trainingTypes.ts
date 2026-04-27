@@ -377,7 +377,8 @@ export function getTrainingTypesForSport(sportType: string | undefined): Trainin
   return ALL_TRAINING_TYPES.filter(t => {
     // If this type is for specific sports only
     if (t.forSports && t.forSports.length > 0) {
-      return t.forSports.includes(baseSport);
+      // Match either the base sport OR the exact subtype (e.g. "basketball_3x3")
+      return t.forSports.includes(baseSport) || t.forSports.includes(sportType.toLowerCase());
     }
     
     // Otherwise filter by team/individual
