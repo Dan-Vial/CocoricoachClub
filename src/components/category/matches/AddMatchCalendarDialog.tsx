@@ -24,7 +24,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { getCompetitionsBySport, getCompetitionStagesBySport } from "@/lib/constants/competitions";
-import { isIndividualSport } from "@/lib/constants/sportTypes";
+import { isIndividualSport, isBasket3x3 } from "@/lib/constants/sportTypes";
+import { Info } from "lucide-react";
 
 interface AddMatchCalendarDialogProps {
   open: boolean;
