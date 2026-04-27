@@ -302,7 +302,50 @@ export const BASKETBALL_STATS: StatField[] = [
   { key: "chargesTaken", label: "Fautes offensives provoquées", shortLabel: "Charges", category: "defense", type: "number" },
 ];
 
-// Judo stats - Per combat/round statistics
+// ============================================================
+// Basketball 3x3 (FIBA) - Specific stats
+// In 3x3 : tirs intérieurs arc = 1pt, tirs derrière arc = 2pts, LF = 1pt
+// Match = 10 min OR 1ère équipe à 21 pts. Possession 12s. Check-ball.
+// VPS (Valeur Pondérée FIBA) = stat officielle de classement.
+// ============================================================
+export const BASKETBALL_3X3_STATS: StatField[] = [
+  // General
+  { key: "minutesPlayed", label: "Minutes jouées", shortLabel: "Min.", category: "general", type: "number" },
+  { key: "starts", label: "Titularisations", shortLabel: "Titu.", category: "general", type: "number" },
+  { key: "personalFouls", label: "Fautes personnelles", shortLabel: "Fautes", category: "general", type: "number" },
+  { key: "technicalFouls", label: "Fautes techniques", shortLabel: "F. tech.", category: "general", type: "number" },
+  { key: "foulsDrawn", label: "Fautes provoquées", shortLabel: "F. prov.", category: "general", type: "number" },
+  { key: "plusMinus", label: "+/-", shortLabel: "+/-", category: "general", type: "number" },
+  { key: "vps", label: "VPS (Valeur FIBA 3x3)", shortLabel: "VPS", category: "general", type: "number" },
+  { key: "manOfMatch", label: "MVP", shortLabel: "MVP", category: "general", type: "number", max: 1 },
+  // Scoring (1pt = intérieur arc, 2pts = derrière arc, LF = 1pt)
+  { key: "points", label: "Points", shortLabel: "Pts", category: "scoring", type: "number" },
+  { key: "onePointersMade", label: "Tirs à 1pt réussis (intérieur arc)", shortLabel: "1pt", category: "scoring", type: "number" },
+  { key: "onePointersAttempted", label: "Tirs à 1pt tentés", shortLabel: "1ptA", category: "scoring", type: "number" },
+  { key: "onePointPercentage", label: "% tirs 1pt", shortLabel: "1pt%", category: "scoring", type: "percentage", max: 100, computedFrom: { successKey: "onePointersMade", totalKey: "onePointersAttempted" } },
+  { key: "twoPointersMade", label: "Tirs à 2pts réussis (derrière arc)", shortLabel: "2pts", category: "scoring", type: "number" },
+  { key: "twoPointersAttempted", label: "Tirs à 2pts tentés", shortLabel: "2ptsA", category: "scoring", type: "number" },
+  { key: "twoPointPercentage", label: "% tirs 2pts", shortLabel: "2pts%", category: "scoring", type: "percentage", max: 100, computedFrom: { successKey: "twoPointersMade", totalKey: "twoPointersAttempted" } },
+  { key: "freeThrowsMade", label: "Lancers francs réussis", shortLabel: "LF", category: "scoring", type: "number" },
+  { key: "freeThrowsAttempted", label: "Lancers francs tentés", shortLabel: "LFA", category: "scoring", type: "number" },
+  { key: "freeThrowPercentage", label: "% lancers francs", shortLabel: "LF%", category: "scoring", type: "percentage", max: 100, computedFrom: { successKey: "freeThrowsMade", totalKey: "freeThrowsAttempted" } },
+  { key: "drives", label: "Pénétrations / Drives", shortLabel: "Drives", category: "scoring", type: "number" },
+  { key: "shotsAfterCheck", label: "Tirs après check-ball", shortLabel: "T. check", category: "scoring", type: "number" },
+  // Attack
+  { key: "assists", label: "Passes décisives", shortLabel: "Passes", category: "attack", type: "number" },
+  { key: "offensiveRebounds", label: "Rebonds offensifs", shortLabel: "RO", category: "attack", type: "number" },
+  { key: "offensiveReboundsAfterClear", label: "Rebonds off. + ressortie réussie", shortLabel: "RO+arc", category: "attack", type: "number" },
+  { key: "turnovers", label: "Ballons perdus", shortLabel: "Pertes", category: "attack", type: "number" },
+  { key: "checkBallsWon", label: "Check-balls gagnés", shortLabel: "Check+", category: "attack", type: "number" },
+  { key: "checkBallsLost", label: "Check-balls perdus", shortLabel: "Check-", category: "attack", type: "number" },
+  // Defense
+  { key: "defensiveRebounds", label: "Rebonds défensifs", shortLabel: "RD", category: "defense", type: "number" },
+  { key: "totalRebounds", label: "Rebonds totaux", shortLabel: "Reb.", category: "defense", type: "number" },
+  { key: "steals", label: "Interceptions", shortLabel: "Steals", category: "defense", type: "number" },
+  { key: "blocks", label: "Contres", shortLabel: "Blocks", category: "defense", type: "number" },
+  { key: "deflections", label: "Déviations", shortLabel: "Dév.", category: "defense", type: "number" },
+  { key: "chargesTaken", label: "Fautes off. provoquées", shortLabel: "Charges", category: "defense", type: "number" },
+];
 // Organized by subcategories as requested:
 // - Résultat & score
 // - Attaque
@@ -844,6 +887,11 @@ function getTriathlonStatsForDiscipline(discipline?: string): StatField[] {
 
 export function getStatsForSport(sportType: SportType | string, isGoalkeeper: boolean = false, discipline?: string): StatField[] {
   const baseSport = getBaseSport(sportType);
+  // Basketball 3x3 = ruleset FIBA distinct (1pt / 2pts au lieu de 2pts / 3pts)
+  const sportLower = String(sportType).toLowerCase();
+  if (sportLower === "basketball_3x3") {
+    return BASKETBALL_3X3_STATS;
+  }
   
   switch (baseSport) {
     case "rugby":

@@ -143,6 +143,18 @@ export const ALL_TRAINING_TYPES: TrainingTypeOption[] = [
   { value: "basketball_transition", label: "Transition", hasExercises: false, forSports: ["basketball"], category: "basketball" },
   { value: "basketball_tactique", label: "Tactique", hasExercises: false, forSports: ["basketball"], category: "basketball" },
   
+  // Basketball 3x3 specific (FIBA ruleset - format court 10 min, possession 12s, check-ball)
+  { value: "basket3x3_1c1", label: "1c1 / Isolation", hasExercises: false, forSports: ["basketball_3x3"], category: "basketball" },
+  { value: "basket3x3_2c2", label: "2c2 / Pick & Roll court", hasExercises: false, forSports: ["basketball_3x3"], category: "basketball" },
+  { value: "basket3x3_check_ball", label: "Check-ball / Remise en jeu arc", hasExercises: false, forSports: ["basketball_3x3"], category: "basketball" },
+  { value: "basket3x3_ressortie_arc", label: "Ressortie arc + tir", hasExercises: false, forSports: ["basketball_3x3"], category: "basketball" },
+  { value: "basket3x3_tir_apres_check", label: "Tir après check-ball", hasExercises: false, forSports: ["basketball_3x3"], category: "basketball" },
+  { value: "basket3x3_rebond_ressortie", label: "Rebond offensif + ressortie", hasExercises: false, forSports: ["basketball_3x3"], category: "basketball" },
+  { value: "basket3x3_endurance_lactique", label: "Endurance lactique 10 min", hasExercises: false, forSports: ["basketball_3x3"], category: "basketball" },
+  { value: "basket3x3_explosivite", label: "Explosivité / Vmax", hasExercises: false, forSports: ["basketball_3x3"], category: "basketball" },
+  { value: "basket3x3_recup_inter_match", label: "Récup. inter-match (tournoi)", hasExercises: false, forSports: ["basketball_3x3"], category: "basketball" },
+  { value: "basket3x3_vps_simulation", label: "Simulation match (VPS)", hasExercises: false, forSports: ["basketball_3x3"], category: "basketball" },
+  
   // Aviron specific (with category)
   { value: "aviron_ergo", label: "Ergomètre (Indoor)", hasExercises: false, forSports: ["aviron"], category: "aviron" },
   { value: "aviron_eau", label: "Sur l'eau (Outdoor)", hasExercises: false, forSports: ["aviron"], category: "aviron" },
@@ -365,7 +377,8 @@ export function getTrainingTypesForSport(sportType: string | undefined): Trainin
   return ALL_TRAINING_TYPES.filter(t => {
     // If this type is for specific sports only
     if (t.forSports && t.forSports.length > 0) {
-      return t.forSports.includes(baseSport);
+      // Match either the base sport OR the exact subtype (e.g. "basketball_3x3")
+      return t.forSports.includes(baseSport) || t.forSports.includes(sportType.toLowerCase());
     }
     
     // Otherwise filter by team/individual
@@ -517,6 +530,17 @@ export const TRAINING_TYPE_COLORS: Record<string, string> = {
   basketball_pick_roll: "bg-purple-500",
   basketball_transition: "bg-amber-500",
   basketball_tactique: "bg-blue-600",
+  // Basketball 3x3 specific (FIBA)
+  basket3x3_1c1: "bg-orange-700",
+  basket3x3_2c2: "bg-orange-600",
+  basket3x3_check_ball: "bg-amber-600",
+  basket3x3_ressortie_arc: "bg-yellow-600",
+  basket3x3_tir_apres_check: "bg-orange-500",
+  basket3x3_rebond_ressortie: "bg-amber-700",
+  basket3x3_endurance_lactique: "bg-red-700",
+  basket3x3_explosivite: "bg-pink-600",
+  basket3x3_recup_inter_match: "bg-emerald-600",
+  basket3x3_vps_simulation: "bg-purple-600",
   // Aviron specific
   aviron_ergo: "bg-blue-400",
   aviron_eau: "bg-cyan-500",
@@ -686,6 +710,17 @@ export const TRAINING_TYPE_LABELS: Record<string, string> = {
   basketball_defense: "Travail Défensif",
   basketball_pick_roll: "Pick & Roll",
   basketball_transition: "Transition",
+  // Basketball 3x3 specific (FIBA)
+  basket3x3_1c1: "1c1 / Isolation",
+  basket3x3_2c2: "2c2 / Pick & Roll court",
+  basket3x3_check_ball: "Check-ball / Remise arc",
+  basket3x3_ressortie_arc: "Ressortie arc + tir",
+  basket3x3_tir_apres_check: "Tir après check-ball",
+  basket3x3_rebond_ressortie: "Rebond off. + ressortie",
+  basket3x3_endurance_lactique: "Endurance lactique 10 min",
+  basket3x3_explosivite: "Explosivité / Vmax",
+  basket3x3_recup_inter_match: "Récup. inter-match",
+  basket3x3_vps_simulation: "Simulation match (VPS)",
   // Aviron specific
   aviron_ergo: "Ergomètre (Indoor)",
   aviron_eau: "Sur l'eau (Outdoor)",
