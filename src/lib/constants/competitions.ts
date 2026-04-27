@@ -1359,6 +1359,11 @@ export const getCompetitionsBySport = (sportType: string): CompetitionCategory[]
     return RUGBY_COMPETITIONS;
   }
   
+  // Basketball 3x3 has its own competition list (FIBA 3x3)
+  if (sportType.toLowerCase() === "basketball_3x3") {
+    return BASKETBALL_3X3_COMPETITIONS;
+  }
+  
   // Handle new sport subtypes (e.g., bowling_club, judo_academie)
   const baseSport = sportType.split('_')[0].toLowerCase();
   
