@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  filterByPreferences,
+  type NotificationCategory,
+} from "../_shared/notification-preferences.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,16 +16,26 @@ interface NotifyAthletesRequest {
     name: string;
     email?: string;
     phone?: string;
+    user_id?: string;
   }>;
   subject: string;
   message: string;
   channels: ("email" | "sms" | "push")[];
-  eventType: "session" | "match" | "event" | "custom";
+  eventType: "session" | "match" | "event" | "custom" | "convocation";
   eventDetails?: {
     date?: string;
     time?: string;
     location?: string;
   };
+}
+
+function eventTypeToCategory(t: NotifyAthletesRequest["eventType"]): NotificationCategory {
+  switch (t) {
+    case "session": return "sessions";
+    case "match": return "matches";
+    case "convocation": return "convocations";
+    default: return "sessions";
+  }
 }
 
 const handler = async (req: Request): Promise<Response> => {
