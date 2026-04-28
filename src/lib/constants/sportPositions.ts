@@ -188,6 +188,14 @@ export const BASKETBALL_POSITIONS: Position[] = [
   { id: "5", name: "Pivot (Center)", x: 75, y: 40 },
 ];
 
+// Basketball 3x3 (FIBA) - 3 joueurs sur un demi-terrain
+// 1 panier, demi-cercle 6.75m, ligne des LF, zone restrictive
+export const BASKETBALL_3X3_POSITIONS: Position[] = [
+  { id: "1", name: "Meneur", x: 50, y: 80 },
+  { id: "2", name: "Ailier", x: 20, y: 55 },
+  { id: "3", name: "Pivot", x: 75, y: 45 },
+];
+
 // Individual sports - no field positions
 export const JUDO_POSITIONS: Position[] = [];
 export const AVIRON_POSITIONS: Position[] = [];
@@ -196,6 +204,10 @@ export const BOWLING_POSITIONS: Position[] = [];
 export type SportType = "XV" | "7" | "XIII" | "touch" | "football" | "handball" | "volleyball" | "basketball" | "judo" | "aviron" | "bowling" | "academie" | "national_team";
 
 export function getPositionsForSport(sportType: SportType | string): Position[] {
+  // Basketball 3x3 (FIBA) - cas spécial : 3 joueurs sur demi-terrain
+  if (sportType?.toLowerCase() === "basketball_3x3") {
+    return BASKETBALL_3X3_POSITIONS;
+  }
   // Extract base sport from subtypes like "basketball_club", "judo_academie"
   const baseSport = sportType.includes('_') ? sportType.split('_')[0].toLowerCase() : sportType;
   
@@ -243,6 +255,18 @@ export function getPositionsForSport(sportType: SportType | string): Position[] 
 }
 
 export function getSportFieldConfig(sportType: SportType | string) {
+  // Basketball 3x3 (FIBA) - demi-terrain, 3 titulaires + 1 remplaçant max
+  if (sportType?.toLowerCase() === "basketball_3x3") {
+    return {
+      type: "basketball_3x3",
+      bgColor: "from-orange-500 to-orange-700",
+      aspectRatio: "1/1",
+      label: "Basket 3x3",
+      starters: 3,
+      substitutes: 1,
+      totalSquad: 4,
+    };
+  }
   // Extract base sport from subtypes like "basketball_club", "judo_academie"
   const baseSport = sportType.includes('_') ? sportType.split('_')[0].toLowerCase() : sportType;
   
