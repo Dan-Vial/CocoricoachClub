@@ -49,6 +49,7 @@ export const SignupEmail = ({
         <Button style={button} href={confirmationUrl}>
           Confirmer mon email
         </Button>
+        <PwaInstructions />
         <Text style={footer}>
           Si tu n'as pas créé de compte, tu peux ignorer cet email en toute sécurité.
         </Text>
