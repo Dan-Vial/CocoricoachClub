@@ -263,7 +263,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       // Send push notification if channel selected
-      if (channels.includes("push") && athlete.email) {
+      if (channels.includes("push") && athlete.email && pushAllowed) {
         try {
           // Build push content
           let pushMessage = message;
