@@ -14,6 +14,7 @@ import {
   Preview,
   Text,
 } from 'npm:@react-email/components@0.0.22'
+import { PwaInstructions } from './pwa-instructions.tsx'
 
 interface InviteEmailProps {
   siteName: string
@@ -43,6 +44,7 @@ export const InviteEmail = ({
         <Button style={button} href={confirmationUrl}>
           Accepter l'invitation
         </Button>
+        <PwaInstructions />
         <Text style={footer}>
           Si tu n'attendais pas cette invitation, tu peux ignorer cet email.
         </Text>
