@@ -310,6 +310,7 @@ export const BASKETBALL_STATS: StatField[] = [
 // ============================================================
 export const BASKETBALL_3X3_STATS: StatField[] = [
   // General
+  { key: "matchDurationSeconds", label: "Durée du match (sec)", shortLabel: "Durée", category: "general", type: "number", max: 600 },
   { key: "minutesPlayed", label: "Minutes jouées", shortLabel: "Min.", category: "general", type: "number" },
   { key: "starts", label: "Titularisations", shortLabel: "Titu.", category: "general", type: "number" },
   { key: "personalFouls", label: "Fautes personnelles", shortLabel: "Fautes", category: "general", type: "number" },
