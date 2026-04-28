@@ -1,46 +1,35 @@
 project_id = "env(SUPABASE_PROJECT_ID)"
 
-[functions.voice-assistant]
-verify_jwt = true
-
-[functions.check-test-reminders]
-verify_jwt = false
-
-[functions.create-injury-notifications]
-verify_jwt = false
-
-[functions.predict-injuries]
-verify_jwt = true
-
-[functions.push-notifications]
-verify_jwt = false
-
-[functions.check-awcr-alerts]
-verify_jwt = false
-
-[functions.send-athlete-invitation]
-verify_jwt = false
-
-[functions.notify-athletes]
-verify_jwt = false
-
-[functions.send-invitation-email]
-verify_jwt = false
-
-[functions.reset-password]
-verify_jwt = false
-
-[functions.auto-fill-rpe]
-verify_jwt = false
-
-[functions.auto-fill-wellness]
-verify_jwt = false
-
-[functions.ewma-rest-day-decay]
-verify_jwt = false
-
-[functions.send-global-notification]
-verify_jwt = true
-
-[functions.delete-onesignal-user]
-verify_jwt = false
+[functions]
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.auto-fill-rpe]
+    verify_jwt = false
+  [functions.auto-fill-wellness]
+    verify_jwt = false
+  [functions.check-awcr-alerts]
+    verify_jwt = false
+  [functions.check-test-reminders]
+    verify_jwt = false
+  [functions.create-injury-notifications]
+    verify_jwt = false
+  [functions.delete-onesignal-user]
+    verify_jwt = false
+  [functions.ewma-rest-day-decay]
+    verify_jwt = false
+  [functions.notify-athletes]
+    verify_jwt = false
+  [functions.predict-injuries]
+    verify_jwt = true
+  [functions.push-notifications]
+    verify_jwt = false
+  [functions.reset-password]
+    verify_jwt = false
+  [functions.send-athlete-invitation]
+    verify_jwt = false
+  [functions.send-global-notification]
+    verify_jwt = true
+  [functions.send-invitation-email]
+    verify_jwt = false
+  [functions.voice-assistant]
+    verify_jwt = true
