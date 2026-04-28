@@ -157,6 +157,8 @@ function Basketball3x3FieldMarkings() {
     </div>
   );
 }
+
+export function SportFieldLineup({ 
   players, 
   sportType = "XV", 
   initialLineup = {},
