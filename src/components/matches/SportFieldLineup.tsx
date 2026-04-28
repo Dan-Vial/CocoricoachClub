@@ -286,6 +286,8 @@ export function SportFieldLineup({
         return <VolleyballFieldMarkings />;
       case "basketball":
         return <BasketballFieldMarkings />;
+      case "basketball_3x3":
+        return <Basketball3x3FieldMarkings />;
       default:
         return <RugbyFieldMarkings />;
     }
