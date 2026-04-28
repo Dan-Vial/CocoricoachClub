@@ -21,6 +21,8 @@ project_id = "env(SUPABASE_PROJECT_ID)"
     verify_jwt = false
   [functions.predict-injuries]
     verify_jwt = true
+  [functions.process-email-queue]
+    verify_jwt = true
   [functions.push-notifications]
     verify_jwt = false
   [functions.reset-password]
