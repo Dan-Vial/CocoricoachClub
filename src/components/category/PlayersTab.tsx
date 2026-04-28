@@ -313,8 +313,26 @@ export function PlayersTab({ categoryId }: PlayersTabProps) {
 
   const deletePlayer = useMutation({
     mutationFn: async (playerId: string) => {
+      // Récupère le user_id lié (s'il existe) AVANT suppression pour purger OneSignal
+      const { data: playerRow } = await supabase
+        .from("players")
+        .select("user_id")
+        .eq("id", playerId)
+        .maybeSingle();
+
       const { error } = await supabase.from("players").delete().eq("id", playerId);
       if (error) throw error;
+
+      // Nettoyage OneSignal (best-effort, ne bloque pas la suppression)
+      if (playerRow?.user_id) {
+        try {
+          await supabase.functions.invoke("delete-onesignal-user", {
+            body: { user_id: playerRow.user_id },
+          });
+        } catch (err) {
+          console.warn("[deletePlayer] OneSignal cleanup failed:", err);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["players", categoryId] });

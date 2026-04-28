@@ -66,6 +66,25 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Best-effort: purge OneSignal user so they stop receiving Wellness/RPE pushes
+    try {
+      const ONESIGNAL_APP_ID = Deno.env.get("ONESIGNAL_APP_ID");
+      const ONESIGNAL_REST_API_KEY = Deno.env.get("ONESIGNAL_REST_API_KEY");
+      if (ONESIGNAL_APP_ID && ONESIGNAL_REST_API_KEY) {
+        const osUrl = `https://api.onesignal.com/apps/${ONESIGNAL_APP_ID}/users/by/external_id/${encodeURIComponent(userId)}`;
+        const osRes = await fetch(osUrl, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Key ${ONESIGNAL_REST_API_KEY}`,
+          },
+        });
+        console.log(`[delete-user] OneSignal DELETE ${userId} → ${osRes.status}`);
+      }
+    } catch (osErr) {
+      console.warn("[delete-user] OneSignal cleanup failed:", osErr);
+    }
+
     // Clean up related data first
     await supabaseAdmin.from("approved_users").delete().eq("user_id", userId);
     await supabaseAdmin.from("super_admin_users").delete().eq("user_id", userId);

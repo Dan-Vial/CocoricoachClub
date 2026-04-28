@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.send-global-notification]
 verify_jwt = true
+
+[functions.delete-onesignal-user]
+verify_jwt = false
