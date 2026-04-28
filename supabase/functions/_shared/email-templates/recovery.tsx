@@ -7,6 +7,7 @@ import {
   Button,
   Container,
   Head,
+  Img,
   Heading,
   Html,
   Preview,
@@ -27,7 +28,7 @@ export const RecoveryEmail = ({
     <Preview>Réinitialise ton mot de passe sur {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={brand}>🐓 CocoriCoach Club</Heading>
+        <Img src="https://mbloebaovvvgfwxsdzgo.supabase.co/storage/v1/object/public/email-assets/cocoricoach-logo.png" alt="CocoriCoach Club" width="160" style={logo} />
         <Heading style={h1}>Réinitialisation du mot de passe</Heading>
         <Text style={text}>
           Nous avons reçu une demande de réinitialisation de ton mot de passe sur {siteName}. Clique sur le bouton ci-dessous pour choisir un nouveau mot de passe.
@@ -47,7 +48,8 @@ export default RecoveryEmail
 
 const main = { backgroundColor: '#ffffff', fontFamily: 'Inter, Arial, sans-serif' }
 const container = { padding: '32px 28px', maxWidth: '560px' }
-const brand = {
+const logo = { margin: "0 0 24px", display: "block" }
+const _brand = {
   fontSize: '14px',
   fontWeight: 'bold' as const,
   color: '#0B1F3A',

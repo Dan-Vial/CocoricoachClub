@@ -7,6 +7,7 @@ import {
   Button,
   Container,
   Head,
+  Img,
   Heading,
   Html,
   Link,
@@ -32,7 +33,7 @@ export const EmailChangeEmail = ({
     <Preview>Confirme ton changement d'email pour {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={brand}>🐓 CocoriCoach Club</Heading>
+        <Img src="https://mbloebaovvvgfwxsdzgo.supabase.co/storage/v1/object/public/email-assets/cocoricoach-logo.png" alt="CocoriCoach Club" width="160" style={logo} />
         <Heading style={h1}>Confirme ton changement d'email</Heading>
         <Text style={text}>
           Tu as demandé à modifier ton adresse email sur {siteName} de{' '}
@@ -58,7 +59,8 @@ export default EmailChangeEmail
 
 const main = { backgroundColor: '#ffffff', fontFamily: 'Inter, Arial, sans-serif' }
 const container = { padding: '32px 28px', maxWidth: '560px' }
-const brand = {
+const logo = { margin: "0 0 24px", display: "block" }
+const _brand = {
   fontSize: '14px',
   fontWeight: 'bold' as const,
   color: '#0B1F3A',

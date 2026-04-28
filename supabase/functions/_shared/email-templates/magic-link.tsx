@@ -7,6 +7,7 @@ import {
   Button,
   Container,
   Head,
+  Img,
   Heading,
   Html,
   Preview,
@@ -27,7 +28,7 @@ export const MagicLinkEmail = ({
     <Preview>Ton lien de connexion à {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={brand}>🐓 CocoriCoach Club</Heading>
+        <Img src="https://mbloebaovvvgfwxsdzgo.supabase.co/storage/v1/object/public/email-assets/cocoricoach-logo.png" alt="CocoriCoach Club" width="160" style={logo} />
         <Heading style={h1}>Ton lien de connexion</Heading>
         <Text style={text}>
           Clique sur le bouton ci-dessous pour te connecter à {siteName}. Ce lien expirera prochainement.
@@ -47,7 +48,8 @@ export default MagicLinkEmail
 
 const main = { backgroundColor: '#ffffff', fontFamily: 'Inter, Arial, sans-serif' }
 const container = { padding: '32px 28px', maxWidth: '560px' }
-const brand = {
+const logo = { margin: "0 0 24px", display: "block" }
+const _brand = {
   fontSize: '14px',
   fontWeight: 'bold' as const,
   color: '#0B1F3A',
