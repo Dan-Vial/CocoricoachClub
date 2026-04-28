@@ -14,6 +14,7 @@ import {
   Preview,
   Text,
 } from 'npm:@react-email/components@0.0.22'
+import { PwaInstructions } from './pwa-instructions.tsx'
 
 interface InviteEmailProps {
   siteName: string
