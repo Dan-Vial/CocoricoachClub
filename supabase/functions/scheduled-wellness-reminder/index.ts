@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { filterByPreferences } from "../_shared/notification-preferences.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -102,8 +103,17 @@ serve(async (req) => {
 
       if (!players || players.length === 0) continue;
 
+      // Filter by per-user notification preferences
+      const allUserIds = players.filter((p) => p.user_id).map((p) => p.user_id!);
+      const { pushUserIds: allowedPushUserIds, emailUserIds: allowedEmailUserIds } =
+        await filterByPreferences(supabase, allUserIds, "wellness_reminder");
+      const allowedEmailSet = new Set(allowedEmailUserIds);
+      const allowedPushSet = new Set(allowedPushUserIds);
+
       // ── EMAIL via OneSignal ────────────────────────────────────────────────
-      const emailRecipients = players.filter((p) => p.email).map((p) => p.email!);
+      const emailRecipients = players
+        .filter((p) => p.email && p.user_id && allowedEmailSet.has(p.user_id))
+        .map((p) => p.email!);
 
       if (emailRecipients.length > 0) {
         try {
@@ -151,7 +161,7 @@ serve(async (req) => {
 
       // ── PUSH via OneSignal ─────────────────────────────────────────────
       const pushUserIds = players
-        .filter((p) => p.user_id)
+        .filter((p) => p.user_id && allowedPushSet.has(p.user_id!))
         .map((p) => p.user_id!);
 
       if (pushUserIds.length > 0) {
