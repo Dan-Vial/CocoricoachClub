@@ -130,10 +130,52 @@ const handler = async (req: Request): Promise<Response> => {
       `;
     };
 
+    // Resolve user_ids for athletes that didn't pass one (lookup via email)
+    const supabaseService = createClient(
+      supabaseUrl!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? supabaseAnonKey!
+    );
+    const emailsToLookup = athletes
+      .filter((a) => !a.user_id && a.email)
+      .map((a) => a.email!.toLowerCase());
+
+    const emailToUserId = new Map<string, string>();
+    if (emailsToLookup.length > 0) {
+      const { data: playerRows } = await supabaseService
+        .from("players")
+        .select("email,user_id")
+        .in("email", emailsToLookup);
+      for (const r of (playerRows ?? []) as Array<{ email: string | null; user_id: string | null }>) {
+        if (r.email && r.user_id) emailToUserId.set(r.email.toLowerCase(), r.user_id);
+      }
+    }
+
+    const enrichedAthletes = athletes.map((a) => ({
+      ...a,
+      user_id: a.user_id ?? (a.email ? emailToUserId.get(a.email.toLowerCase()) : undefined),
+    }));
+
+    // Filter by per-user notification preferences
+    const category = eventTypeToCategory(eventType);
+    const allUserIds = enrichedAthletes
+      .map((a) => a.user_id)
+      .filter((u): u is string => Boolean(u));
+    const { pushUserIds, emailUserIds } = await filterByPreferences(
+      supabaseService,
+      allUserIds,
+      category
+    );
+    const allowedPushSet = new Set(pushUserIds);
+    const allowedEmailSet = new Set(emailUserIds);
+
     // Send notifications for each athlete
-    for (const athlete of athletes) {
+    for (const athlete of enrichedAthletes) {
+      // If we know the user_id, respect their preferences. If unknown, fall through (legacy).
+      const emailAllowed = !athlete.user_id || allowedEmailSet.has(athlete.user_id);
+      const pushAllowed = !athlete.user_id || allowedPushSet.has(athlete.user_id);
+
       // Send email if channel selected and email available
-      if (channels.includes("email") && athlete.email) {
+      if (channels.includes("email") && athlete.email && emailAllowed) {
         try {
           const emailResponse = await fetch("https://api.onesignal.com/notifications", {
             method: "POST",
