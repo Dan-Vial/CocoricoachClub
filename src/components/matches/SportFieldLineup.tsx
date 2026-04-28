@@ -136,7 +136,27 @@ function BasketballFieldMarkings() {
   );
 }
 
-export function SportFieldLineup({ 
+// Basketball 3x3 (FIBA) - demi-terrain unique avec 1 panier en haut
+function Basketball3x3FieldMarkings() {
+  return (
+    <div className="absolute inset-0">
+      {/* Court border (demi-terrain) */}
+      <div className="absolute inset-[3%] border-2 border-white/60" />
+      {/* Ligne médiane (limite arrière du demi-terrain 3x3) */}
+      <div className="absolute bottom-[3%] left-[3%] right-[3%] h-[2px] bg-white/60" />
+      {/* Arc à 3 points (6.75m FIBA) - en haut autour du panier */}
+      <div className="absolute top-[3%] left-[12%] right-[12%] h-[42%] border-2 border-white/60 border-t-0 rounded-b-full" />
+      {/* Raquette (zone restrictive) */}
+      <div className="absolute top-[3%] left-[32%] right-[32%] h-[26%] border-2 border-white/55 border-t-0" />
+      {/* Cercle des LF */}
+      <div className="absolute top-[24%] left-[50%] w-[16%] h-[10%] -translate-x-1/2 border-2 border-dashed border-white/45 rounded-full" />
+      {/* Panier */}
+      <div className="absolute top-[5%] left-[50%] w-[4%] h-[1.5%] -translate-x-1/2 bg-white/70" />
+      {/* Demi-cercle restrictive sous le panier */}
+      <div className="absolute top-[5%] left-[50%] w-[10%] h-[6%] -translate-x-1/2 border-2 border-white/40 border-t-0 rounded-b-full" />
+    </div>
+  );
+}
   players, 
   sportType = "XV", 
   initialLineup = {},
