@@ -44,6 +44,7 @@ export const InviteEmail = ({
         <Button style={button} href={confirmationUrl}>
           Accepter l'invitation
         </Button>
+        <PwaInstructions />
         <Text style={footer}>
           Si tu n'attendais pas cette invitation, tu peux ignorer cet email.
         </Text>
