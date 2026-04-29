@@ -3,35 +3,16 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
+import { defineFallbackEnv } from './vite-lovable-fallback-env'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const PORT = Number(env.VITE_PORT || 8080);
 
-  // Fallbacks robustes pour éviter un crash runtime si l'env build n'injecte pas les vars
-  const SUPABASE_URL =
-    env.VITE_SUPABASE_URL ||
-    process.env.VITE_SUPABASE_URL ||
-    "https://mbloebaovvvgfwxsdzgo.supabase.co";
-
-  const SUPABASE_PUBLISHABLE_KEY =
-    env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ibG9lYmFvdnZ2Z2Z3eHNkemdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwMTc0NzksImV4cCI6MjA3ODU5MzQ3OX0.o2SMHIz5Vg34bhLErBlMT1Ign6enDcHTzhbIzMIkJLE";
-
-  const SUPABASE_PROJECT_ID =
-    env.VITE_SUPABASE_PROJECT_ID ||
-    process.env.VITE_SUPABASE_PROJECT_ID ||
-    "mbloebaovvvgfwxsdzgo";
-
   return {
     clearScreen: false,
-    define: {
-      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(SUPABASE_URL),
-      "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(SUPABASE_PUBLISHABLE_KEY),
-      "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(SUPABASE_PROJECT_ID),
-    },
+    define: defineFallbackEnv(mode),
     server: {
       host: "::",
       port: PORT,
